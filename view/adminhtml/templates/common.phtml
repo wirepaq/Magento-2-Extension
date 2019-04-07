@@ -1,0 +1,17 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/** @var \Unbxd\ProductFeed\Block\Adminhtml\Common $block */
+?>
+
+<script type="text/x-magento-init">
+    {
+        "*": {
+            "unbxdCommon": {
+                "config": <?= /* @escapeNotVerified */ $block->getJsonConfig() ?>,
+                "formKey": "<?= /* @escapeNotVerified */ $block->getFormKey() ?>"
+            }
+        }
+    }
+</script>

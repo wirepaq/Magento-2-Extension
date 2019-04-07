@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <unbxd_setup>
+            <general>
+                <site_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
+                <secret_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
+                <api_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
+            </general>
+        </unbxd_setup>
+        <unbxd_catalog>
+            <general>
+                <available_product_types>simple,configurable,grouped</available_product_types>
+                <special_attributes>all</special_attributes>
+            </general>
+            <indexing>
+                <enable_product_indexing>1</enable_product_indexing>
+                <product_index_prefix>magento2_</product_index_prefix>
+            </indexing>
+            <cron>
+                <enabled>0</enabled>
+                <cron_type>manually</cron_type>
+            </cron>
+        </unbxd_catalog>
+        <unbxd_search>
+
+        </unbxd_search>
+    </default>
+</config>

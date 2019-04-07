@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Unbxd_ProductFeed::productfeed"
+             title="Unbxd"
+             translate="title"
+             module="Unbxd_ProductFeed"
+             sortOrder="60"
+             resource="Unbxd_ProductFeed::productfeed"/>
+        <add id="Unbxd_ProductFeed::productfeed_setup"
+             title="Setup"
+             module="Unbxd_ProductFeed"
+             sortOrder="10"
+             dependsOnModule="Unbxd_ProductFeed"
+             parent="Unbxd_ProductFeed::productfeed"
+             action="adminhtml/system_config/edit/section/unbxd_setup"
+             resource="Unbxd_ProductFeed::productfeed"/>
+        <add id="Unbxd_ProductFeed::productfeed_catalog"
+             title="Catalog"
+             module="Unbxd_ProductFeed"
+             sortOrder="20"
+             dependsOnModule="Unbxd_ProductFeed"
+             parent="Unbxd_ProductFeed::productfeed"
+             action="adminhtml/system_config/edit/section/unbxd_catalog"
+             resource="Unbxd_ProductFeed::productfeed"/>
+        <add id="Unbxd_ProductFeed::productfeed_sync_view"
+             title="Feed Log View"
+             module="Unbxd_ProductFeed"
+             sortOrder="30"
+             dependsOnModule="Unbxd_ProductFeed"
+             parent="Unbxd_ProductFeed::productfeed"
+             action="unbxd_productfeed/feed_view/index"
+             resource="Unbxd_ProductFeed::productfeed_feed_view"/>
+        <add id="Unbxd_ProductFeed::productfeed_search"
+             title="Search Results Page"
+             module="Unbxd_ProductFeed"
+             sortOrder="40"
+             dependsOnModule="Unbxd_ProductFeed"
+             parent="Unbxd_ProductFeed::productfeed"
+             action="adminhtml/system_config/edit/section/unbxd_search"
+             resource="Unbxd_ProductFeed::productfeed"/>
+    </menu>
+</config>

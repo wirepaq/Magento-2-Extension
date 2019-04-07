@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="unbxd_feed" instance="Unbxd\ProductFeed\Cron\Feed" method="execute" />
+    </group>
+</config>

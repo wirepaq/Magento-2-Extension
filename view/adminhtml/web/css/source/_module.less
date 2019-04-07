@@ -1,0 +1,130 @@
+.config-nav-block {
+    &.unbxd-tab {
+        .admin__page-nav-title {
+            &:before {
+                content: '';
+                display: block;
+                position: absolute;
+                background: url(../images/unbxd_logo_badge.png) no-repeat;
+                background-size: contain;
+                width: 19px;
+                height: 19px;
+            }
+
+            strong {
+                margin-left: 25px;
+            }
+        }
+    }
+}
+
+.unbxd-system-config-information-container {
+    background: #f8f8f8;
+    border: 1px solid #e3e3e3;
+    padding: 1.5rem;
+
+    .block {
+        margin-bottom: 1rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        &.content {
+            .helper-links {
+                p:last-child {
+                    margin-bottom: 0;
+                }
+            }
+        }
+
+        h2 {
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0;
+        }
+
+        .logo {
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        .messages {
+            .message {
+                margin: 0 0 1.5rem;
+
+                &-success {
+                    background-color: #e9fbdb;
+                    color: green;
+                }
+            }
+        }
+    }
+
+
+    &.catalog {
+        .content {
+            ul {
+                list-style: none;
+                padding-left: 1rem;
+                margin: 0;
+
+                li {
+                    &:before {
+                        content: '- ';
+                    }
+
+                    code {
+                        padding-left: 10px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.unbxd-fieldset {
+    &-buttons {
+        button {
+            &.action-default {
+                min-width: 220px;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+
+            & ~ .tooltip {
+                float: none !important;
+            }
+        }
+    }
+
+    &-field-note {
+        margin: 2.2rem auto;
+        background: #f1f1f1;
+        border: 1px solid #ccc;
+
+        &:before {
+            color: #676056;
+        }
+    }
+}
+
+.adminhtml-system-config-edit {
+    .modal-popup {
+        &.confirm {
+            .modal-inner-wrap {
+                width: 75%;
+            }
+        }
+    }
+}
+.unbxd-response-modal-container {
+    left: auto;
+    right: 0;
+    min-width: 30%;
+
+    h3 {
+        margin-bottom: 0;
+    }
+}

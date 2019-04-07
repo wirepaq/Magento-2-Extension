@@ -1,0 +1,21 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/** @var \Unbxd\ProductFeed\Block\Adminhtml\System\Config\Fieldset\Setup $block */
+?>
+<div class="unbxd-system-config-information-container setup">
+    <div class="block header">
+        <h2>
+            <strong><?= /* @escapeNotVerified */ __('Product Feed v. %1', $block->getModuleVersion()) ?></strong>&nbsp;
+            <span><?= /* @escapeNotVerified */ __('by') ?></span>
+        </h2>
+        <a class="logo" href="<?= /* @escapeNotVerified */ $block->getUnbxdReferenceUrl()?>" target="_blank">
+            <img src="<?php echo $block->getLogoSrc() ?>" alt="<?= /* @escapeNotVerified */ __('Unbxd') ?>" />
+        </a>
+    </div>
+    <div class="block content">
+        <p><?= /* @escapeNotVerified */ __('Have a question? Please refer to the <a href="%1">documentation</a>.',
+                $block->getUnbxdReferenceUrl('feed_doc')) ?></p>
+    </div>
+</div>

@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
+        <arguments>
+            <argument name="attributes" xsi:type="array">
+                <item name="catalog.value" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\Disabled</item>
+                <item name="stock.is_in_stock" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\OutOfStock</item>
+                <item name="visibility" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\Visibility</item>
+                <item name="no_image" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\NoImage</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- START: ui grids -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="unbxd_productfeed_feed_view_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\Sync\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Unbxd\ProductFeed\Model\ResourceModel\Sync\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">unbxd_productfeed_feed_view</argument>
+            <argument name="resourceModel" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\Sync</argument>
+        </arguments>
+    </type>
+    <!-- END: ui grids -->
+
+    <!-- START: logger -->
+    <!--<preference for="Unbxd\ProductFeed\Logger\LoggerInterface" type="Unbxd\ProductFeed\Logger\LoggerProxy"/>-->
+    <!--<type name="Unbxd\ProductFeed\Logger\LoggerProxy">-->
+        <!--<arguments>-->
+            <!--<argument name="loggerAlias" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_OUTPUT</argument>-->
+            <!--<argument name="logAll" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_LOG_EVERYTHING</argument>-->
+            <!--<argument name="logActionTime" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_ACTION_TIME_THRESHOLD</argument>-->
+            <!--<argument name="logCallStack" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_INCLUDE_STACKTRACE</argument>-->
+        <!--</arguments>-->
+    <!--</type>-->
+    <!--<type name="Unbxd\ProductFeed\Logger\File">-->
+        <!--<arguments>-->
+            <!--<argument name="debugFile" xsi:type="string">unbxd/feed.log</argument>-->
+        <!--</arguments>-->
+    <!--</type>-->
+    <!-- END: logger -->
+
+    <!-- START: indexer -->
+    <virtualType name="unbxdCatalogProductIndexHandler" type="Unbxd\ProductFeed\Model\Indexer\IndexerHandler">
+        <arguments>
+            <argument name="indexName" xsi:type="string">unbxd_products</argument>
+            <argument name="typeName" xsi:type="string">product</argument>
+        </arguments>
+    </virtualType>
+    <type name="Unbxd\ProductFeed\Model\Indexer\Product">
+        <arguments>
+            <argument name="indexerHandler" xsi:type="object">unbxdCatalogProductIndexHandler</argument>
+        </arguments>
+    </type>
+
+    <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider">
+        <arguments>
+            <argument name="typeName" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider::DATA_SOURCES_DEFAULT_TYPE</argument>
+            <argument name="dataSources" xsi:type="array">
+                <item name="attribute" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Attribute</item>
+                <item name="image" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Image</item>
+                <item name="price" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price</item>
+                <item name="stock" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Stock</item>
+                <item name="category" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Category</item>
+            </argument>
+        </arguments>
+    </type>
+    <!-- END: indexer -->
+
+    <!-- START: indexer optimization -->
+    <!--<type name="Unbxd\ProductFeed\Model\Indexer\Product\Action\Full">-->
+        <!--<arguments>-->
+            <!--<argument name="batchRowsCount" xsi:type="number">100000</argument>-->
+            <!--<argument name="batchSizeManagement" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\ProductBatchSize</argument>-->
+        <!--</arguments>-->
+    <!--</type>-->
+    <!--<virtualType name="Unbxd\ProductFeed\Model\Indexer\Product\ProductBatchSize" type="Magento\Framework\Indexer\BatchSizeManagement">-->
+        <!--<arguments>-->
+            <!--<argument name="rowSizeEstimator" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\RowSizeEstimator</argument>-->
+        <!--</arguments>-->
+    <!--</virtualType>-->
+    <!-- END: indexer optimization -->
+
+    <type name="Magento\Catalog\Model\ResourceModel\Product">
+        <plugin name="unbxd_product_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\Product"/>
+    </type>
+    <type name="Magento\Catalog\Model\Product\Action">
+        <plugin name="unbxd_product_massaction_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\ProductMassAction"/>
+    </type>
+</config>

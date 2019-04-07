@@ -1,0 +1,21 @@
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">unbxd_productfeed_feed_view_grid.unbxd_productfeed_feed_view_grid_data_source</item>
+        </item>
+    </argument>
+</listing>

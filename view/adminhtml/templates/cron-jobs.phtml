@@ -1,0 +1,40 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/** @var \Magento\Framework\View\Element\Template $block */
+?>
+<?php
+$jobs = $block->getCronJobs();
+?>
+<?php if (empty($jobs)): ?>
+    <div class="messages">
+        <div class="message message-warning">
+            <?= /* @escapeNotVerified */ __('Empty jobs data. Cron is not running.') ?>
+        </div>
+    </div>
+<?php else: ?>
+    <h3><?= /* @escapeNotVerified */ __('Cron is running. Last %1 jobs:', count($jobs)) ?></h3>
+    <div class="admin__data-grid-wrap admin__data-grid-wrap-static">
+        <table id="unbxd_cron_jobs_grid_table" class="data-grid">
+            <thead>
+            <tr>
+                <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Schedule Id') ?></span></th>
+                <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Job Code') ?></span></th>
+                <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Status') ?></span></th>
+                <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Created At') ?></span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($jobs as $key => $data): ?>
+                <tr data-role="row" class="<?php echo $key % 2 == 0 ? 'even' : ''; ?>">
+                    <td><span><?= /* @escapeNotVerified */ $data['schedule_id'] ?></span></td>
+                    <td><span><?= /* @escapeNotVerified */ $data['code'] ?></span></td>
+                    <td><span><?= /* @escapeNotVerified */ $data['status'] ?></span></td>
+                    <td><span><?= /* @escapeNotVerified */ $data['created_at'] ?></span></td>
+                </tr>
+            <?php endforeach;?>
+            </tbody>
+        </table>
+    </div>
+<?php endif; ?>

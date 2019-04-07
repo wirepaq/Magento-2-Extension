@@ -1,0 +1,35 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/** @var \Unbxd\ProductFeed\Block\Adminhtml\System\Config\Fieldset\Catalog $block */
+?>
+<div class="unbxd-system-config-information-container catalog">
+    <div class="block notification">
+        <?php
+        $stateClassName = !$block->isCatalogSynchronized() ? 'warning' : 'success';
+        $message = !$block->isCatalogSynchronized()
+            ? __('Product catalog is not synchronized yet.')
+            : __('Product catalog is synchronized successfully.')
+        ?>
+        <div class="messages">
+            <div class="message message-<?php echo $stateClassName ?>">
+                <?= /* @escapeNotVerified */ $message ?>
+                <?php if ($dateTime = $block->getLastCatalogSyncDatetime()): ?>
+                    <?= /* @escapeNotVerified */ __('Last synchronization - %1', $dateTime) ?>
+                    <!-- @TODO link to grid layout -->
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <div class="block content">
+        <p><?= /* @escapeNotVerified */ __('Possibility of product catalog synchronization:') ?></p>
+        <ul>
+            <li><a href="#unbxd_catalog_actions-head"><?= /* @escapeNotVerified */ __('manually') ?></a></li>
+            <li><?= /* @escapeNotVerified */ __('by configuration related <a href="#unbxd_catalog_cron-head">cron job</a>') ?></li>
+            <li><?= /* @escapeNotVerified */ __('by cli commands: %1',
+                    '<br/><code>php bin/magento unbxd:product-feed:full</code><br/>
+                    <code>php bin/magento unbxd:product-feed:incremental</code>') ?></li>
+        </ul>
+    </div>
+</div>
