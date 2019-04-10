@@ -14,7 +14,11 @@
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
-    <type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
+    <preference for="Unbxd\ProductFeed\Api\Data\IndexingQueueSearchResultsInterface" type="Magento\Framework\Api\SearchResults" />
+    <preference for="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" type="Unbxd\ProductFeed\Model\IndexingQueue" />
+    <preference for="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" type="Unbxd\ProductFeed\Model\IndexingQueueRepository" />
+	
+	<type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
         <arguments>
             <argument name="attributes" xsi:type="array">
                 <item name="catalog.value" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\Disabled</item>
@@ -25,21 +29,50 @@
         </arguments>
     </type>
 
-    <!-- START: ui grids -->
+	<!-- START: ui grids -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">
-                <item name="unbxd_productfeed_feed_view_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\Sync\Grid\Collection</item>
+                <item name="unbxd_productfeed_feed_view_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\FeedView\Grid\Collection</item>
+                <item name="unbxd_productfeed_indexing_queue_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
-    <type name="Unbxd\ProductFeed\Model\ResourceModel\Sync\Grid\Collection">
+    <type name="Unbxd\ProductFeed\Model\ResourceModel\FeedView\Grid\Collection">
         <arguments>
             <argument name="mainTable" xsi:type="string">unbxd_productfeed_feed_view</argument>
-            <argument name="resourceModel" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\Sync</argument>
+            <argument name="eventPrefix" xsi:type="string">unbxd_productfeed_feed_view_grid_collection</argument>
+            <argument name="eventObject" xsi:type="string">feed_view_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\FeedView</argument>
+        </arguments>
+    </type>
+    <type name="Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">unbxd_productfeed_indexing_queue</argument>
+            <argument name="eventPrefix" xsi:type="string">unbxd_productfeed_indexing_queue_grid_collection</argument>
+            <argument name="eventObject" xsi:type="string">indexing_queue_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue</argument>
         </arguments>
     </type>
     <!-- END: ui grids -->
+	
+	<type name="Magento\Framework\EntityManager\MetadataPool">
+        <arguments>
+            <argument name="metadata" xsi:type="array">
+                <item name="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" xsi:type="array">
+                    <item name="entityTableName" xsi:type="string">unbxd_productfeed_indexing_queue</item>
+                    <item name="identifierField" xsi:type="string">queue_id</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\EntityManager\HydratorPool">
+        <arguments>
+            <argument name="hydrators" xsi:type="array">
+                <item name="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" xsi:type="string">Magento\Framework\EntityManager\AbstractModelHydrator</item>
+            </argument>
+        </arguments>
+    </type>
 
     <!-- START: logger -->
     <!--<preference for="Unbxd\ProductFeed\Logger\LoggerInterface" type="Unbxd\ProductFeed\Logger\LoggerProxy"/>-->
@@ -83,6 +116,15 @@
             </argument>
         </arguments>
     </type>
+	<type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price">
+        <arguments>
+            <argument name="priceReaderPool" xsi:type="array">
+                <item name="default" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceDefault</item>
+                <item name="configurable" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\Configurable</item>
+                <item name="grouped" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\Grouped</item>
+            </argument>
+        </arguments>
+    </type>
     <!-- END: indexer -->
 
     <!-- START: indexer optimization -->
@@ -104,5 +146,13 @@
     </type>
     <type name="Magento\Catalog\Model\Product\Action">
         <plugin name="unbxd_product_massaction_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\ProductMassAction"/>
+    </type>
+	
+	<type name="Unbxd\ProductFeed\Model\IndexingQueue\Config\Reader">
+        <arguments>
+            <argument name="fileName" xsi:type="string">indexing_queue_config.xml</argument>
+            <argument name="converter" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Config\Converter</argument>
+            <argument name="schemaLocator" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Config\SchemaLocator</argument>
+        </arguments>
     </type>
 </config>

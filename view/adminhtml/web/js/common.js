@@ -112,21 +112,12 @@ define([
                 return false;
             }
 
-            if (isCronConfigured) {
-                alert({
-                    content: $.mage.__('This process already configured by related cron job.' + '<br/>' +
-                        'To prevent synchronization conflicts, please disable related cron job ' +
-                        'before run this action.'),
-                });
-
-                return false;
-            }
-
             confirm({
                 title: $.mage.__('Confirmation'),
                 content: $.mage.__('Are you sure do you want to run synchronization with ' +
                     '<a href="http://unbxd.com"><strong>Unbxd</strong></a> service?' + '<br/><br/>' +
-                    '<strong>' + 'NOTE: ' +  '</strong>' + 'Recommended to configure related cron job for this action.'),
+                    '<strong>' + 'NOTE: ' +  '</strong>' + 'Please make sure the related cron job is configured ' +
+                    'to perform this operation.'),
                 actions: {
                     /** @inheritdoc */
                     confirm: function () {

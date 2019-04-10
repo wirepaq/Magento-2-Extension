@@ -11,14 +11,14 @@
  */
 namespace Unbxd\ProductFeed\Controller\Adminhtml\Feed;
 
-use Unbxd\ProductFeed\Controller\Adminhtml\Index;
+use Unbxd\ProductFeed\Controller\Adminhtml\ActionIndex;
 use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Class Incremental
  * @package Unbxd\ProductFeed\Controller\Adminhtml\Feed
  */
-class Incremental extends Index
+class Incremental extends ActionIndex
 {
     /**
      * @return array|\Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface

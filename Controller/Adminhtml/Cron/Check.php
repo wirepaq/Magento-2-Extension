@@ -11,14 +11,14 @@
  */
 namespace Unbxd\ProductFeed\Controller\Adminhtml\Cron;
 
-use Unbxd\ProductFeed\Controller\Adminhtml\Index;
+use Unbxd\ProductFeed\Controller\Adminhtml\ActionIndex;
 use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Class Check
  * @package Unbxd\ProductFeed\Controller\Adminhtml\Cron
  */
-class Check extends Index
+class Check extends ActionIndex
 {
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\Result\Json|\Magento\Framework\Controller\ResultInterface

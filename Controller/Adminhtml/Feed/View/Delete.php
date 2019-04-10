@@ -11,14 +11,14 @@
  */
 namespace Unbxd\ProductFeed\Controller\Adminhtml\Feed\View;
 
-use Unbxd\ProductFeed\Controller\Adminhtml\FeedView;
+use Unbxd\ProductFeed\Controller\Adminhtml\ActionIndex;
 use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Class Delete
  * @package Unbxd\ProductFeed\Controller\Adminhtml\Feed\View
  */
-class Delete extends FeedView
+class Delete extends ActionIndex
 {
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void

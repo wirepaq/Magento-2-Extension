@@ -128,3 +128,36 @@
         margin-bottom: 0;
     }
 }
+
+.admin__data-grid-wrap {
+    .data-grid {
+        tbody {
+            .data-row {
+                .data-grid-cell-content {
+                    .grid-severity {
+                        &-pending,
+                        &-hold{
+                            display: block;
+                            font-weight: bold;
+                            line-height: 17px;
+                            padding: 0 3px;
+                            text-align: center;
+                            text-transform: uppercase;
+                        }
+
+                        &-pending {
+                            background: #dbdbdb;
+                            border: 1px solid #adadad;
+                            color: #514943;
+                        }
+                        &-hold {
+                            background: #f8f8f8;
+                            border: 1px solid #c3c3c3;
+                            color: #888;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

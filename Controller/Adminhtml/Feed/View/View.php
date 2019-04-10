@@ -11,14 +11,14 @@
  */
 namespace Unbxd\ProductFeed\Controller\Adminhtml\Feed\View;
 
-use Unbxd\ProductFeed\Controller\Adminhtml\FeedView;
+use Unbxd\ProductFeed\Controller\Adminhtml\ActionIndex;
 use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Class View
  * @package Unbxd\ProductFeed\Controller\Adminhtml\Feed\View
  */
-class View extends FeedView
+class View extends ActionIndex
 {
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
