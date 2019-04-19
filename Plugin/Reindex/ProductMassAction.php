@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Plugin\Product;
 
 use Magento\Framework\Indexer\IndexerRegistry;
 use Unbxd\ProductFeed\Model\Indexer\Product as UnbxdProductIndexer;
+use Unbxd\ProductFeed\Model\IndexingQueue\Handler;
 use Magento\Catalog\Model\Product\Action;
 
 /**
@@ -65,8 +66,12 @@ class ProductMassAction
     ) {
         $result = $closure($productIds, $attrData, $storeId);
         if (!$this->indexer->isScheduled()) {
+            $productIds = array_unique($productIds);
+            foreach ($productIds as $id) {
+                Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+            }
             // if indexer is 'Update on save' mode we need to rebuild related index data
-            $this->indexer->reindexList(array_unique($productIds));
+            $this->indexer->reindexList($productIds);
         }
 
         return $result;
@@ -89,8 +94,12 @@ class ProductMassAction
     ) {
         $result = $closure($productIds, $websiteIds, $type);
         if (!$this->indexer->isScheduled()) {
+            $productIds = array_unique($productIds);
+            foreach ($productIds as $id) {
+                Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+            }
             // if indexer is 'Update on save' mode we need to rebuild related index data
-            $this->indexer->reindexList(array_unique($productIds));
+            $this->indexer->reindexList($productIds);
         }
 
         return $result;

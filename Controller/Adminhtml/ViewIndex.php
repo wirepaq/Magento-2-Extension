@@ -24,6 +24,11 @@ use Unbxd\ProductFeed\Helper\Data as HelperData;
 abstract class ViewIndex extends Action
 {
     /**
+     * @var \Magento\Framework\Registry
+     */
+    protected $registry;
+
+    /**
      * @var \Magento\Framework\View\Result\PageFactory
      */
     protected $resultPageFactory;
@@ -34,20 +39,20 @@ abstract class ViewIndex extends Action
     protected $storeManager;
 
     /**
-     * Index constructor.
+     * ViewIndex constructor.
      * @param Action\Context $context
+     * @param \Magento\Framework\Registry $registry
      * @param PageFactory $resultPageFactory
-     * @param CronManager $cronManager
-     * @param HelperData $helperData
-     * @param \Magento\Framework\Data\Form\FormKey\Validator $formKeyValidator
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         Action\Context $context,
+        \Magento\Framework\Registry $registry,
         PageFactory $resultPageFactory,
         StoreManagerInterface $storeManager
     ) {
         parent::__construct($context);
+        $this->registry = $registry;
         $this->resultPageFactory = $resultPageFactory;
         $this->storeManager = $storeManager;
     }

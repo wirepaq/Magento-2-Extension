@@ -14,11 +14,14 @@ namespace Unbxd\ProductFeed\Controller\Adminhtml;
 use Magento\Backend\App\Action;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Ui\Component\MassAction\Filter as MassActionFilter;
 use Unbxd\ProductFeed\Model\CronManager;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Helper\ProductHelper;
+use Unbxd\ProductFeed\Model\IndexingQueue;
 use Unbxd\ProductFeed\Model\IndexingQueueFactory;
 use Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface;
+use Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\CollectionFactory as IndexingQueueCollectionFactory;
 
 /**
  * Class ActionIndex
@@ -32,6 +35,16 @@ abstract class ActionIndex extends Action
     protected $resultPageFactory;
 
     /**
+     * @var MassActionFilter
+     */
+    protected $massActionFilter;
+
+    /**
+     * @var IndexingQueue
+     */
+    protected $indexingQueue;
+
+    /**
      * @var IndexingQueueFactory
      */
     protected $indexingQueueFactory;
@@ -40,6 +53,11 @@ abstract class ActionIndex extends Action
      * @var IndexingQueueRepositoryInterface
      */
     protected $indexingQueueRepository;
+
+    /**
+     * @var IndexingQueueCollectionFactory
+     */
+    protected $indexingQueueCollectionFactory;
 
     /**
      * @var CronManager
@@ -65,9 +83,12 @@ abstract class ActionIndex extends Action
      * ActionIndex constructor.
      * @param Action\Context $context
      * @param PageFactory $resultPageFactory
+     * @param MassActionFilter $massActionFilter
      * @param IndexingQueueFactory $indexingQueueFactory
      * @param IndexingQueueRepositoryInterface $indexingQueueRepository
+     * @param IndexingQueueCollectionFactory $indexingQueueCollectionFactory
      * @param CronManager $cronManager
+     * @param \Magento\Framework\App\Response\Http\FileFactory $fileFactory
      * @param HelperData $helperData
      * @param ProductHelper $productHelper
      * @param StoreManagerInterface $storeManager
@@ -75,20 +96,27 @@ abstract class ActionIndex extends Action
     public function __construct(
         Action\Context $context,
         PageFactory $resultPageFactory,
+        MassActionFilter $massActionFilter,
         IndexingQueueFactory $indexingQueueFactory,
         IndexingQueueRepositoryInterface $indexingQueueRepository,
+        IndexingQueueCollectionFactory $indexingQueueCollectionFactory,
         CronManager $cronManager,
+        \Magento\Framework\App\Response\Http\FileFactory $fileFactory,
         HelperData $helperData,
         ProductHelper $productHelper,
         StoreManagerInterface $storeManager
     ) {
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
+        $this->massActionFilter = $massActionFilter;
         $this->indexingQueueFactory = $indexingQueueFactory
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueFactory::class);
         $this->indexingQueueRepository = $indexingQueueRepository
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueRepositoryInterface::class);
+        $this->indexingQueueCollectionFactory = $indexingQueueCollectionFactory
+            ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueCollectionFactory::class);
         $this->cronManager = $cronManager;
+        $this->fileFactory = $fileFactory;
         $this->helperData = $helperData;
         $this->productHelper = $productHelper;
         $this->storeManager = $storeManager;

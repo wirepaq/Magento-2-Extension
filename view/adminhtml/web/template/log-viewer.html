@@ -1,0 +1,26 @@
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<div class="log-viewer-modal" data-bind="afterRender: setModalElement, blockLoader: isLoading">
+    <div class="messages">
+        <div class="message message-warning">
+            <strong data-bind="text: 'File Location:'"></strong>
+            <span data-bind="text: fileLocation"></span>
+            <span data-bind="text: fileSize"></span>
+        </div>
+    </div>
+    <div class="content-wrapper">
+        <div id="log_content" class="log-content" data-bind="html: fileContent"></div>
+    </div>
+</div>

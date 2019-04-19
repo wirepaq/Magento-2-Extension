@@ -13,11 +13,8 @@ namespace Unbxd\ProductFeed\Model\Eav\Indexer\Full\DataSourceProvider;
 
 use Magento\Eav\Model\Entity\Attribute\AttributeInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider\AbstractAttribute as ResourceModel;
-use Unbxd\ProductFeed\Model\Index\Mapping\FieldFactory;
-use Unbxd\ProductFeed\Helper\AbstractAttribute as AttributeHelper;
-use Unbxd\ProductFeed\Model\Index\Mapping\FieldInterface;
-
-// @TODO - working
+use Unbxd\ProductFeed\Helper\AttributeHelper as AttributeHelper;
+use Unbxd\ProductFeed\Model\Feed\Mapping\FieldInterface;
 
 /**
  * Class AbstractAttribute
@@ -40,6 +37,16 @@ abstract class AbstractAttribute
     protected $attributeIdsByTable = [];
 
     /**
+     * @var AttributeHelper
+     */
+    protected $attributeHelper;
+
+    /**
+     * @var ResourceModel
+     */
+    protected $resourceModel;
+
+    /**
      * @var array
      */
     protected $fields = [];
@@ -56,5 +63,124 @@ abstract class AbstractAttribute
         \Magento\Catalog\Model\Product\Attribute\Backend\Weight::class,
         \Magento\Catalog\Model\Product\Attribute\Backend\Price::class,
     ];
-	
+
+    /**
+     * AbstractAttribute constructor.
+     * @param ResourceModel $resourceModel
+     * @param AttributeHelper $attributeHelper
+     * @param array $indexedBackendModels
+     */
+    public function __construct(
+        ResourceModel $resourceModel,
+        AttributeHelper $attributeHelper,
+        array $indexedBackendModels = []
+    ) {
+        $this->resourceModel = $resourceModel;
+        $this->attributeHelper = $attributeHelper;
+
+        if (is_array($indexedBackendModels) && !empty($indexedBackendModels)) {
+            $indexedBackendModels = array_values($indexedBackendModels);
+            $this->indexedBackendModels = array_merge($indexedBackendModels, $this->indexedBackendModels);
+        }
+
+        $this->initAttributes();
+    }
+
+    /**
+     * List of fields generated from the attributes list.
+     *
+     * {@inheritdoc}
+     */
+    public function getFields()
+    {
+        return $this->fields;
+    }
+
+    /**
+     * Load attribute data from the database.
+     *
+     * @param $storeId
+     * @param array $entityIds
+     * @param $tableName
+     * @param array $attributeIds
+     * @return array
+     * @throws \Exception
+     */
+    protected function loadAttributesRawData($storeId, array $entityIds, $tableName, array $attributeIds)
+    {
+        return $this->resourceModel->getAttributesRawData($storeId, $entityIds, $tableName, $attributeIds);
+    }
+
+    /**
+     * Init attributes.
+     *
+     * @return $this
+     */
+    private function initAttributes()
+    {
+        $attributeCollection = $this->attributeHelper->getAttributeCollection();
+        foreach ($attributeCollection as $attribute) {
+            if ($this->canIndexAttribute($attribute)) {
+                $attributeId = (int) $attribute->getId();
+                $this->attributesById[$attributeId] = $attribute;
+                $this->attributeIdsByTable[$attribute->getBackendTable()][] = $attributeId;
+                // collect attributes fields, maybe useful in feed operation
+                $this->initFields($attribute);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if an attribute can be indexed.
+     *
+     * @param AttributeInterface $attribute
+     * @return bool
+     */
+    private function canIndexAttribute(AttributeInterface $attribute)
+    {
+        $canIndex = ($attribute->getBackendType() != 'static') && ($attribute->getAttributeCode() !== 'price');
+        if ($canIndex && $attribute->getBackendModel()) {
+            $canIndex = in_array($attribute->getBackendModel(), $this->indexedBackendModels);
+        }
+
+        return $canIndex;
+    }
+
+    /**
+     * Create a mapping field from an attribute.
+     *
+     * @param AttributeInterface $attribute
+     * @return $this
+     */
+    private function initFields(AttributeInterface $attribute)
+    {
+        $fieldName = $attribute->getAttributeCode();
+        $fieldConfig = $this->attributeHelper->getMappingFieldOptions($attribute);
+
+        if ($attribute->usesSource()) {
+            $optionFieldName = $this->attributeHelper->getOptionTextFieldName($fieldName);
+            $fieldType = FieldInterface::FIELD_TYPE_TEXT;
+            $fieldOptions = [
+                'code' => $fieldName,
+                'name' => $optionFieldName,
+                'type' => $fieldType,
+                'fieldConfig' => $fieldConfig
+            ];
+            $this->fields[$optionFieldName] = $fieldOptions;
+        }
+
+        $fieldType = $this->attributeHelper->getFieldType($attribute);
+        $fieldOptions = [
+            'code' => $fieldName,
+            'name' => $fieldName,
+            'type' => $fieldType,
+            'fieldConfig' => $fieldConfig
+        ];
+
+        $this->fields[$fieldName] = $fieldOptions;
+
+        return $this;
+    }
 }

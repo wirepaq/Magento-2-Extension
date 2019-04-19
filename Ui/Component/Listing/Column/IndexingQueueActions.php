@@ -23,7 +23,7 @@ use Magento\Ui\Component\Listing\Columns\Column;
 class IndexingQueueActions extends Column
 {
     /** Url path */
-    const URL_PATH_VIEW = 'unbxd_productfeed/indexing_queue/view';
+    const URL_PATH_VIEW = 'unbxd_productfeed/indexing_queue/viewDetails';
     const URL_PATH_HOLD = 'unbxd_productfeed/indexing_queue/hold';
     const URL_PATH_UNHOLD = 'unbxd_productfeed/indexing_queue/unhold';
     const URL_PATH_DELETE = 'unbxd_productfeed/indexing_queue/delete';
@@ -105,7 +105,7 @@ class IndexingQueueActions extends Column
                         'label' => __('Hold'),
                         'confirm' => [
                             'title' => __('Hold #%1', $item['queue_id']),
-                            'message' => __('Are you sure you want to put on hold a #%1 record?', $item['queue_id'])
+                            'message' => __('Are you sure you want to put on hold record #%1?', $item['queue_id'])
                         ]
                     ];
                     $item[$name]['unhold'] = [
@@ -113,7 +113,7 @@ class IndexingQueueActions extends Column
                         'label' => __('Unhold'),
                         'confirm' => [
                             'title' => __('Unhold #%1', $item['queue_id']),
-                            'message' => __('Are you sure you want to unhold a #%1 record?', $item['queue_id'])
+                            'message' => __('Are you sure you want to unhold record #%1?', $item['queue_id'])
                         ]
                     ];
                     $item[$name]['delete'] = [
@@ -121,7 +121,7 @@ class IndexingQueueActions extends Column
                         'label' => __('Delete'),
                         'confirm' => [
                             'title' => __('Delete #%1', $item['queue_id']),
-                            'message' => __('Are you sure you want to delete a #%1 record?', $item['queue_id'])
+                            'message' => __('Are you sure you want to delete record #%1?', $item['queue_id'])
                         ]
                     ];
                 }

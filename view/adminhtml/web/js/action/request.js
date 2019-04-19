@@ -55,11 +55,11 @@ define([
                         content: $t(response.message)
                     });
                     callbacks.forEach(function (callback) {
-                        callback(data);
+                        callback(data, response);
                     });
                 } else {
                     callbacks.forEach(function (callback) {
-                        callback(data);
+                        callback(data, response);
                     });
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
@@ -72,6 +72,9 @@ define([
                             modalClass: 'unbxd-response-modal-container',
                             content: response.content
                         });
+                    } else if (response.hasOwnProperty('updatedContent')) {
+                        // action(s) will be performed by callbacks
+                        return true;
                     } else {
                         location.reload();
                     }
@@ -81,7 +84,7 @@ define([
                     content: $t('Request failed. Please try again later.')
                 });
                 callbacks.forEach(function (callback) {
-                    callback(data);
+                    callback(data, {});
                 });
             });
         };

@@ -11,11 +11,12 @@
  */
 namespace Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer;
 
+use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\AbstractIndexer;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\Indexer\Table\StrategyInterface;
 use Magento\Framework\EntityManager\EntityMetadataInterface;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Store\Model\StoreManagerInterface;
-use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\AbstractIndexer;
 
 /**
  * Class Indexer
@@ -24,23 +25,26 @@ use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\AbstractIndexer;
 class Indexer extends AbstractIndexer
 {
     /**
-     * @var \Magento\Framework\EntityManager\MetadataPool
+     * @var MetadataPool
      */
     private $metadataPool;
 
     /**
      * Indexer constructor.
      * @param ResourceConnection $resource
+     * @param StrategyInterface $tableStrategy
      * @param StoreManagerInterface $storeManager
      * @param MetadataPool $metadataPool
      */
     public function __construct(
         ResourceConnection $resource,
+        StrategyInterface $tableStrategy,
         StoreManagerInterface $storeManager,
         MetadataPool $metadataPool
     ) {
         parent::__construct(
             $resource,
+            $tableStrategy,
             $storeManager
         );
         $this->metadataPool = $metadataPool;

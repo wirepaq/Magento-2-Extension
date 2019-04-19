@@ -54,7 +54,7 @@ class Full extends ActionIndex
         try {
             $this->indexingQueueRepository->save($queue);
             $this->messageManager->addSuccessMessage(
-                __('Sync operation was added to queue. Please make sure the related cron job is configured to perform queue operation.')
+                __('Sync operation was added to queue. Please make sure the related cron job is configured to perform this operation.')
             );
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
@@ -62,7 +62,8 @@ class Full extends ActionIndex
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving this operation.'));
         }
 
-        return $responseContent;
+        $resultJson->setData($responseContent);
+        return $resultJson;
     }
 
     /**
@@ -86,16 +87,13 @@ class Full extends ActionIndex
             $data[IndexingQueue::EXECUTION_TIME] = 0;
         }
         if (!isset($data[IndexingQueue::DATA_FOR_PROCESSING])) {
-            $data[IndexingQueue::DATA_FOR_PROCESSING] = __('Full Catalog Products');
+            $data[IndexingQueue::DATA_FOR_PROCESSING] = __(IndexingQueue::REINDEX_FULL_LABEL);
         }
         if (!isset($data[IndexingQueue::NUMBER_OF_ENTITIES])) {
             $data[IndexingQueue::NUMBER_OF_ENTITIES] = count($this->productHelper->getAllProductsIds());
         }
         if (!isset($data[IndexingQueue::ACTION_TYPE])) {
             $data[IndexingQueue::ACTION_TYPE] = IndexingQueue::TYPE_REINDEX_FULL;
-        }
-        if (!isset($data[IndexingQueue::ADDITIONAL_INFORMATION])) {
-            $data[IndexingQueue::ADDITIONAL_INFORMATION] = __('*** TEST RECORD ***');
         }
     }
 }

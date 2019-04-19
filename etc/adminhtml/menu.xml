@@ -46,7 +46,7 @@
              action="unbxd_productfeed/indexing/queue"
              resource="Unbxd_ProductFeed::productfeed_indexing_queue"/>
         <add id="Unbxd_ProductFeed::productfeed_sync_view"
-             title="Feed Log View"
+             title="Feed View"
              module="Unbxd_ProductFeed"
              sortOrder="40"
              dependsOnModule="Unbxd_ProductFeed"

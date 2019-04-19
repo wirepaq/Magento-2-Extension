@@ -17,9 +17,9 @@ namespace Unbxd\ProductFeed\Model\Config\Backend;
  */
 class Cron extends \Magento\Framework\App\Config\Value
 {
-    const CRON_STRING_PATH = 'crontab/default/jobs/unbxd_synchronization/schedule/cron_expr';
+    const CRON_STRING_PATH = 'crontab/default/jobs/unbxd_feed/schedule/cron_expr';
 
-    const CRON_MODEL_PATH = 'crontab/default/jobs/unbxd_synchronization/run/model';
+    const CRON_MODEL_PATH = 'crontab/default/jobs/unbxd_feed/run/model';
 
     const XML_PATH_CRON_ENABLED = 'groups/cron/fields/enabled/value';
 

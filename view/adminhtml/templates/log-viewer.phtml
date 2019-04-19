@@ -1,0 +1,21 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/** @var \Unbxd\ProductFeed\Block\Adminhtml\LogViewer\Indexing $block */
+?>
+
+<div id="unbxdProductFeedLogViewer" data-bind="scope: 'unbxdProductFeedLogViewer'" style="display: none">
+    <script>
+        window.logViewer = <?= /* @noEscape */ $block->getSerializedConfig() ?>;
+    </script>
+    <!-- ko template: getTemplate() --><!-- /ko -->
+    <script type="text/x-magento-init">
+        {
+            "#unbxdProductFeedLogViewer": {
+                "Magento_Ui/js/core/app": <?= /* @noEscape */ $block->getJsLayout() ?>
+            }
+        }
+    </script>
+</div>
+

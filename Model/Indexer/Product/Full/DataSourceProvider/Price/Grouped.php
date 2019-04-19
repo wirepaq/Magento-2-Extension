@@ -11,8 +11,6 @@
  */
 namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price;
 
-// @TODO - working
-
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceReaderInterface;
 
 /**
@@ -23,5 +21,27 @@ use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceR
  */
 class Grouped implements PriceReaderInterface
 {
-    
+    /**
+     * {@inheritDoc}
+     */
+    public function getPrice($priceData)
+    {
+        return isset($priceData['min_price']) ? $priceData['min_price'] : 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getOriginalPrice($priceData)
+    {
+        return isset($priceData['min_price']) ? $priceData['min_price'] : 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getSpecialPrice($priceData)
+    {
+        return isset($priceData['min_price']) ? $priceData['min_price'] : 0;
+    }
 }

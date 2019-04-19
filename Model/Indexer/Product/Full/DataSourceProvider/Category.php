@@ -11,18 +11,16 @@
  */
 namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 
-// @TODO - working
-
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Category as ResourceModel;
 
 /**
  * Data source used to append categories data to product during indexing.
  *
- * Class CategoryData
+ * Class Category
  * @package Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider
  */
-class CategoryData implements DataSourceProviderInterface
+class Category implements DataSourceProviderInterface
 {
     /**
      * @var ResourceModel
@@ -46,6 +44,27 @@ class CategoryData implements DataSourceProviderInterface
      */
     public function appendData($storeId, array $indexData)
     {
-        // @TODO - implement
+        $categoryData = $this->resourceModel->loadCategoryData($storeId, array_keys($indexData));
+        foreach ($categoryData as $categoryDataRow) {
+            $productId = (int) $categoryDataRow['product_id'];
+            unset($categoryDataRow['product_id']);
+
+            $categoryDataRow = array_merge(
+                $categoryDataRow,
+                [
+                    'category_id' => (int) $categoryDataRow['category_id'],
+                    'is_parent' => (bool) $categoryDataRow['is_parent'],
+                    'name' => (string) $categoryDataRow['name'],
+                ]
+            );
+
+            if (isset($categoryDataRow['position']) && $categoryDataRow['position'] !== null) {
+                $categoryDataRow['position'] = (int) $categoryDataRow['position'];
+            }
+
+            $indexData[$productId]['category'][] = array_filter($categoryDataRow);
+        }
+
+        return $indexData;
     }
 }

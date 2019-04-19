@@ -11,18 +11,16 @@
  */
 namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 
-// @TODO - working
-
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Inventory as ResourceModel;
 
 /**
  * Data source used to append inventory data to product during indexing.
  *
- * Class InventoryData
+ * Class Inventory
  * @package Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider
  */
-class InventoryData implements DataSourceProviderInterface
+class Inventory implements DataSourceProviderInterface
 {
     /**
      * @var ResourceModel
@@ -46,6 +44,18 @@ class InventoryData implements DataSourceProviderInterface
      */
     public function appendData($storeId, array $indexData)
     {
-        // @TODO - implement
+        $inventoryData = $this->resourceModel->loadInventoryData($storeId, array_keys($indexData));
+        foreach ($inventoryData as $inventoryDataRow) {
+            $productId = (int) $inventoryDataRow['product_id'];
+            $isInStock = (bool) $inventoryDataRow['stock_status'];
+            // for compatibility with unbxd service
+            $indexData[$productId]['availability'] = $isInStock;
+            $indexData[$productId]['stock'] = [
+                'is_in_stock' => $isInStock,
+                'qty' => (int) $inventoryDataRow['qty'],
+            ];
+        }
+
+        return $indexData;
     }
 }

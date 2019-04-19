@@ -14,6 +14,7 @@ namespace Unbxd\ProductFeed\Helper;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Store\Model\Store;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
@@ -38,6 +39,11 @@ use Magento\Framework\ObjectManagerInterface;
  */
 class ProductHelper
 {
+    /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
+
     /**
      * @var Visibility
      */
@@ -132,6 +138,7 @@ class ProductHelper
      * @param ObjectManagerInterface $objectManager
      */
     public function __construct(
+        ProductRepositoryInterface $productRepository,
         Visibility $visibility,
         Status $status,
         Type $type,
@@ -146,6 +153,7 @@ class ProductHelper
         EventManagerInterface $eventManager,
         ObjectManagerInterface $objectManager
     ) {
+        $this->productRepository = $productRepository;
         $this->visibility = $visibility;
         $this->status = $status;
         $this->type = $type;
@@ -159,6 +167,23 @@ class ProductHelper
         $this->currencyHelper = $currencyHelper;
         $this->eventManagerInterface = $eventManager;
         $this->objectManager = $objectManager;
+    }
+
+    /**
+     * @param $id
+     * @return \Magento\Catalog\Api\Data\ProductInterface|null
+     */
+    public function getProduct($id)
+    {
+        $product = null;
+        try {
+            $product = $this->productRepository->getById($id);
+        } catch (\Exception $e) {
+            // log exception
+            return $product;
+        }
+
+        return $product;
     }
 
     /**

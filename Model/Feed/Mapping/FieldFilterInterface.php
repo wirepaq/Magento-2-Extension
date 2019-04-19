@@ -9,17 +9,15 @@
  * @email andyworkbase@gmail.com
  * @team MageCloud
  */
-namespace Unbxd\ProductFeed\Model\Index\Mapping;
+namespace Unbxd\ProductFeed\Model\Feed\Mapping;
 
-//@TODO - working
-
-use Unbxd\ProductFeed\Model\Index\Mapping\FieldInterface;
+use Unbxd\ProductFeed\Model\Feed\Mapping\FieldInterface;
 
 /**
  * Class implementing this interface allowed to specify a field filter.
  *
  * Interface FieldFilterInterface
- * @package Unbxd\ProductFeed\Model\Index\Mapping
+ * @package Unbxd\ProductFeed\Model\Feed\Mapping
  */
 interface FieldFilterInterface
 {

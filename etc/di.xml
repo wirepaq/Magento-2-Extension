@@ -14,11 +14,14 @@
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Unbxd\ProductFeed\Api\Data\FeedViewSearchResultsInterface" type="Magento\Framework\Api\SearchResults" />
     <preference for="Unbxd\ProductFeed\Api\Data\IndexingQueueSearchResultsInterface" type="Magento\Framework\Api\SearchResults" />
+    <preference for="Unbxd\ProductFeed\Api\Data\FeedViewInterface" type="Unbxd\ProductFeed\Model\FeedView" />
     <preference for="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" type="Unbxd\ProductFeed\Model\IndexingQueue" />
+    <preference for="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" type="Unbxd\ProductFeed\Model\FeedViewRepository" />
     <preference for="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" type="Unbxd\ProductFeed\Model\IndexingQueueRepository" />
-	
-	<type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
+
+    <type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
         <arguments>
             <argument name="attributes" xsi:type="array">
                 <item name="catalog.value" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\Disabled</item>
@@ -29,7 +32,7 @@
         </arguments>
     </type>
 
-	<!-- START: ui grids -->
+    <!-- START: grids/collections -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">
@@ -54,11 +57,13 @@
             <argument name="resourceModel" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue</argument>
         </arguments>
     </type>
-    <!-- END: ui grids -->
-	
-	<type name="Magento\Framework\EntityManager\MetadataPool">
+    <type name="Magento\Framework\EntityManager\MetadataPool">
         <arguments>
             <argument name="metadata" xsi:type="array">
+                <item name="Unbxd\ProductFeed\Api\Data\FeedViewInterface" xsi:type="array">
+                    <item name="entityTableName" xsi:type="string">unbxd_productfeed_feed_view</item>
+                    <item name="identifierField" xsi:type="string">feed_id</item>
+                </item>
                 <item name="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" xsi:type="array">
                     <item name="entityTableName" xsi:type="string">unbxd_productfeed_indexing_queue</item>
                     <item name="identifierField" xsi:type="string">queue_id</item>
@@ -69,54 +74,51 @@
     <type name="Magento\Framework\EntityManager\HydratorPool">
         <arguments>
             <argument name="hydrators" xsi:type="array">
+                <item name="Unbxd\ProductFeed\Api\Data\FeedViewInterface" xsi:type="string">Magento\Framework\EntityManager\AbstractModelHydrator</item>
                 <item name="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" xsi:type="string">Magento\Framework\EntityManager\AbstractModelHydrator</item>
             </argument>
         </arguments>
     </type>
+    <!-- END: grids/collections -->
 
     <!-- START: logger -->
-    <!--<preference for="Unbxd\ProductFeed\Logger\LoggerInterface" type="Unbxd\ProductFeed\Logger\LoggerProxy"/>-->
-    <!--<type name="Unbxd\ProductFeed\Logger\LoggerProxy">-->
-        <!--<arguments>-->
-            <!--<argument name="loggerAlias" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_OUTPUT</argument>-->
-            <!--<argument name="logAll" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_LOG_EVERYTHING</argument>-->
-            <!--<argument name="logActionTime" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_ACTION_TIME_THRESHOLD</argument>-->
-            <!--<argument name="logCallStack" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_INCLUDE_STACKTRACE</argument>-->
-        <!--</arguments>-->
-    <!--</type>-->
-    <!--<type name="Unbxd\ProductFeed\Logger\File">-->
-        <!--<arguments>-->
-            <!--<argument name="debugFile" xsi:type="string">unbxd/feed.log</argument>-->
-        <!--</arguments>-->
-    <!--</type>-->
-    <!-- END: logger -->
-
-    <!-- START: indexer -->
-    <virtualType name="unbxdCatalogProductIndexHandler" type="Unbxd\ProductFeed\Model\Indexer\IndexerHandler">
+    <preference for="Unbxd\ProductFeed\Logger\LoggerInterface" type="Unbxd\ProductFeed\Logger\LoggerProxy"/>
+    <type name="Unbxd\ProductFeed\Logger\LoggerProxy">
         <arguments>
-            <argument name="indexName" xsi:type="string">unbxd_products</argument>
-            <argument name="typeName" xsi:type="string">product</argument>
-        </arguments>
-    </virtualType>
-    <type name="Unbxd\ProductFeed\Model\Indexer\Product">
-        <arguments>
-            <argument name="indexerHandler" xsi:type="object">unbxdCatalogProductIndexHandler</argument>
+            <argument name="loggerAlias" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_OUTPUT</argument>
+            <argument name="logAll" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_LOG_EVERYTHING</argument>
+            <argument name="logCallStack" xsi:type="init_parameter">Unbxd\ProductFeed\Logger\OptionsListConstants::LOGGER_INCLUDE_STACKTRACE</argument>
         </arguments>
     </type>
-
-    <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider">
+    <type name="Unbxd\ProductFeed\Logger\File">
         <arguments>
-            <argument name="typeName" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider::DATA_SOURCES_DEFAULT_TYPE</argument>
-            <argument name="dataSources" xsi:type="array">
-                <item name="attribute" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Attribute</item>
-                <item name="image" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Image</item>
-                <item name="price" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price</item>
-                <item name="stock" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Stock</item>
-                <item name="category" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Category</item>
+            <argument name="types" xsi:type="array">
+                <item name="default" xsi:type="string">default.log</item>
+                <item name="indexing" xsi:type="string">indexing.log</item>
+                <item name="feed" xsi:type="string">feed.log</item>
             </argument>
         </arguments>
     </type>
-	<type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price">
+    <!-- END: logger -->
+
+    <!-- START: indexer -->
+    <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full">
+        <arguments>
+            <argument name="batchRowsCount" xsi:type="string">5000</argument>
+        </arguments>
+    </type>
+    <type name="Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider\AbstractAttribute">
+        <arguments>
+            <argument name="entityType" xsi:type="string">Magento\Catalog\Api\Data\CategoryInterface</argument>
+        </arguments>
+    </type>
+    <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Attribute">
+        <arguments>
+            <!-- @TODO - add attribute helper? -->
+            <argument name="resourceModel" xsi:type="object">Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Attribute</argument>
+        </arguments>
+    </type>
+    <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price">
         <arguments>
             <argument name="priceReaderPool" xsi:type="array">
                 <item name="default" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceDefault</item>
@@ -125,34 +127,43 @@
             </argument>
         </arguments>
     </type>
+    <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider">
+        <arguments>
+            <argument name="typeName" xsi:type="string">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider::DATA_SOURCES_DEFAULT_TYPE</argument>
+            <argument name="dataSources" xsi:type="array">
+                <item name="attribute" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Attribute</item>
+                <item name="price" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price</item>
+                <item name="inventory" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Inventory</item>
+                <item name="category" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Category</item>
+                <!--<item name="image" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Image</item>-->
+            </argument>
+        </arguments>
+    </type>
     <!-- END: indexer -->
 
-    <!-- START: indexer optimization -->
-    <!--<type name="Unbxd\ProductFeed\Model\Indexer\Product\Action\Full">-->
-        <!--<arguments>-->
-            <!--<argument name="batchRowsCount" xsi:type="number">100000</argument>-->
-            <!--<argument name="batchSizeManagement" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\ProductBatchSize</argument>-->
-        <!--</arguments>-->
-    <!--</type>-->
-    <!--<virtualType name="Unbxd\ProductFeed\Model\Indexer\Product\ProductBatchSize" type="Magento\Framework\Indexer\BatchSizeManagement">-->
-        <!--<arguments>-->
-            <!--<argument name="rowSizeEstimator" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\RowSizeEstimator</argument>-->
-        <!--</arguments>-->
-    <!--</virtualType>-->
-    <!-- END: indexer optimization -->
-
+    <!-- START: plugins -->
     <type name="Magento\Catalog\Model\ResourceModel\Product">
         <plugin name="unbxd_product_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\Product"/>
     </type>
     <type name="Magento\Catalog\Model\Product\Action">
         <plugin name="unbxd_product_massaction_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\ProductMassAction"/>
     </type>
-	
-	<type name="Unbxd\ProductFeed\Model\IndexingQueue\Config\Reader">
+    <!-- @TODO - not sure if this plugin need, as we already have 'unbxd_product_reindex' plugin to perform product operations -->
+    <!--<type name="Magento\CatalogInventory\Model\ResourceModel\Stock\Item">-->
+        <!--<plugin name="unbxd_product_stock_item_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\StockItem"/>-->
+    <!--</type>-->
+    <type name="Magento\Catalog\Model\ResourceModel\Category">
+        <plugin name="unbxd_product_category_products_reindex" type="Unbxd\ProductFeed\Plugin\Reindex\CategoryProducts"/>
+    </type>
+    <!-- END: plugins -->
+
+    <!-- START: custom xml config reader -->
+    <type name="Unbxd\ProductFeed\Model\IndexingQueue\Config\Reader">
         <arguments>
             <argument name="fileName" xsi:type="string">indexing_queue_config.xml</argument>
             <argument name="converter" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Config\Converter</argument>
             <argument name="schemaLocator" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Config\SchemaLocator</argument>
         </arguments>
     </type>
+    <!-- END: custom xml config reader -->
 </config>

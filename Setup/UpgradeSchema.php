@@ -75,7 +75,7 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 'Is Active'
             )->addColumn(
                 'execution_time',
-                \Magento\Framework\DB\Ddl\Table::TYPE_INTEGER,
+                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
                 null,
                 ['nullable' => false],
                 'Execution Time'

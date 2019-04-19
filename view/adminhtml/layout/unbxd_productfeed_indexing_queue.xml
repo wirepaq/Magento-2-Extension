@@ -16,7 +16,29 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
+            <block class="Unbxd\ProductFeed\Block\Adminhtml\LogViewer\Toolbar" name="adminhtml.cloudways.manager.toolbar"/>
             <uiComponent name="unbxd_productfeed_indexing_queue_grid" />
+        </referenceContainer>
+        <referenceContainer name="before.body.end">
+            <block class="Unbxd\ProductFeed\Block\Adminhtml\LogViewer\Indexing"
+                   name="adminhtml.unbxd.productfeed.logviewer.indexing.container"
+                   as="adminhtml.unbxd.productfeed.logviewer.indexing.container"
+                   template="Unbxd_ProductFeed::log-viewer.phtml"
+                   cacheable="false">
+                <arguments>
+                    <argument name="type" xsi:type="string">indexing</argument>
+                    <argument name="jsLayout" xsi:type="array">
+                        <item name="components" xsi:type="array">
+                            <item name="unbxdProductFeedLogViewer" xsi:type="array">
+                                <item name="component" xsi:type="string">Unbxd_ProductFeed/js/view/log-viewer</item>
+                                <item name="children" xsi:type="array">
+                                    <!-- merge your components here -->
+                                </item>
+                            </item>
+                        </item>
+                    </argument>
+                </arguments>
+            </block>
         </referenceContainer>
     </body>
 </page>

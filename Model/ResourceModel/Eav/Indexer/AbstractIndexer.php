@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\Indexer\Table\StrategyInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
@@ -34,6 +35,11 @@ abstract class AbstractIndexer
     protected $connection;
 
     /**
+     * @var StrategyInterface
+     */
+    protected $tableStrategy;
+
+    /**
      * @var StoreManagerInterface
      */
     protected $storeManager;
@@ -41,14 +47,17 @@ abstract class AbstractIndexer
     /**
      * AbstractIndexer constructor.
      * @param ResourceConnection $resource
+     * @param StrategyInterface $tableStrategy
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         ResourceConnection $resource,
+        StrategyInterface $tableStrategy,
         StoreManagerInterface $storeManager
     ) {
         $this->resource = $resource;
         $this->connection = $resource->getConnection();
+        $this->tableStrategy = $tableStrategy;
         $this->storeManager = $storeManager;
     }
 
@@ -71,6 +80,27 @@ abstract class AbstractIndexer
     protected function getConnection()
     {
         return $this->connection;
+    }
+
+    /**
+     * Get Table strategy
+     *
+     * @return StrategyInterface
+     */
+    public function getTableStrategy()
+    {
+        return $this->tableStrategy;
+    }
+
+    /**
+     * Retrieve index table name
+     *
+     * @param null $table
+     * @return string
+     */
+    public function getIdxTable($table = null)
+    {
+        return $this->getTableStrategy()->getTableName($table);
     }
 
     /**

@@ -11,8 +11,6 @@
  */
 namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 
-// @TODO - working
-
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Price as ResourceModel;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceReaderInterface;
@@ -55,6 +53,48 @@ class Price implements DataSourceProviderInterface
      */
     public function appendData($storeId, array $indexData)
     {
-		// @TODO - implement
+        $priceData = $this->resourceModel->loadPriceData($storeId, array_keys($indexData));
+        foreach ($priceData as $priceDataRow) {
+            $productId = (int) $priceDataRow['entity_id'];
+            $productTypeId = $indexData[$productId]['type_id'];
+            /** @var PriceReaderInterface $priceModifier */
+            $priceReader = $this->getPriceReader($productTypeId);
+
+            $price = $priceReader->getPrice($priceDataRow);
+            $originalPrice = $priceReader->getOriginalPrice($priceDataRow);
+            $specialPrice = $priceReader->getSpecialPrice($priceDataRow);
+
+            $indexData[$productId]['prices'] = [
+                'price' => $price,
+                'original_price' => $originalPrice,
+                'special_price' => $specialPrice,
+                'is_discount' => $price < $originalPrice
+            ];
+
+            if (!isset($indexData[$productId]['indexed_attributes'])) {
+                $indexData[$productId]['indexed_attributes'] = ['price'];
+            } else if (!in_array('price', $indexData[$productId]['indexed_attributes'])) {
+                // add price only one time.
+                $indexData[$productId]['indexed_attributes'][] = 'price';
+            }
+        }
+
+        return $indexData;
+    }
+
+    /**
+     * Retrieve price
+     *
+     * @param $typeId
+     * @return mixed|PriceReaderInterface
+     */
+    private function getPriceReader($typeId)
+    {
+        $priceModifier = $this->priceReaderPool['default'];
+        if (isset($this->priceReaderPool[$typeId])) {
+            $priceModifier = $this->priceReaderPool[$typeId];
+        }
+
+        return $priceModifier;
     }
 }

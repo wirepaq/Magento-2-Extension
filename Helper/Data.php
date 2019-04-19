@@ -42,8 +42,7 @@ class Data extends AbstractHelper
      */
     const XML_PATH_CATALOG_AVAILABLE_PRODUCT_TYPES = 'unbxd_catalog/general/available_product_types';
     const XML_PATH_CATALOG_EXCLUDE_PRODUCTS_SPECIAL_ATTRIBUTES = 'unbxd_catalog/general/special_attributes';
-    const XML_PATH_CATALOG_PRODUCT_INDEXING_ENABLED = 'unbxd_catalog/indexing/enable_product_indexing';
-    const XML_PATH_CATALOG_PRODUCT_INDEX_PREFIX = 'unbxd_catalog/indexing/product_index_prefix';
+    const XML_PATH_CATALOG_INDEXING_QUEUE_ENABLED = 'unbxd_catalog/indexing/enabled_queue';
     const XML_PATH_CATALOG_CRON_ENABLED = 'unbxd_catalog/cron/enabled';
     const XML_PATH_CATALOG_CRON_TYPE = 'unbxd_catalog/cron/cron_type';
     const XML_PATH_CATALOG_CRON_TYPE_MANUALLY_SCHEDULE = 'unbxd_catalog/cron/cron_type_manually_schedule';
@@ -86,11 +85,11 @@ class Data extends AbstractHelper
      */
     public function getSiteKey($store = null)
     {
-        return $this->scopeConfig->getValue(
+        return trim($this->scopeConfig->getValue(
             self::XML_PATH_SETUP_SITE_KEY,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
-        );
+        ));
     }
 
     /**
@@ -99,11 +98,11 @@ class Data extends AbstractHelper
      */
     public function getSecretKey($store = null)
     {
-        return $this->scopeConfig->getValue(
+        return trim($this->scopeConfig->getValue(
             self::XML_PATH_SETUP_SECRET_KEY,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
-        );
+        ));
     }
 
     /**
@@ -112,11 +111,11 @@ class Data extends AbstractHelper
      */
     public function getApiKey($store = null)
     {
-        return $this->scopeConfig->getValue(
+        return trim($this->scopeConfig->getValue(
             self::XML_PATH_SETUP_API_KEY,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
-        );
+        ));
     }
 
     /**
@@ -172,30 +171,13 @@ class Data extends AbstractHelper
      * @param null $store
      * @return mixed
      */
-    public function isProductIndexingEnabled($store = null)
+    public function isIndexingQueueEnabled($store = null)
     {
         return $this->scopeConfig->isSetFlag(
-            self::XML_PATH_CATALOG_PRODUCT_INDEXING_ENABLED,
+            self::XML_PATH_CATALOG_INDEXING_QUEUE_ENABLED,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $store
         );
-    }
-
-    /**
-     * @param null $store
-     * @return mixed
-     */
-    public function getProductIndexPrefix($store = null)
-    {
-        if ($this->isProductIndexingEnabled($store)) {
-            return $this->scopeConfig->getValue(
-                self::XML_PATH_CATALOG_PRODUCT_INDEX_PREFIX,
-                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-                $store
-            );
-        }
-
-        return null;
     }
 
     /**

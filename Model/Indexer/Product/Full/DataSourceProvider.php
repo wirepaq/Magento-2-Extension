@@ -11,7 +11,7 @@
  */
 namespace Unbxd\ProductFeed\Model\Indexer\Product\Full;
 
-use Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributeInterface;
+use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 
 /**
  * Class DataSourceProvider
@@ -27,7 +27,7 @@ class DataSourceProvider
     private $typeName;
 
     /**
-     * @var SpecialAttributeInterface[]
+     * @var DataSourceProviderInterface[]
      */
     private $dataSources = [];
 
@@ -57,7 +57,7 @@ class DataSourceProvider
     /**
      * Retrieve data sources list.
      *
-     * @return SpecialAttributeInterface[]
+     * @return DataSourceProviderInterface[]
      */
     public function getList()
     {
@@ -68,7 +68,7 @@ class DataSourceProvider
      * Retrieve a special data source by code.
      *
      * @param $dataSourceCode
-     * @return mixed|SpecialAttributeInterface|null
+     * @return DataSourceProviderInterface|null
      */
     public function getDataSource($dataSourceCode)
     {

@@ -11,8 +11,6 @@
  */
 namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price;
 
-// @TODO - working
-
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceReaderInterface;
 
 /**
@@ -23,5 +21,30 @@ use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceR
  */
 class PriceDefault implements PriceReaderInterface
 {
-    
+    /**
+     * {@inheritDoc}
+     */
+    public function getPrice($priceData)
+    {
+        return isset($priceData['final_price'])
+            ? $priceData['final_price']
+            : isset($priceData['price'])
+                ? $priceData['price'] : 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getOriginalPrice($priceData)
+    {
+        return isset($priceData['price']) ? $priceData['price'] : 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getSpecialPrice($priceData)
+    {
+        return isset($priceData['final_price']) ? $priceData['final_price'] : 0;
+    }
 }

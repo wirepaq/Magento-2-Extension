@@ -20,11 +20,14 @@
         </item>
         <item name="spinner" xsi:type="string">unbxd_productfeed_indexing_queue_columns</item>
         <item name="buttons" xsi:type="array">
-            <item name="clear" xsi:type="array">
-                <item name="name" xsi:type="string">clear</item>
-                <item name="label" xsi:type="string" translate="true">Clear Queue</item>
+            <!-- as we need confirmation on 'Clear Queue" action, related button will be added
+            via block @see Unbxd\ProductFeed\Block\Adminhtml\LogViewer\Toolbar -->
+            <item name="view_log" xsi:type="array">
+                <item name="name" xsi:type="string">view_log</item>
+                <item name="label" xsi:type="string" translate="true">View Log</item>
                 <item name="class" xsi:type="string">primary</item>
-                <item name="url" xsi:type="string">*/*/*/deleteAll</item>
+                <item name="id" xsi:type="string">log_viewer</item>
+                <item name="on_click" xsi:type="string">return false</item>
             </item>
         </item>
     </argument>
@@ -93,7 +96,7 @@
                     <item name="config" xsi:type="array">
                         <item name="type" xsi:type="string">delete</item>
                         <item name="label" xsi:type="string" translate="true">Delete</item>
-                        <item name="url" xsi:type="url" path="*/*/*/massDelete"/>
+                        <item name="url" xsi:type="url" path="*/indexing_queue/massDelete"/>
                         <item name="confirm" xsi:type="array">
                             <item name="title" xsi:type="string" translate="true">Delete items</item>
                             <item name="message" xsi:type="string" translate="true">Are you sure you wan't to delete selected items?</item>
@@ -106,7 +109,7 @@
                     <item name="config" xsi:type="array">
                         <item name="type" xsi:type="string">hold</item>
                         <item name="label" xsi:type="string" translate="true">Hold</item>
-                        <item name="url" xsi:type="url" path="*/*/massHold"/>
+                        <item name="url" xsi:type="url" path="*/indexing_queue/massHold"/>
                         <item name="confirm" xsi:type="array">
                             <item name="title" xsi:type="string" translate="true">Put items on hold</item>
                             <item name="message" xsi:type="string" translate="true">Are you sure you wan't to put selected items on hold?</item>
@@ -119,7 +122,7 @@
                     <item name="config" xsi:type="array">
                         <item name="type" xsi:type="string">unhold</item>
                         <item name="label" xsi:type="string" translate="true">Unhold</item>
-                        <item name="url" xsi:type="url" path="*/*/*/massUnhold"/>
+                        <item name="url" xsi:type="url" path="*/indexing_queue/massUnhold"/>
                         <item name="confirm" xsi:type="array">
                             <item name="title" xsi:type="string" translate="true">Release selected items from holding status</item>
                             <item name="message" xsi:type="string" translate="true">Are you sure you wan't to release selected items from holding status?</item>
@@ -164,38 +167,41 @@
                     <item name="filter" xsi:type="string">dateRange</item>
                     <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
                     <item name="dataType" xsi:type="string">date</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
                     <item name="label" xsi:type="string" translate="true">Created</item>
                 </item>
             </argument>
         </column>
-        <column name="started_at" class="Magento\Ui\Component\Listing\Columns\Date">
+        <column name="started_at" class="Unbxd\ProductFeed\Ui\Component\Listing\Column\Date">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">dateRange</item>
                     <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
                     <item name="dataType" xsi:type="string">date</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
                     <item name="label" xsi:type="string" translate="true">Started</item>
                 </item>
             </argument>
         </column>
-        <column name="finished_at" class="Magento\Ui\Component\Listing\Columns\Date">
+        <column name="finished_at" class="Unbxd\ProductFeed\Ui\Component\Listing\Column\Date">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">dateRange</item>
                     <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
                     <item name="dataType" xsi:type="string">date</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
                     <item name="label" xsi:type="string" translate="true">Finished</item>
                 </item>
             </argument>
         </column>
-        <column name="status" class="Unbxd\ProductFeed\Ui\Component\Listing\Column\Status">
+        <column name="status" class="Unbxd\ProductFeed\Ui\Component\Listing\Column\IndexingQueue\Status">
             <argument name="data" xsi:type="array">
                 <item name="options" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Source\Status</item>
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">select</item>
-                    <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/select</item>
-                    <item name="editor" xsi:type="string">select</item>
+                    <item name="bodyTmpl" xsi:type="string">ui/grid/cells/html</item>
                     <item name="dataType" xsi:type="string">select</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
                     <item name="label" xsi:type="string" translate="true">Status</item>
                 </item>
             </argument>
@@ -204,17 +210,18 @@
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">text</item>
-                    <item name="editor" xsi:type="string">text</item>
-                    <item name="label" xsi:type="string" translate="true">Execution Time (sec.)</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
+                    <item name="label" xsi:type="string" translate="true">Execution Time (s)</item>
                 </item>
             </argument>
         </column>
-        <column name="data_for_processing">
+        <column name="data_for_processing" class="Unbxd\ProductFeed\Ui\Component\Listing\Column\IndexingQueue\AffectedEntities">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">text</item>
-                    <item name="editor" xsi:type="string">text</item>
-                    <item name="label" xsi:type="string" translate="true">Data For Processing</item>
+                    <item name="bodyTmpl" xsi:type="string">ui/grid/cells/html</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
+                    <item name="label" xsi:type="string" translate="true">Affected Entities</item>
                 </item>
             </argument>
         </column>
@@ -222,8 +229,8 @@
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">text</item>
-                    <item name="editor" xsi:type="string">text</item>
-                    <item name="label" xsi:type="string" translate="true">Entities</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
+                    <item name="label" xsi:type="string" translate="true">Number Of Entities</item>
                 </item>
             </argument>
         </column>
@@ -233,17 +240,18 @@
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">select</item>
                     <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/select</item>
-                    <item name="editor" xsi:type="string">select</item>
                     <item name="dataType" xsi:type="string">select</item>
+                    <item name="sortable" xsi:type="boolean">true</item>
                     <item name="label" xsi:type="string" translate="true">Action Type</item>
                 </item>
             </argument>
         </column>
-        <column name="additional_information">
+        <column name="additional_information" class="Unbxd\ProductFeed\Ui\Component\Listing\Column\IndexingQueue\AdditionalInformation">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="filter" xsi:type="string">text</item>
-                    <item name="editor" xsi:type="string">text</item>
+                    <item name="bodyTmpl" xsi:type="string">ui/grid/cells/html</item>
+                    <item name="sortable" xsi:type="boolean">false</item>
                     <item name="label" xsi:type="string" translate="true">Additional Information</item>
                 </item>
             </argument>

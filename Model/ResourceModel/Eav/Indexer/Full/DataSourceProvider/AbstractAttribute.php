@@ -11,13 +11,12 @@
  */
 namespace Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider;
 
-// @TODO - working
-
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Store\Model\StoreManagerInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Indexer;
 use Magento\Eav\Model\ResourceModel\Entity\Attribute\Collection as AttributeCollection;
+use Magento\Framework\Indexer\Table\StrategyInterface;
 
 /**
  * Abstract data source to retrieve attributes of EAV entities.
@@ -33,14 +32,16 @@ class AbstractAttribute extends Indexer
     private $entityTypeId = null;
 
     /**
-     * AbstractAttributeData constructor.
+     * AbstractAttribute constructor.
      * @param ResourceConnection $resource
+     * @param StrategyInterface $tableStrategy
      * @param StoreManagerInterface $storeManager
      * @param MetadataPool $metadataPool
      * @param null $entityType
      */
     public function __construct(
         ResourceConnection $resource,
+        StrategyInterface $tableStrategy,
         StoreManagerInterface $storeManager,
         MetadataPool $metadataPool,
         $entityType = null
@@ -48,13 +49,60 @@ class AbstractAttribute extends Indexer
         $this->entityTypeId = $entityType;
         parent::__construct(
             $resource,
+            $tableStrategy,
             $storeManager,
             $metadataPool
         );
     }
 
     /**
-     * Get Entity Type Id.
+     * Load attribute data for a list of entity ids.
+     *
+     * @param $storeId
+     * @param array $entityIds
+     * @param $tableName
+     * @param array $attributeIds
+     * @return array
+     * @throws \Exception
+     */
+    public function getAttributesRawData($storeId, array $entityIds, $tableName, array $attributeIds)
+    {
+        $select = $this->connection->select();
+
+        // the field modelizing the link between entity table and attribute values table, either row_id or entity_id.
+        $linkField = $this->getEntityMetaData($this->getEntityTypeId())->getLinkField();
+
+        // the legacy entity_id field.
+        $entityIdField = $this->getEntityMetaData($this->getEntityTypeId())->getIdentifierField();
+
+        $joinStoreValuesConditionClauses = [
+            "t_default.$linkField = t_store.$linkField",
+            't_default.attribute_id = t_store.attribute_id',
+            't_store.store_id= ?',
+        ];
+
+        $joinStoreValuesCondition = $this->connection->quoteInto(
+            implode(' AND ', $joinStoreValuesConditionClauses),
+            $storeId
+        );
+
+        $select->from(['entity' => $this->getEntityMetaData($this->getEntityTypeId())->getEntityTable()], [$entityIdField])
+            ->joinInner(
+                ['t_default' => $tableName],
+                new \Zend_Db_Expr("entity.{$linkField} = t_default.{$linkField}"),
+                ['attribute_id']
+            )
+            ->joinLeft(['t_store' => $tableName], $joinStoreValuesCondition, [])
+            ->where('t_default.store_id=?', 0)
+            ->where('t_default.attribute_id IN (?)', $attributeIds)
+            ->where("entity.{$entityIdField} IN (?)", $entityIds)
+            ->columns(['value' => new \Zend_Db_Expr('COALESCE(t_store.value, t_default.value)')]);
+
+        return $this->connection->fetchAll($select);
+    }
+
+    /**
+     * Get entity type Id.
      *
      * @return string
      */

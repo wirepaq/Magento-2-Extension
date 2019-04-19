@@ -12,9 +12,13 @@
 namespace Unbxd\ProductFeed\Model\Indexer;
 
 use Magento\Framework\Indexer\IndexerRegistry;
-use Magento\Framework\Indexer\SaveHandler\IndexerInterface;
 use Magento\Framework\Search\Request\DimensionFactory;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as FullAction;
+use Unbxd\ProductFeed\Model\IndexingQueue;
+use Unbxd\ProductFeed\Model\IndexingQueue\Handler as QueueHandler;
+use Unbxd\ProductFeed\Helper\Data as HelperData;
+use Unbxd\ProductFeed\Logger\LoggerInterface;
+use Unbxd\ProductFeed\Logger\OptionsListConstants;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -36,11 +40,6 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
     private $indexerRegistry;
 
     /**
-     * @var IndexerInterface
-     */
-    private $indexerHandler;
-
-    /**
      * @var DimensionFactory
      */
     private $dimensionFactory;
@@ -49,6 +48,21 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      * @var FullAction
      */
     private $fullAction;
+
+    /**
+     * @var QueueHandler
+     */
+    private $queueHandler;
+
+    /**
+     * @var HelperData
+     */
+    private $helperData;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * @var StoreManagerInterface
@@ -68,26 +82,32 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
     /**
      * Product constructor.
      * @param IndexerRegistry $indexerRegistry
-     * @param IndexerInterface $indexerHandler
      * @param DimensionFactory $dimensionFactory
      * @param FullAction $fullAction
+     * @param QueueHandler $queueHandler
+     * @param HelperData $helperData
+     * @param LoggerInterface $logger
      * @param StoreManagerInterface $storeManager
      * @param ManagerInterface $messageManager
      * @param ConsoleOutput $consoleOutput
      */
     public function __construct(
         IndexerRegistry $indexerRegistry,
-        IndexerInterface $indexerHandler,
         DimensionFactory $dimensionFactory,
         FullAction $fullAction,
+        QueueHandler $queueHandler,
+        HelperData $helperData,
+        LoggerInterface $logger,
         StoreManagerInterface $storeManager,
         ManagerInterface $messageManager,
         ConsoleOutput $consoleOutput
     ) {
         $this->indexerRegistry = $indexerRegistry;
-        $this->indexerHandler = $indexerHandler;
         $this->dimensionFactory = $dimensionFactory;
         $this->fullAction = $fullAction;
+        $this->queueHandler = $queueHandler;
+        $this->helperData = $helperData;
+        $this->logger = $logger->create(OptionsListConstants::LOGGER_TYPE_INDEXING);
         $this->storeManager = $storeManager;
         $this->messageManager = $messageManager;
         $this->consoleOutput = $consoleOutput;
@@ -97,17 +117,63 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      * Execute materialization on ids entities
      * Used by mview, allows process indexer in the "Update on schedule" mode
      *
-     * @param int[] $ids
+     * @param array $ids
+     * @return bool
      * @throws \Exception
      */
-    public function execute($ids)
+    public function execute($ids = [])
     {
-        $storeIds = array_keys($this->storeManager->getStores());
+        // check if authorization credentials were provided
+        if (!$this->helperData->isAuthorizationCredentialsSetup()) {
+            $message = 'Please check authorization credentials to perform this operation.';
+            $this->logger->error($message);
+            // for console action(s)
+            if (php_sapi_name() === 'cli') {
+                $this->consoleOutput->writeln("<error>{$message}</error>");
+                return false;
+            }
+            // for frontend action(s)
+            $this->messageManager->addWarningMessage(__($message));
+            return false;
+        }
 
+        $storeIds = array_keys($this->storeManager->getStores());
         foreach ($storeIds as $storeId) {
-            $dimension = $this->dimensionFactory->create(['name' => 'scope', 'value' => $storeId]);
-            $this->indexerHandler->deleteIndex([$dimension], new \ArrayObject($ids));
-            $this->indexerHandler->saveIndex([$dimension], $this->fullAction->rebuildStoreIndex($storeId, $ids));
+            // check if in indexing queue enabled
+            if (!$this->helperData->isIndexingQueueEnabled($storeId)) {
+                $this->logger->error('Indexing queue is disabled. Start reindex.')->startTimer();
+
+                try {
+                    $index = $this->fullAction->rebuildProductStoreIndex($storeId, $ids);
+                    $this->logger->info('Finished reindex. Stats:')->logStats();
+                } catch (\Exception $e) {
+                    if (php_sapi_name() === 'cli') {
+                        $this->consoleOutput->writeln("<error>{$e->getMessage()}</error>");
+                        return false;
+                    }
+                    $this->logger->error(sprintf('Reindex failed. Error: %s', $e->getMessage()));
+                }
+
+                if (!empty($index)) {
+                    // @TODO - implement feed operation(s) based on index data
+
+                }
+
+                continue;
+            }
+
+            // detect reindex action type
+            $reindexType = IndexingQueue::TYPE_REINDEX_ROW;
+            if (empty($ids)) {
+                // full reindex (clean index, save new index)
+                $reindexType = IndexingQueue::TYPE_REINDEX_FULL;
+            }
+            if (count($ids) > 1) {
+                // list reindex (delete index record(s), save index record(s))
+                $reindexType = IndexingQueue::TYPE_REINDEX_LIST;
+            }
+
+            $this->queueHandler->add($ids, $reindexType, $storeId);
         }
     }
 
@@ -120,15 +186,7 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      */
     public function executeFull()
     {
-        $this->execute(null);
-
-        $storeIds = array_keys($this->storeManager->getStores());
-
-        foreach ($storeIds as $storeId) {
-            $dimension = $this->dimensionFactory->create(['name' => 'scope', 'value' => $storeId]);
-            $this->indexerHandler->cleanIndex([$dimension]);
-            $this->indexerHandler->saveIndex([$dimension], $this->fullAction->rebuildStoreIndex($storeId));
-        }
+        $this->execute();
     }
 
     /**
@@ -152,6 +210,9 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      */
     public function executeRow($id)
     {
-        $this->execute([$id]);
+        if (!is_array($id)) {
+            $id = [$id];
+        }
+        $this->execute($id);
     }
 }

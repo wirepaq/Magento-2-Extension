@@ -14,6 +14,7 @@ namespace Unbxd\ProductFeed\Plugin\Reindex;
 use Magento\Framework\Indexer\IndexerRegistry;
 use Unbxd\ProductFeed\Model\Indexer\Product as UnbxdProductIndexer;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
+use Unbxd\ProductFeed\Model\IndexingQueue\Handler;
 use Magento\Framework\Model\AbstractModel;
 
 /**
@@ -62,8 +63,13 @@ class Product
     ) {
         $productResource->addCommitCallback(function () use ($product) {
             if (!$this->indexer->isScheduled()) {
+                /** @var \Magento\Catalog\Model\Product $product */
+                $id = $product->getId();
+                Handler::$additionalInformation[$id] = $product->isObjectNew()
+                    ? __('Product with ID %1 was added.', $id)
+                    : __('Product with ID %1 was updated.', $id);
                 // if indexer is 'Update on save' mode we need to rebuild related index data
-                $this->indexer->reindexRow($product->getId());
+                $this->indexer->reindexRow($id);
             }
         });
 
@@ -83,8 +89,12 @@ class Product
     ) {
         $productResource->addCommitCallback(function () use ($product) {
             if (!$this->indexer->isScheduled()) {
+                /** @var \Magento\Catalog\Model\Product $product */
+                $id = $product->getId();
+                Handler::$additionalInformation[$id] =
+                    __('Product with ID %1 was deleted.', $id);
                 // if indexer is 'Update on save' mode we need to rebuild related index data
-                $this->indexer->reindexRow($product->getId());
+                $this->indexer->reindexRow($id);
             }
         });
 
