@@ -89,12 +89,11 @@ class Category extends Indexer
      * @param $storeId
      * @param $productIds
      * @return array
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Exception
      */
     public function loadCategoryData($storeId, $productIds)
     {
-        $select = $this->getCategoryProductSelect($productIds, $storeId);
-        $categoryData = $this->getConnection()->fetchAll($select);
+        $categoryData = $this->getProductCategories($productIds, $storeId);
 
         $categoryIds = [];
         foreach ($categoryData as $categoryDataRow) {
@@ -103,11 +102,12 @@ class Category extends Indexer
 
 //        $storeCategoryName = $this->loadCategoryNames(array_unique($categoryIds), $storeId);
         $storeCategoryName = [];
-
-        foreach ($categoryData as &$categoryDataRow) {
-            $categoryDataRow['name'] = '';
-            if (isset($storeCategoryName[(int) $categoryDataRow['category_id']])) {
-                $categoryDataRow['name'] = $storeCategoryName[(int) $categoryDataRow['category_id']];
+        if (!empty($storeCategoryName)) {
+            foreach ($categoryData as &$categoryDataRow) {
+                $categoryDataRow['name'] = '';
+                if (isset($storeCategoryName[(int) $categoryDataRow['category_id']])) {
+                    $categoryDataRow['name'] = $storeCategoryName[(int) $categoryDataRow['category_id']];
+                }
             }
         }
 
@@ -117,12 +117,11 @@ class Category extends Indexer
     /**
      * Prepare indexed data select.
      *
-     * @param array   $productIds Product ids.
-     * @param integer $storeId    Store id.
-     *
+     * @param array $productIds
+     * @param integer $storeId
      * @return \Zend_Db_Select
      */
-    protected function getCategoryProductSelect($productIds, $storeId)
+    protected function getCategoryProductBaseSelect($productIds, $storeId)
     {
         $select = $this->getConnection()->select()
             ->from(['cpi' => $this->getTable($this->getCatalogCategoryProductIndexTable($storeId))])
@@ -130,6 +129,156 @@ class Category extends Indexer
             ->where('cpi.product_id IN(?)', $productIds);
 
         return $select;
+    }
+
+    /**
+     * Prepare category indexed data.
+     *
+     * @param $productIds
+     * @param $storeId
+     * @return array
+     * @throws \Exception
+     */
+    protected function getProductCategories($productIds, $storeId)
+    {
+        $select = $this->getConnection()->select()
+            ->from(['cpi' => $this->getTable($this->getCatalogCategoryProductIndexTable($storeId))])
+            ->where('cpi.store_id = ?', $storeId)
+            ->where('cpi.product_id IN(?)', $productIds)
+            ->reset(\Magento\Framework\DB\Select::COLUMNS)
+            ->columns(['category_id', 'product_id'], 'cpi');
+
+        $categoryIds = $this->getConnection()->fetchCol($select);
+
+        $select->useStraightJoin(true)
+            ->join([
+                'cce' => $this->getTable('catalog_category_entity')],
+                'cce.entity_id = cpi.category_id',
+                ['path']
+            )->where('cce.level NOT IN (0,1)');
+
+        $relatedData = [];
+        $allIds = [];
+        foreach ($this->getConnection()->fetchAll($select) as $row) {
+            $categoryId = isset($row['category_id']) ? (int) $row['category_id'] : null;
+            $productId = isset($row['product_id']) ? (int) $row['product_id'] : null;
+            $path = isset($row['path']) ? $row['path'] : null;
+            if (!$categoryId || !$productId || !$path) {
+                continue;
+            }
+
+            // remove root categories from path
+            $rootPartPath = sprintf(
+                '%s/%s',
+                \Magento\Catalog\Model\Category::TREE_ROOT_ID,
+                $this->getRootCategoryId($storeId)
+            );
+            $path = str_replace($rootPartPath, '', $path);
+            if ($path) {
+                $ids = explode('/', $path);
+                if (!empty($ids)) {
+                    foreach ($ids as $id) {
+                        $relatedData[] = [
+                            'category_id' => $id,
+                            'product_id' => $productId,
+                            'related' => in_array($id, $categoryIds)
+                        ];
+                        if (!in_array($id, $allIds)) {
+                            array_push($allIds, $id);
+                        }
+                    }
+                }
+            }
+        }
+
+        // data with related product id
+        $helperData = array_values(array_unique($relatedData, SORT_REGULAR));
+
+        $allIds = array_unique($allIds);
+        sort($allIds);
+
+        $entityType = $this->getEntityMetaData(CategoryInterface::class)->getEavEntityType();
+        $displayModeAttributeId = $this->getAttributeId($entityType,'display_mode');
+        $nameAttributeId = $this->getAttributeId($entityType,'name');
+        $urlKeyAttributeId = $this->getAttributeId($entityType,'url_key');
+        $urlPathAttributeId = $this->getAttributeId($entityType,'url_path');
+
+        $select = $this->getConnection()->select()
+            ->from(['ccev' => $this->getTable('catalog_category_entity_varchar')])
+            ->where('ccev.entity_id IN(?)', $allIds)
+            ->where('ccev.attribute_id <> ?', $displayModeAttributeId)
+            ->reset(\Magento\Framework\DB\Select::COLUMNS)
+            ->columns('attribute_id', 'ccev')
+            ->columns('ccev.entity_id AS category_id', 'ccev')
+            ->columns('value', 'ccev');
+
+        $output = [];
+        foreach ($this->getConnection()->fetchAll($select) as $key => $row) {
+            $attributeId = isset($row['attribute_id']) ? (int) $row['attribute_id'] : null;
+            $categoryId = isset($row['category_id']) ? (int) $row['category_id'] : null;
+            $value = isset($row['value']) ? (string) $row['value'] : null;
+            if (!$attributeId || !$categoryId || !$value) {
+                continue;
+            }
+
+            $productIdCandidate = null;
+            $related = false;
+            foreach ($helperData as $data) {
+                if (isset($data['category_id']) && ($data['category_id'] == $categoryId)) {
+                    $productIdCandidate = isset($data['product_id']) ? (int) $data['product_id'] : $productIdCandidate;
+                    $related = isset($data['related']) ? (int) $data['related'] : $related;
+                    break;
+                }
+            }
+
+            if ($productIdCandidate) {
+                if (!array_key_exists($categoryId, $output)) {
+                    $output[$categoryId] = [
+                        'category_id' => $categoryId,
+                        'product_id' => $productIdCandidate,
+                        'related' => $related
+                    ];
+                }
+                if ($attributeId == $nameAttributeId) {
+                    $output[$categoryId]['name'] = $value;
+                }
+                if ($attributeId == $urlKeyAttributeId) {
+                    $output[$categoryId]['url_key'] = $value;
+                }
+                if ($attributeId == $urlPathAttributeId) {
+                    $output[$categoryId]['url_path'] = $value;
+                }
+            }
+        }
+
+        return array_values($output);
+    }
+
+    /**
+     * Retrieve attribute id by entity type code and attribute code
+     *
+     * @param string $entityType
+     * @param string $code
+     * @return int
+     */
+    public function getAttributeId($entityType, $code)
+    {
+        $connection = $this->getConnection();
+        $bind = [':entity_type_code' => $entityType, ':attribute_code' => $code];
+        $select = $connection->select()->from(
+            ['a' => $this->getTable('eav_attribute')],
+            ['a.attribute_id']
+        )->join(
+            ['t' => $this->getTable('eav_entity_type')],
+            'a.entity_type_id = t.entity_type_id',
+            []
+        )->where(
+            't.entity_type_code = :entity_type_code'
+        )->where(
+            'a.attribute_code = :attribute_code'
+        );
+
+        return $connection->fetchOne($select, $bind);
     }
 
     /**
@@ -214,8 +363,7 @@ class Category extends Indexer
         $loadCategoryIds = array_map('intval', $loadCategoryIds);
         $useNameAttribute = $this->getUseNameInSearchAttribute();
 
-//        if (!empty($loadCategoryIds) && $useNameAttribute && $useNameAttribute->getId()) {
-        if (!empty($loadCategoryIds)) {
+        if (!empty($loadCategoryIds) && $useNameAttribute && $useNameAttribute->getId()) {
             $select = $this->prepareCategoryNameSelect($loadCategoryIds, $storeId);
             $entityIdField = $this->getEntityMetaData(CategoryInterface::class)->getIdentifierField();
 

@@ -26,10 +26,10 @@
         </item>
         <item name="template" xsi:type="string">templates/form/collapsible</item>
         <item name="buttons" xsi:type="array">
-            <item name="back" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\Buttons\Back</item>
-            <item name="hold" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\Buttons\Hold</item>
-            <item name="unhold" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\Buttons\Unhold</item>
-            <item name="delete" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\Buttons\Delete</item>
+            <item name="back" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\ViewDetails\Buttons\IndexingQueue\Back</item>
+            <item name="hold" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\ViewDetails\Buttons\IndexingQueue\Hold</item>
+            <item name="unhold" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\ViewDetails\Buttons\IndexingQueue\Unhold</item>
+            <item name="delete" xsi:type="string">Unbxd\ProductFeed\Block\Adminhtml\ViewDetails\Buttons\IndexingQueue\Delete</item>
         </item>
     </argument>
     <dataSource name="unbxd_productfeed_indexing_queue_item_data_source">
@@ -59,7 +59,7 @@
                 </item>
             </argument>
             <htmlContent name="html_content">
-                <argument name="block" xsi:type="object">Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\Tab\General</argument>
+                <argument name="block" xsi:type="object">Unbxd\ProductFeed\Block\Adminhtml\ViewDetails\Tab\General\IndexingQueue</argument>
             </htmlContent>
         </container>
     </fieldset>
@@ -77,7 +77,7 @@
                 </item>
             </argument>
             <htmlContent name="html_content">
-                <argument name="block" xsi:type="object">Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\ViewDetails</argument>
+                <argument name="block" xsi:type="object">Unbxd\ProductFeed\Block\Adminhtml\ViewDetails</argument>
             </htmlContent>
         </container>
     </fieldset>

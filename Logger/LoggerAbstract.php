@@ -74,7 +74,7 @@ abstract class LoggerAbstract implements LoggerInterface
      */
     public function getStats($extraMessage = '', $type = null)
     {
-        $message = '## Process ID ' . getmypid() . ' | ';
+        $message = 'Process ID ' . getmypid() . ' | ';
         $nl = "\n";
 
         if ($extraMessage) {
@@ -102,6 +102,7 @@ abstract class LoggerAbstract implements LoggerInterface
     /**
      * Return human readable debug trace.
      *
+     * @param $trace
      * @return string
      */
     public function getFormattedLogTrace($trace)

@@ -9,18 +9,19 @@
  * @email andyworkbase@gmail.com
  * @team MageCloud
  */
-namespace Unbxd\ProductFeed\Plugin\Product;
+namespace Unbxd\ProductFeed\Plugin\Reindex;
 
 use Magento\Framework\Indexer\IndexerRegistry;
 use Unbxd\ProductFeed\Model\Indexer\Product as UnbxdProductIndexer;
 use Unbxd\ProductFeed\Model\IndexingQueue\Handler;
 use Magento\Catalog\Model\Product\Action;
+use Unbxd\ProductFeed\Helper\ProductHelper;
 
 /**
  * Class provides plugins to force reindex after product mass action processing
  *
  * Class ProductMassAction
- * @package Unbxd\ProductFeed\Plugin\Product
+ * @package Unbxd\ProductFeed\Plugin\Reindex
  */
 class ProductMassAction
 {
@@ -30,6 +31,11 @@ class ProductMassAction
     private $indexerRegistry;
 
     /**
+     * @var ProductHelper
+     */
+    private $productHelper;
+
+    /**
      * Indexer instance
      *
      * @var object
@@ -37,16 +43,19 @@ class ProductMassAction
     private $indexer = null;
 
     /**
-     * ProductMassActionReindex constructor.
+     * ProductMassAction constructor.
      * @param IndexerRegistry $indexerRegistry
+     * @param ProductHelper $productHelper
      */
     public function __construct(
-        IndexerRegistry $indexerRegistry
+        IndexerRegistry $indexerRegistry,
+        ProductHelper $productHelper
     ) {
         $this->indexerRegistry = $indexerRegistry;
         if (!$this->indexer) {
             $this->indexer = $indexerRegistry->get(UnbxdProductIndexer::INDEXER_ID);
         }
+        $this->productHelper = $productHelper;
     }
 
     /**
@@ -67,11 +76,19 @@ class ProductMassAction
         $result = $closure($productIds, $attrData, $storeId);
         if (!$this->indexer->isScheduled()) {
             $productIds = array_unique($productIds);
+            $validProductIds = [];
             foreach ($productIds as $id) {
-                Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                /** @var \Magento\Catalog\Model\Product $product */
+                $product = $this->productHelper->getProduct($id);
+                if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
+                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    $validProductIds[] = $id;
+                }
             }
-            // if indexer is 'Update on save' mode we need to rebuild related index data
-            $this->indexer->reindexList($productIds);
+            if (!empty($validProductIds)) {
+                // if indexer is 'Update on save' mode we need to rebuild related index data
+                $this->indexer->reindexList($validProductIds);
+            }
         }
 
         return $result;
@@ -95,11 +112,19 @@ class ProductMassAction
         $result = $closure($productIds, $websiteIds, $type);
         if (!$this->indexer->isScheduled()) {
             $productIds = array_unique($productIds);
+            $validProductIds = [];
             foreach ($productIds as $id) {
-                Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                /** @var \Magento\Catalog\Model\Product $product */
+                $product = $this->productHelper->getProduct($id);
+                if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
+                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    $validProductIds[] = $id;
+                }
             }
-            // if indexer is 'Update on save' mode we need to rebuild related index data
-            $this->indexer->reindexList($productIds);
+            if (!empty($validProductIds)) {
+                // if indexer is 'Update on save' mode we need to rebuild related index data
+                $this->indexer->reindexList($validProductIds);
+            }
         }
 
         return $result;

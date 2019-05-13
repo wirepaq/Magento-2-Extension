@@ -27,10 +27,14 @@ class Check extends ActionIndex
     {
         /** @var \Magento\Framework\Controller\Result\Json $resultJson */
         $resultJson = $this->resultFactory->create(ResultFactory::TYPE_JSON);
-
         $responseContent = [];
-        $responseContent = $this->_isValidPostRequest();
-        if (!empty($responseContent)) {
+
+        $isValid = $this->_isValidPostRequest();
+        if (!$isValid) {
+            $responseContent = [
+                'errors' => true,
+                'message' => __('Invalid request.')
+            ];
             $resultJson->setData($responseContent);
             return $resultJson;
         }

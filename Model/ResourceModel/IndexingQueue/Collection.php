@@ -62,6 +62,8 @@ class Collection extends AbstractCollection
      */
     public function addStoreFilter($store, $withAdmin = true)
     {
+        $this->performAddStoreFilter($store, $withAdmin);
+
         return $this;
     }
 }

@@ -27,6 +27,11 @@ class Price extends Indexer
     private $priceIndexer = null;
 
     /**
+     * @var int
+     */
+    private $limiter = 0;
+
+    /**
      * Load prices data for a list of product ids and a given store.
      *
      * @param $storeId
@@ -46,6 +51,11 @@ class Price extends Indexer
             ->where('p.entity_id IN (?)', $productIds);
 
         $result = $this->getConnection()->fetchAll($select);
+
+        if ($this->limiter > 3) {
+            return $result;
+        }
+
         // new added product prices may not be populated into price index table in some reason,
         // try to force reindex for unprocessed entities
         $processedIds = [];
@@ -55,6 +65,7 @@ class Price extends Indexer
         $diffIds = array_diff($productIds, $processedIds);
         if (!empty($diffIds)) {
             $this->getPriceIndexer()->executeList($diffIds);
+            $this->limiter += 1;
             $this->loadPriceData($storeId, $productIds);
         }
 

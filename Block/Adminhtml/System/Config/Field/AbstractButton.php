@@ -12,6 +12,7 @@
 namespace Unbxd\ProductFeed\Block\Adminhtml\System\Config\Field;
 
 use Magento\Framework\UrlInterface;
+use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 
 /**
  * Class AbstractButton
@@ -20,6 +21,11 @@ use Magento\Framework\UrlInterface;
 abstract class AbstractButton extends \Magento\Config\Block\System\Config\Form\Field
 {
     /**
+     * @var FeedHelper
+     */
+    protected $feedHelper;
+
+    /**
      * @var UrlInterface
      */
     protected $urlBuilder;
@@ -27,13 +33,16 @@ abstract class AbstractButton extends \Magento\Config\Block\System\Config\Form\F
     /**
      * AbstractButton constructor.
      * @param \Magento\Backend\Block\Template\Context $context
+     * @param FeedHelper $feedHelper
      * @param array $data
      */
     public function __construct(
         \Magento\Backend\Block\Template\Context $context,
+        FeedHelper $feedHelper,
         array $data = []
     ) {
         $this->urlBuilder = $context->getUrlBuilder();
+        $this->feedHelper = $feedHelper;
         parent::__construct($context, $data);
     }
 

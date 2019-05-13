@@ -15,6 +15,8 @@ use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem;
 use Magento\Framework\Filesystem\Directory\WriteInterface;
 use Unbxd\ProductFeed\Logger\OptionsListConstants;
+use Magento\Framework\Profiler\Driver\Standard\Stat;
+use Magento\Framework\Profiler\Driver\Standard\StatFactory;
 
 /**
  * Logging to file

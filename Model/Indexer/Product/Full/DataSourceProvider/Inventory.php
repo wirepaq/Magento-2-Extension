@@ -48,12 +48,9 @@ class Inventory implements DataSourceProviderInterface
         foreach ($inventoryData as $inventoryDataRow) {
             $productId = (int) $inventoryDataRow['product_id'];
             $isInStock = (bool) $inventoryDataRow['stock_status'];
+            $qty = (int) $inventoryDataRow['qty'];
             // for compatibility with unbxd service
             $indexData[$productId]['availability'] = $isInStock;
-            $indexData[$productId]['stock'] = [
-                'is_in_stock' => $isInStock,
-                'qty' => (int) $inventoryDataRow['qty'],
-            ];
         }
 
         return $indexData;

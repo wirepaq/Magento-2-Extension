@@ -1,0 +1,70 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/**
+ * @var $block \Unbxd\ProductFeed\Block\Adminhtml\ViewDetails\Tab\General\IndexingQueue
+ */
+?>
+<?php
+    $model = $block->getItem();
+?>
+<div class="fieldset-wrapper indexing-queue-item-information">
+    <table class="admin__table-secondary">
+        <tbody>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Created At') ?></th>
+            <td><?php /* @escapeNotVerified */ echo $block->getFormattedDate($model->getCreatedAt()) ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Started At'); ?></th>
+            <?php
+                $value = $model->getStartedAt();
+                if (!$value || (strpos($value, '0000') !== false)) {
+                    $value = __('Not Performed Yet');
+                } else {
+                    $value = $block->getFormattedDate($value);
+                }
+            ?>
+            <td><?php /* @escapeNotVerified */ echo $value ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Finished At'); ?></th>
+            <?php
+                $value = $model->getFinishedAt();
+                if (!$value || (strpos($value, '0000') !== false)) {
+                    $value = __('Not Performed Yet');
+                } else {
+                    $value = $block->getFormattedDate($value);
+                }
+            ?>
+            <td><?php /* @escapeNotVerified */ echo $value ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Status'); ?></th>
+            <td><?php /* @escapeNotVerified */ echo $block->getStatusLabelById($model->getStatus()); ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Execution Time (in seconds)'); ?></th>
+            <td><?php /* @escapeNotVerified */ echo $model->getExecutionTime(); ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Total Number Of Entities'); ?></th>
+            <td><?php /* @escapeNotVerified */ echo $model->getNumberOfEntities(); ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Action Type'); ?></th>
+            <td><?php /* @escapeNotVerified */ echo $block->getActionLabelById($model->getActionType()); ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Additional Information'); ?></th>
+            <td style="max-height: 300px"><?php /* @escapeNotVerified */ echo $model->getAdditionalInformation(); ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('System Information'); ?></th>
+            <td style="max-height: 300px"><?php /* @escapeNotVerified */ echo $model->getSystemInformation(); ?></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+

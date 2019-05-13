@@ -16,6 +16,8 @@ use Magento\Framework\Data\Form\Element\Renderer\RendererInterface;
 use Magento\Backend\Block\Template\Context;
 use Unbxd\ProductFeed\Helper\Module as ModuleHelper;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
+use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
+use Unbxd\ProductFeed\Model\FeedView;
 
 /**
  * Class AbstractFieldset
@@ -49,16 +51,28 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     private $moduleHelper;
 
     /**
+     * @var FeedHelper
+     */
+    private $feedHelper;
+
+    /**
+     * @var FeedView
+     */
+    protected $feedView;
+
+    /**
      * @var TimezoneInterface
      */
     protected $dateTime;
 
     /**
-     * General constructor.
+     * AbstractFieldset constructor.
      * @param Context $context
      * @param \Magento\Framework\View\Asset\Repository $assetRepo
      * @param \Magento\Config\Model\Config\Structure $configStructure
      * @param ModuleHelper $moduleHelper
+     * @param FeedHelper $feedHelper
+     * @param FeedView $feedView
      * @param TimezoneInterface $dateTime
      * @param array $data
      */
@@ -67,6 +81,8 @@ abstract class AbstractFieldset extends Template implements RendererInterface
         \Magento\Framework\View\Asset\Repository $assetRepo,
         \Magento\Config\Model\Config\Structure $configStructure,
         ModuleHelper $moduleHelper,
+        FeedHelper $feedHelper,
+        FeedView $feedView,
         TimezoneInterface $dateTime,
         array $data = []
     ) {
@@ -74,6 +90,8 @@ abstract class AbstractFieldset extends Template implements RendererInterface
         $this->assetRepo = $assetRepo;
         $this->configStructure = $configStructure;
         $this->moduleHelper = $moduleHelper;
+        $this->feedHelper = $feedHelper;
+        $this->feedView = $feedView;
         $this->dateTime = $dateTime;
     }
 
@@ -96,23 +114,97 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     /**
      * @return bool
      */
-    public function isCatalogSynchronized()
+    public function isFullCatalogSynchronized()
     {
-        // @TODO - implement
-        return false;
+        return (bool) $this->feedHelper->isFullCatalogSynchronized();
     }
 
     /**
-     * @return |null
+     * @return bool
+     */
+    public function isIncrementalProductSynchronized()
+    {
+        return (bool) $this->feedHelper->isIncrementalProductSynchronized();
+    }
+
+    /**
+     * @return string|null
      */
     public function getLastCatalogSyncDatetime()
     {
-        // @TODO - implement
-        if ($this->isCatalogSynchronized()) {
+        $date = $this->feedHelper->getLastSynchronizationDatetime();
+        if (!$this->isSynchronized() || !$date) {
             return null;
         }
 
-        return null;
+        return $this->dateTime->formatDate($date,\IntlDateFormatter::MEDIUM,true);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getLastSynchronizationOperationType()
+    {
+        $type = $this->feedHelper->getLastSynchronizationOperationType();
+        if (!$this->isSynchronized() || !$type) {
+            return null;
+        }
+
+        return ucfirst($type);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSynchronized()
+    {
+        return (bool) ($this->isFullCatalogSynchronized() || $this->isIncrementalProductSynchronized());
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsSuccess()
+    {
+        return (bool) (($this->getStatus() == FeedView::STATUS_COMPLETE) && $this->isSynchronized());
+    }
+
+    /**
+     * @return bool
+     */
+    public function getStatus()
+    {
+        return (int) $this->feedHelper->getLastSynchronizationStatus();
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getLastSynchronizationStatusHtml()
+    {
+        $status = $this->getStatus();
+        if (!$this->isSynchronized() || !$status) {
+            return null;
+        }
+
+        $availableStatuses = $this->feedView->getAvailableStatuses();
+        $decoratorClassPath = 'undefined';
+        $title = 'Undefined';
+        $statusHtml = '';
+        if (array_key_exists($status, $availableStatuses)) {
+            $title = $availableStatuses[$status];
+            if ($status == FeedView::STATUS_RUNNING) {
+                $decoratorClassPath = 'minor';
+            } elseif ($status == FeedView::STATUS_COMPLETE) {
+                $decoratorClassPath = 'notice';
+            } elseif ($status == FeedView::STATUS_ERROR) {
+                $decoratorClassPath = 'critical';
+            }
+        }
+
+        $statusHtml .= '<span class="grid-severity-' . $decoratorClassPath .'" style="display: inline-block"><span>' . __($title) . '</span></span>';
+
+        return $statusHtml;
     }
 
     /**

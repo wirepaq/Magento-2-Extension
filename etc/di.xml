@@ -20,6 +20,34 @@
     <preference for="Unbxd\ProductFeed\Api\Data\IndexingQueueInterface" type="Unbxd\ProductFeed\Model\IndexingQueue" />
     <preference for="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" type="Unbxd\ProductFeed\Model\FeedViewRepository" />
     <preference for="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" type="Unbxd\ProductFeed\Model\IndexingQueueRepository" />
+    <virtualType name="Unbxd\ProductFeed\Model\Api\SearchCriteria\IndexingQueueCollectionProcessor" type="Magento\Framework\Api\SearchCriteria\CollectionProcessor">
+        <arguments>
+            <argument name="processors" xsi:type="array">
+                <item name="filters" xsi:type="object">Magento\Cms\Model\Api\SearchCriteria\CollectionProcessor\BlockFilterProcessor</item>
+                <item name="sorting" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\SortingProcessor</item>
+                <item name="pagination" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\PaginationProcessor</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Unbxd\ProductFeed\Model\IndexingQueueRepository">
+        <arguments>
+            <argument name="collectionProcessor" xsi:type="object">Unbxd\ProductFeed\Model\Api\SearchCriteria\IndexingQueueCollectionProcessor</argument>
+        </arguments>
+    </type>
+    <virtualType name="Unbxd\ProductFeed\Model\Api\SearchCriteria\FeedViewCollectionProcessor" type="Magento\Framework\Api\SearchCriteria\CollectionProcessor">
+        <arguments>
+            <argument name="processors" xsi:type="array">
+                <item name="filters" xsi:type="object">Magento\Cms\Model\Api\SearchCriteria\CollectionProcessor\BlockFilterProcessor</item>
+                <item name="sorting" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\SortingProcessor</item>
+                <item name="pagination" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\PaginationProcessor</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Unbxd\ProductFeed\Model\FeedViewRepository">
+        <arguments>
+            <argument name="collectionProcessor" xsi:type="object">Unbxd\ProductFeed\Model\Api\SearchCriteria\FeedViewCollectionProcessor</argument>
+        </arguments>
+    </type>
 
     <type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
         <arguments>
@@ -166,4 +194,25 @@
         </arguments>
     </type>
     <!-- END: custom xml config reader -->
+
+    <!-- START: feed related -->
+    <type name="Unbxd\ProductFeed\Model\Feed\FileManager">
+        <arguments>
+            <argument name="fileName" xsi:type="string">unbxdFeed</argument>
+            <argument name="contentFormat" xsi:type="string">json</argument>
+            <argument name="allowedMimeTypes" xsi:type="array">
+                <item name="json" xsi:type="string">application/json</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="unbxd_productfeed_feed_full" xsi:type="object">Unbxd\ProductFeed\Console\Command\Feed\Full</item>
+                <item name="unbxd_productfeed_feed_incremental" xsi:type="object">Unbxd\ProductFeed\Console\Command\Feed\Incremental</item>
+            </argument>
+        </arguments>
+    </type>
+    <!-- END: feed related -->
 </config>

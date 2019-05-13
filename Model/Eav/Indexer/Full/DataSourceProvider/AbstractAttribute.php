@@ -14,7 +14,7 @@ namespace Unbxd\ProductFeed\Model\Eav\Indexer\Full\DataSourceProvider;
 use Magento\Eav\Model\Entity\Attribute\AttributeInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider\AbstractAttribute as ResourceModel;
 use Unbxd\ProductFeed\Helper\AttributeHelper as AttributeHelper;
-use Unbxd\ProductFeed\Model\Feed\Mapping\FieldInterface;
+use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 
 /**
  * Class AbstractAttribute
@@ -50,6 +50,11 @@ abstract class AbstractAttribute
      * @var array
      */
     protected $fields = [];
+
+    /**
+     * @var array
+     */
+    protected $indexedFields = [];
 
     /**
      * @var array
@@ -94,6 +99,26 @@ abstract class AbstractAttribute
     public function getFields()
     {
         return $this->fields;
+    }
+
+    /**
+     * List of indexed fields generated from the attributes list.
+     *
+     * {@inheritdoc}
+     */
+    public function getIndexedFields()
+    {
+        return $this->indexedFields;
+    }
+
+    /**
+     * Load default attribute codes from the database.
+     *
+     * @return array
+     */
+    protected function loadDefaultAttributeFields()
+    {
+        return $this->resourceModel->getDefaultAttributeFields();
     }
 
     /**
@@ -158,25 +183,24 @@ abstract class AbstractAttribute
     {
         $fieldName = $attribute->getAttributeCode();
         $fieldConfig = $this->attributeHelper->getMappingFieldOptions($attribute);
+        $isFieldMultivalued = $this->attributeHelper->isFieldMultivalued($attribute);
 
         if ($attribute->usesSource()) {
             $optionFieldName = $this->attributeHelper->getOptionTextFieldName($fieldName);
-            $fieldType = FieldInterface::FIELD_TYPE_TEXT;
+            $fieldType = FeedConfig::FIELD_TYPE_TEXT;
             $fieldOptions = [
-                'code' => $fieldName,
-                'name' => $optionFieldName,
-                'type' => $fieldType,
-                'fieldConfig' => $fieldConfig
+                'fieldName' => (string) $fieldName,
+                'dataType' => (string) $fieldType,
+                'multiValued' => (boolean) $isFieldMultivalued,
             ];
             $this->fields[$optionFieldName] = $fieldOptions;
         }
 
         $fieldType = $this->attributeHelper->getFieldType($attribute);
         $fieldOptions = [
-            'code' => $fieldName,
-            'name' => $fieldName,
-            'type' => $fieldType,
-            'fieldConfig' => $fieldConfig
+            'fieldName' => (string) $fieldName,
+            'dataType' => (string) $fieldType,
+            'multiValued' => (boolean) $isFieldMultivalued,
         ];
 
         $this->fields[$fieldName] = $fieldOptions;

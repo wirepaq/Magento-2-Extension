@@ -56,6 +56,18 @@ class AbstractAttribute extends Indexer
     }
 
     /**
+     * Load default attribute codes for product entity.
+     *
+     * @return array
+     */
+    public function getDefaultAttributeFields()
+    {
+        return array_flip(
+            array_keys($this->connection->describeTable($this->getTable('catalog_product_entity')))
+        );
+    }
+
+    /**
      * Load attribute data for a list of entity ids.
      *
      * @param $storeId

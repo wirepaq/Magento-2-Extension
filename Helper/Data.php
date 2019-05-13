@@ -12,7 +12,11 @@
 namespace Unbxd\ProductFeed\Helper;
 
 use Magento\Framework\App\Helper\AbstractHelper;
+use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
+use Magento\Framework\App\Config\Storage\WriterInterface as ConfigWriter;
+use Magento\Framework\App\Config\ValueInterface as ConfigValueInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Unbxd\ProductFeed\Model\Config\Backend\Cron;
 
@@ -23,12 +27,6 @@ use Unbxd\ProductFeed\Model\Config\Backend\Cron;
 class Data extends AbstractHelper
 {
     /**
-     * Unbxd API endpoint(s)
-     */
-    const FULL_SYNC_DEFAULT_API_ENDPOINT = 'http://feed.unbxd.io/api/%s/upload/catalog/full';
-    const INCREMENTAL_SYNC_DEFAULT_API_ENDPOINT = '';
-
-    /**
      * XML paths
      *
      * setup section
@@ -36,6 +34,12 @@ class Data extends AbstractHelper
     const XML_PATH_SETUP_SITE_KEY = 'unbxd_setup/general/site_key';
     const XML_PATH_SETUP_SECRET_KEY = 'unbxd_setup/general/secret_key';
     const XML_PATH_SETUP_API_KEY = 'unbxd_setup/general/api_key';
+
+    /**
+     * API endpoints
+     */
+    const XML_PATH_FULL_FEED_API_ENDPOINT = 'unbxd_setup/general/api_endpoint/full';
+    const XML_PATH_INCREMENTAL_FEED_API_ENDPOINT = 'unbxd_setup/general/api_endpoint/incremental';
 
     /**
      * catalog section
@@ -56,6 +60,21 @@ class Data extends AbstractHelper
     const XML_PATH_SEARCH_PAGE_ENABLED = 'unbxd_search/general/enabled';
 
     /**
+     * @var ConfigInterface
+     */
+    private $configInterface;
+
+    /**
+     * @var ConfigWriter
+     */
+    private $configWriter;
+
+    /**
+     * @var ConfigValueInterface
+     */
+    private $configData;
+
+    /**
      * @var ScopeConfigInterface
      */
     protected $scopeConfig;
@@ -69,14 +88,87 @@ class Data extends AbstractHelper
      * Data constructor.
      * @param \Magento\Framework\App\Helper\Context $context
      * @param StoreManagerInterface $storeManager
+     * @param ConfigInterface $configInterface
+     * @param ConfigWriter $configWriter
+     * @param ConfigValueInterface $configData
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        ConfigInterface $configInterface,
+        ConfigWriter $configWriter,
+        ConfigValueInterface $configData
     ) {
         parent::__construct($context);
         $this->scopeConfig = $context->getScopeConfig();
         $this->storeManager = $storeManager;
+        $this->configInterface = $configInterface;
+        $this->configWriter = $configWriter;
+        $this->configData = $configData;
+    }
+
+    /**
+     * Retrieve core config value by path and store
+     *
+     * @param $path
+     * @param string $scopeType
+     * @param null $scopeCode
+     * @return string
+     */
+    public function getConfigValue($path, $scopeType = ScopeConfigInterface::SCOPE_TYPE_DEFAULT, $scopeCode = null)
+    {
+        return trim($this->scopeConfig->getValue($path, $scopeType, $scopeCode));
+    }
+
+    /**
+     * Save config value to storage
+     *
+     * @param $path
+     * @param $value
+     * @param string $scope
+     * @param int $scopeId
+     */
+    public function updateConfigValue($path, $value, $scope = ScopeConfigInterface::SCOPE_TYPE_DEFAULT, $scopeId = 0)
+    {
+        $this->configWriter->save($path, trim($value), $scope, $scopeId);
+    }
+
+    /**
+     * Save config value to the storage resource
+     *
+     * @param $path
+     * @param $value
+     * @param string $scope
+     * @param int $scopeId
+     */
+    public function saveConfig($path, $value, $scope = ScopeConfigInterface::SCOPE_TYPE_DEFAULT, $scopeId = 0)
+    {
+        $this->configInterface->saveConfig($path, $value, $scope, $scopeId);
+    }
+
+    /**
+     * Delete config value from the storage resource
+     *
+     * @param $path
+     * @param string $scope
+     * @param int $scopeId
+     */
+    public function deleteConfig($path, $scope = ScopeConfigInterface::SCOPE_TYPE_DEFAULT, $scopeId = 0)
+    {
+        $this->configInterface->deleteConfig($path, $scope, $scopeId);
+    }
+
+    /**
+     * Check whether or not core config value is enabled
+     *
+     * @param $path
+     * @param string $scopeType
+     * @param null $scopeCode
+     * @return bool
+     */
+    public function isSetFlag($path, $scopeType = ScopeConfigInterface::SCOPE_TYPE_DEFAULT, $scopeCode = null)
+    {
+        return $this->scopeConfig->isSetFlag($path, $scopeType, $scopeCode);
     }
 
     /**
@@ -87,7 +179,7 @@ class Data extends AbstractHelper
     {
         return trim($this->scopeConfig->getValue(
             self::XML_PATH_SETUP_SITE_KEY,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         ));
     }
@@ -100,7 +192,7 @@ class Data extends AbstractHelper
     {
         return trim($this->scopeConfig->getValue(
             self::XML_PATH_SETUP_SECRET_KEY,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         ));
     }
@@ -113,7 +205,33 @@ class Data extends AbstractHelper
     {
         return trim($this->scopeConfig->getValue(
             self::XML_PATH_SETUP_API_KEY,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
+            $store
+        ));
+    }
+
+    /**
+     * @param null $store
+     * @return string
+     */
+    public function getFullFeedApiEndpoint($store = null)
+    {
+        return trim($this->scopeConfig->getValue(
+            self::XML_PATH_FULL_FEED_API_ENDPOINT,
+            ScopeInterface::SCOPE_STORE,
+            $store
+        ));
+    }
+
+    /**
+     * @param null $store
+     * @return string
+     */
+    public function getIncrementalFeedApiEndpoint($store = null)
+    {
+        return trim($this->scopeConfig->getValue(
+            self::XML_PATH_INCREMENTAL_FEED_API_ENDPOINT,
+            ScopeInterface::SCOPE_STORE,
             $store
         ));
     }
@@ -135,7 +253,7 @@ class Data extends AbstractHelper
     {
         $value = $this->scopeConfig->getValue(
             self::XML_PATH_CATALOG_AVAILABLE_PRODUCT_TYPES,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         );
 
@@ -155,7 +273,7 @@ class Data extends AbstractHelper
     {
         $value = $this->scopeConfig->getValue(
             self::XML_PATH_CATALOG_EXCLUDE_PRODUCTS_SPECIAL_ATTRIBUTES,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         );
 
@@ -175,7 +293,7 @@ class Data extends AbstractHelper
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_CATALOG_INDEXING_QUEUE_ENABLED,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         );
     }
@@ -188,7 +306,7 @@ class Data extends AbstractHelper
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_CATALOG_CRON_ENABLED,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         );
     }
@@ -202,7 +320,7 @@ class Data extends AbstractHelper
         if ($this->isCronEnabled($store)) {
             return $this->scopeConfig->getValue(
                 self::XML_PATH_CATALOG_CRON_TYPE,
-                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                ScopeInterface::SCOPE_STORE,
                 $store
             );
         }
@@ -219,7 +337,7 @@ class Data extends AbstractHelper
         if ($this->isCronEnabled($store) && $this->getCronType()) {
             return $this->scopeConfig->getValue(
                 Cron::CRON_STRING_PATH,
-                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                ScopeInterface::SCOPE_STORE,
                 $store
             );
         }
@@ -246,7 +364,7 @@ class Data extends AbstractHelper
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_CATALOG_MANUAL_SYNCHRONIZATION_ENABLED,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         );
     }
@@ -259,7 +377,7 @@ class Data extends AbstractHelper
     {
         return $this->scopeConfig->isSetFlag(
             self::XML_PATH_SEARCH_PAGE_ENABLED,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            ScopeInterface::SCOPE_STORE,
             $store
         );
     }

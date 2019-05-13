@@ -68,11 +68,10 @@ class Full
      * @param $storeId
      * @param array $productIds
      * @param int $fromId
-     * @param int $limit
+     * @param null $limit
      * @return array
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    private function getProducts($storeId, $productIds = [], $fromId = 0, $limit = 5000)
+    private function getProducts($storeId, $productIds = [], $fromId = 0, $limit = null)
     {
         return $this->resourceModel->getProducts($storeId, $productIds, $fromId, $limit);
     }
@@ -101,7 +100,6 @@ class Full
         $result = [];
         foreach ($products as $productData) {
             $productId = (int) $productData['entity_id'];
-            $productData['unique_id'] = (int) $productId;
             $productData['has_options'] = (bool) $productData['has_options'];
             $productData['required_options'] = (bool) $productData['required_options'];
             $result[$productId] = $productData;
@@ -178,7 +176,7 @@ class Full
             if (!empty($deletedCandidateIds)) {
                 // mark deleted product in index data
                 foreach ($deletedCandidateIds as $id) {
-                    $fullIndex[$id]['deleted'] = true;
+                    $fullIndex[$id]['action'] = 'delete';
                 }
             }
         }

@@ -86,8 +86,8 @@ class Full extends ActionIndex
         if (!isset($data[IndexingQueue::EXECUTION_TIME])) {
             $data[IndexingQueue::EXECUTION_TIME] = 0;
         }
-        if (!isset($data[IndexingQueue::DATA_FOR_PROCESSING])) {
-            $data[IndexingQueue::DATA_FOR_PROCESSING] = __(IndexingQueue::REINDEX_FULL_LABEL);
+        if (!isset($data[IndexingQueue::AFFECTED_ENTITIES])) {
+            $data[IndexingQueue::AFFECTED_ENTITIES] = __(IndexingQueue::REINDEX_FULL_LABEL);
         }
         if (!isset($data[IndexingQueue::NUMBER_OF_ENTITIES])) {
             $data[IndexingQueue::NUMBER_OF_ENTITIES] = count($this->productHelper->getAllProductsIds());

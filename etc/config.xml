@@ -20,6 +20,10 @@
                 <site_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
                 <secret_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
                 <api_key backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
+                <api_endpoint>
+                    <full>http://feed.unbxd.io/api/%s/upload/catalog/full</full>
+                    <incremental>http://feed.unbxd.io/api/%s/upload/catalog/delta</incremental>
+                </api_endpoint>
             </general>
         </unbxd_setup>
         <unbxd_catalog>

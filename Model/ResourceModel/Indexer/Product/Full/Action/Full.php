@@ -17,6 +17,7 @@ use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Indexer\Table\StrategyInterface;
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
 
 /**
  * Unbxd product full indexer resource model.
@@ -72,11 +73,10 @@ class Full extends Indexer
      * @param $storeId
      * @param array $productIds
      * @param int $fromId
-     * @param int $limit
+     * @param null $limit
      * @return array
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function getProducts($storeId, $productIds = [], $fromId = 0, $limit = 5000)
+    public function getProducts($storeId, $productIds = [], $fromId = 0, $limit = null)
     {
         $select = $this->getConnection()->select()
             ->from(['e' => $this->getTable('catalog_product_entity')]);
@@ -87,7 +87,10 @@ class Full extends Indexer
             $select->where('e.entity_id IN (?)', $productIds);
         }
 
-        $select->limit($limit);
+        if ($limit) {
+            $select->limit($limit);
+        }
+
         $select->where('e.entity_id > ?', $fromId);
         $select->where('e.type_id IN (?)', $this->supportedTypes);
         $select->order('e.entity_id');
@@ -128,6 +131,8 @@ class Full extends Indexer
     private function addCollectionFilters($select, $storeId)
     {
         $this->addIsVisibleInStoreFilter($select, $storeId);
+        $this->addStatusFilter($select, $storeId);
+
         return $this;
     }
 
@@ -152,6 +157,40 @@ class Full extends Indexer
         $select->useStraightJoin(true)
             ->join(['visibility' => $indexTable], $visibilityJoinCond, ['visibility'])
             ->where('visibility.category_id = ?', (int) $rootCategoryId);
+
+        return $this;
+    }
+
+    /**
+     * Filter the select to append only enabled product into the index.
+     *
+     * @param $select
+     * @param $storeId
+     * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function addStatusFilter($select, $storeId)
+    {
+        $relatedTable = $this->getTable('catalog_product_entity_int');
+
+        $bind = [];
+        $bind = ['status' => 'status'];
+        $statusAttributeIdSelect = $this->getConnection()->select()
+            ->from(['attribute' => $this->getTable('eav_attribute')], ['attribute_id'])
+            ->where('attribute.entity_type_id = 4') // 4 - catalog_product
+            ->where('attribute.attribute_code = :status');
+
+        $statusAttributeId = $this->getConnection()->fetchOne($statusAttributeIdSelect, $bind);
+
+        $statusJoinCond = $this->getConnection()->quoteInto(
+            'status.entity_id = e.entity_id AND status.store_id = ?',
+            $storeId
+        );
+
+        $select->useStraightJoin(true)
+            ->join(['status' => $relatedTable], $statusJoinCond, ['value AS status'])
+            ->where('status.attribute_id = ?', (int) $statusAttributeId)
+            ->where('status.value = ?', Status::STATUS_ENABLED);
 
         return $this;
     }

@@ -30,6 +30,7 @@ use Magento\Directory\Model\Currency as CurrencyHelper;
 use Magento\Framework\DataObject;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Magento\Framework\ObjectManagerInterface;
+use Unbxd\ProductFeed\Model\Config\Source\ProductTypes;
 
 /**
  * Helper class to perform operations with product entity
@@ -122,7 +123,13 @@ class ProductHelper
     private $productAttributesCodes = [];
 
     /**
+     * @var ProductTypes
+     */
+    private $productTypes;
+
+    /**
      * ProductHelper constructor.
+     * @param ProductRepositoryInterface $productRepository
      * @param Visibility $visibility
      * @param Status $status
      * @param Type $type
@@ -136,6 +143,7 @@ class ProductHelper
      * @param CurrencyHelper $currencyHelper
      * @param EventManagerInterface $eventManager
      * @param ObjectManagerInterface $objectManager
+     * @param ProductTypes $productTypes
      */
     public function __construct(
         ProductRepositoryInterface $productRepository,
@@ -151,7 +159,8 @@ class ProductHelper
         StoreManagerInterface $storeManager,
         CurrencyHelper $currencyHelper,
         EventManagerInterface $eventManager,
-        ObjectManagerInterface $objectManager
+        ObjectManagerInterface $objectManager,
+        ProductTypes $productTypes
     ) {
         $this->productRepository = $productRepository;
         $this->visibility = $visibility;
@@ -167,6 +176,7 @@ class ProductHelper
         $this->currencyHelper = $currencyHelper;
         $this->eventManagerInterface = $eventManager;
         $this->objectManager = $objectManager;
+        $this->productTypes = $productTypes;
     }
 
     /**
@@ -203,7 +213,7 @@ class ProductHelper
      *
      * @return AbstractType[]|null
      */
-    private function getCompositeTypes()
+    public function getCompositeTypes()
     {
         if ($this->compositeTypes === null) {
             $productEmulator = new DataObject();
@@ -214,6 +224,15 @@ class ProductHelper
         }
 
         return $this->compositeTypes;
+    }
+
+    /**
+     * @param $typeId
+     * @return bool
+     */
+    public function isProductTypeSupported($typeId)
+    {
+        return array_key_exists($typeId, $this->productTypes->toArray());
     }
 
     /**
@@ -230,5 +249,45 @@ class ProductHelper
         }
 
         return $parentIds;
+    }
+
+    /**
+     * Returns all child product IDs, e.g. when product configurable or grouped
+     *
+     * @param int|array $parentId
+     * @return array
+     */
+    public function getChildProductIds($parentId)
+    {
+        $childIds = [];
+        foreach ($this->getCompositeTypes() as $typeInstance) {
+            $childIds = array_merge($childIds, $typeInstance->getChildrenIds($parentId));
+        }
+
+        return $childIds;
+    }
+
+    /**
+     * Returns all child product IDs for specific store
+     *
+     * @param int $parentId
+     * @param $storeId
+     * @return array
+     */
+    public function getChildProductIdsByStore($parentId, $storeId)
+    {
+        $childGroupData = $this->getChildProductIds($parentId);
+        $childIds = array_key_exists($storeId, $childGroupData) ? array_values($childGroupData[$storeId]) : [];
+
+        return $childIds;
+    }
+
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function getVisibilityTypeLabelByValue($value)
+    {
+        return $this->visibility->getOptionText($value);
     }
 }

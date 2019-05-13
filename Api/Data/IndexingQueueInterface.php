@@ -27,11 +27,12 @@ interface IndexingQueueInterface
     const FINISHED_AT               = 'finished_at';
     const IS_ACTIVE                 = 'is_active';
     const EXECUTION_TIME            = 'execution_time';
-    const DATA_FOR_PROCESSING       = 'data_for_processing';
+    const AFFECTED_ENTITIES         = 'affected_entities';
     const NUMBER_OF_ENTITIES        = 'number_of_entities';
     const ACTION_TYPE               = 'action_type';
     const STATUS                    = 'status';
     const ADDITIONAL_INFORMATION    = 'additional_information';
+    const SYSTEM_INFORMATION        = 'system_information';
     /**#@-*/
 
     /**
@@ -84,11 +85,11 @@ interface IndexingQueueInterface
     public function getExecutionTime();
 
     /**
-     * Get data for processing
+     * Get affected entities
      *
      * @return string|null
      */
-    public function getDataForProcessing();
+    public function getAffectedEntities();
 
     /**
      * Get number of entities
@@ -117,6 +118,13 @@ interface IndexingQueueInterface
      * @return string|null
      */
     public function getAdditionalInformation();
+
+    /**
+     * Get system information
+     *
+     * @return string|null
+     */
+    public function getSystemInformation();
 
     /**
      * Set ID
@@ -175,12 +183,12 @@ interface IndexingQueueInterface
     public function setExecutionTime($executionTime);
 
     /**
-     * Set data for processing
+     * Set affected entities
      *
      * @param string $data
      * @return IndexingQueueInterface
      */
-    public function setDataForProcessing($data);
+    public function setAffectedEntities($data);
 
     /**
      * Set number of entities
@@ -193,7 +201,7 @@ interface IndexingQueueInterface
     /**
      * Set action type
      *
-     * @param string $actionType
+     * @param int $actionType
      * @return IndexingQueueInterface
      */
     public function setActionType($actionType);
@@ -201,7 +209,7 @@ interface IndexingQueueInterface
     /**
      * Set status
      *
-     * @param string $status
+     * @param int $status
      * @return IndexingQueueInterface
      */
     public function setStatus($status);
@@ -213,4 +221,12 @@ interface IndexingQueueInterface
      * @return IndexingQueueInterface
      */
     public function setAdditionalInformation($additionalInformation);
+
+    /**
+     * Set system information
+     *
+     * @param string $systemInformation
+     * @return IndexingQueueInterface
+     */
+    public function setSystemInformation($systemInformation);
 }

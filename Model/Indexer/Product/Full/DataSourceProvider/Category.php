@@ -53,8 +53,8 @@ class Category implements DataSourceProviderInterface
                 $categoryDataRow,
                 [
                     'category_id' => (int) $categoryDataRow['category_id'],
-                    'is_parent' => (bool) $categoryDataRow['is_parent'],
-                    'name' => (string) $categoryDataRow['name'],
+//                    'is_parent' => (bool) $categoryDataRow['is_parent'],
+//                    'name' => (string) $categoryDataRow['name'],
                 ]
             );
 

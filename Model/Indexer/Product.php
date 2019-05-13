@@ -16,9 +16,12 @@ use Magento\Framework\Search\Request\DimensionFactory;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as FullAction;
 use Unbxd\ProductFeed\Model\IndexingQueue;
 use Unbxd\ProductFeed\Model\IndexingQueue\Handler as QueueHandler;
+use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
+use Unbxd\ProductFeed\Helper\ProductHelper;
 use Unbxd\ProductFeed\Logger\LoggerInterface;
 use Unbxd\ProductFeed\Logger\OptionsListConstants;
+use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -55,9 +58,19 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
     private $queueHandler;
 
     /**
+     * @var FeedManager
+     */
+    private $feedManager;
+
+    /**
      * @var HelperData
      */
     private $helperData;
+
+    /**
+     * @var ProductHelper
+     */
+    private $productHelper;
 
     /**
      * @var LoggerInterface
@@ -86,6 +99,7 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      * @param FullAction $fullAction
      * @param QueueHandler $queueHandler
      * @param HelperData $helperData
+     * @param ProductHelper $productHelper
      * @param LoggerInterface $logger
      * @param StoreManagerInterface $storeManager
      * @param ManagerInterface $messageManager
@@ -96,7 +110,9 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
         DimensionFactory $dimensionFactory,
         FullAction $fullAction,
         QueueHandler $queueHandler,
+        FeedManager $feedManager,
         HelperData $helperData,
+        ProductHelper $productHelper,
         LoggerInterface $logger,
         StoreManagerInterface $storeManager,
         ManagerInterface $messageManager,
@@ -106,7 +122,9 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
         $this->dimensionFactory = $dimensionFactory;
         $this->fullAction = $fullAction;
         $this->queueHandler = $queueHandler;
+        $this->feedManager = $feedManager;
         $this->helperData = $helperData;
+        $this->productHelper = $productHelper;
         $this->logger = $logger->create(OptionsListConstants::LOGGER_TYPE_INDEXING);
         $this->storeManager = $storeManager;
         $this->messageManager = $messageManager;
@@ -137,44 +155,79 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
             return false;
         }
 
-        $storeIds = array_keys($this->storeManager->getStores());
-        foreach ($storeIds as $storeId) {
-            // check if in indexing queue enabled
-            if (!$this->helperData->isIndexingQueueEnabled($storeId)) {
-                $this->logger->error('Indexing queue is disabled. Start reindex.')->startTimer();
-
-                try {
-                    $index = $this->fullAction->rebuildProductStoreIndex($storeId, $ids);
-                    $this->logger->info('Finished reindex. Stats:')->logStats();
-                } catch (\Exception $e) {
-                    if (php_sapi_name() === 'cli') {
-                        $this->consoleOutput->writeln("<error>{$e->getMessage()}</error>");
-                        return false;
-                    }
-                    $this->logger->error(sprintf('Reindex failed. Error: %s', $e->getMessage()));
-                }
-
-                if (!empty($index)) {
-                    // @TODO - implement feed operation(s) based on index data
-
-                }
-
-                continue;
-            }
-
-            // detect reindex action type
-            $reindexType = IndexingQueue::TYPE_REINDEX_ROW;
-            if (empty($ids)) {
-                // full reindex (clean index, save new index)
-                $reindexType = IndexingQueue::TYPE_REINDEX_FULL;
-            }
-            if (count($ids) > 1) {
-                // list reindex (delete index record(s), save index record(s))
-                $reindexType = IndexingQueue::TYPE_REINDEX_LIST;
-            }
-
-            $this->queueHandler->add($ids, $reindexType, $storeId);
+        // @TODO - need to figure out with stores
+        $storeId = 1;
+        $specificStoreId = null;
+        // detect reindex action type
+        $reindexType = IndexingQueue::TYPE_REINDEX_ROW;
+        if (empty($ids)) {
+            // full reindex (clean index, save new index)
+            $reindexType = IndexingQueue::TYPE_REINDEX_FULL;
         }
+        if (count($ids) > 1) {
+            // list reindex (delete index record(s), save index record(s))
+            $reindexType = IndexingQueue::TYPE_REINDEX_LIST;
+        }
+
+        if ($reindexType == IndexingQueue::TYPE_REINDEX_ROW) {
+            // try to retrieve store id related to affected product
+            /** @var \Magento\Catalog\Model\Product $affectedProduct */
+            $affectedProduct = $this->productHelper->getProduct($ids);
+            $specificStoreId = $storeId;
+        }
+
+        if ($specificStoreId) {
+            $this->executeAction($ids, $reindexType, $specificStoreId);
+        } else {
+//            $storeIds = array_keys($this->storeManager->getStores());
+//            foreach ($storeIds as $storeId) {
+//                $this->executeAction($storeId, $ids, $reindexType);
+//            }
+            $this->executeAction($ids, $reindexType, $storeId);
+        }
+    }
+
+    /**
+     * @param $ids
+     * @param $reindexType
+     * @param $storeId
+     * @return bool
+     * @throws \Exception
+     */
+    private function executeAction($ids, $reindexType, $storeId)
+    {
+        // if run reindex via command line it will take all of the catalog product data and do reindex
+        // in our case full catalog synchronization will be only available manually from backend ()
+        // or via separate cli command - php bin/magento unbxd:product-feed:full (or incremental if it's related
+        // with separate products), so to prevent duplicate full catalog synchronization we just omit this operation.
+        // NOTE*: empty ids means that the full catalog product must be reindex.
+        if (empty($ids) && (php_sapi_name() === 'cli')) {
+            return true;
+        }
+
+        // check if in indexing queue enabled
+        if (!$this->helperData->isIndexingQueueEnabled($storeId)) {
+            try {
+                $this->logger->error('Indexing queue is disabled. START reindex.')->startTimer();
+                $index = $this->fullAction->rebuildProductStoreIndex($storeId, $ids);
+                $this->logger->info('END reindex. STATS:')->logStats();
+            } catch (\Exception $e) {
+                $this->logger->error('Indexing error.')->critical($e);
+                if (php_sapi_name() === 'cli') {
+                    $this->consoleOutput->writeln("<error>Indexing error: {$e->getMessage()}</error>");
+                }
+
+                return false;
+            }
+
+            $this->feedManager->execute($index);
+
+            return true;
+        }
+
+        $this->queueHandler->add($ids, $reindexType, $storeId);
+
+        return true;
     }
 
     /**

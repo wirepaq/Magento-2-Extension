@@ -62,7 +62,7 @@ class CacheManager
      * @param array $cacheTags
      * @param int $lifetime
      */
-    public function saveCache($cacheKey, $data, $cacheTags = [], $lifetime = self::DEFAULT_LIFETIME)
+    public function save($cacheKey, $data, $cacheTags = [], $lifetime = self::DEFAULT_LIFETIME)
     {
         $this->localCache[$cacheKey] = $data;
         if (!is_string($data)) {
@@ -78,7 +78,7 @@ class CacheManager
      * @param $cacheKey
      * @return mixed
      */
-    public function loadCache($cacheKey)
+    public function load($cacheKey)
     {
         if (!isset($this->localCache[$cacheKey])) {
             $data = $this->cache->load($cacheKey);
@@ -98,7 +98,7 @@ class CacheManager
      * @param $storeId
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function cleanCache($identifier, $storeId)
+    public function clean($identifier, $storeId)
     {
         $cacheTags = $this->getCacheTags($identifier, $storeId);
         $this->localCache = [];

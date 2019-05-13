@@ -1,0 +1,270 @@
+<?php
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+namespace Unbxd\ProductFeed\Model\Feed;
+
+use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Filesystem;
+use Magento\Framework\Filesystem\Directory\WriteInterface;
+
+/**
+ * Class FileManager
+ * @package Unbxd\ProductFeed\Model\Feed
+ */
+class FileManager
+{
+    /**
+     * Default file data
+     */
+    const DEFAULT_JSON_FILE_MIME_TYPE = 'application/json';
+
+    /**
+     * @var WriteInterface
+     */
+    private $dir;
+
+    /**
+     * @var string
+     */
+    private $subDir = 'unbxd';
+
+    /**
+     * @var array
+     */
+    private $defaultMimeTypes = [
+        self::DEFAULT_JSON_FILE_MIME_TYPE
+    ];
+
+    /**
+     * @var string
+     */
+    private $fileName = null;
+
+    /**
+     * @var string
+     */
+    private $contentFormat = null;
+
+    /**
+     * @var string
+     */
+    private $filePath = null;
+
+    /**
+     * @var array
+     */
+    private $allowedMimeTypes = [];
+
+    /**
+     * FileManager constructor.
+     * @param Filesystem $filesystem
+     * @param null $fileName
+     * @param null $contentFormat
+     * @param array $allowedMimeTypes
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function __construct(
+        Filesystem $filesystem,
+        $fileName = null,
+        $contentFormat = null,
+        array $allowedMimeTypes = []
+    ) {
+        $this->fileName = $fileName;
+        $this->contentFormat = $contentFormat;
+        $this->filePath = sprintf(
+            '%s%s%s.%s',
+            $this->subDir,
+            DIRECTORY_SEPARATOR,
+             $this->fileName,
+            $this->contentFormat
+            );
+        $this->allowedMimeTypes = array_unique(array_merge($this->defaultMimeTypes, array_values($allowedMimeTypes)));
+        $this->dir = $filesystem->getDirectoryWrite(DirectoryList::VAR_DIR);
+    }
+
+    /**
+     * @param $string
+     * @return $this
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function write($string)
+    {
+        $stream = $this->dir->openFile($this->getFilePath(), 'a');
+        $stream->lock();
+        $stream->write($string);
+        $stream->unlock();
+        $stream->close();
+
+        return $this;
+    }
+
+    /**
+     * @return Filesystem\File\WriteInterface
+     */
+    public function getFileStream()
+    {
+        return $this->dir->openFile($this->getFilePath(), 'r');
+    }
+
+    /**
+     * Check if log file exist
+     *
+     * @return bool
+     */
+    public function isExist()
+    {
+        return $this->dir->isExist($this->getFilePath());
+    }
+
+    /**
+     * Init file, if file not exist create new one with empty content
+     *
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    private function initFile()
+    {
+        if (!$this->isExist()) {
+            // just create file with empty content
+            $this->dir->writeFile($this->getFilePath(), '');
+        }
+    }
+
+    /**
+     * Retrieve file name
+     *
+     * @return string
+     */
+    public function getFileName()
+    {
+        return $this->fileName;
+    }
+
+    /**
+     * Retrieve file content format
+     *
+     * @return string
+     */
+    public function getContentFormat()
+    {
+        return $this->contentFormat;
+    }
+
+    /**
+     * Retrieve file sub path location
+     *
+     * @return string
+     */
+    private function getFilePath()
+    {
+        return $this->filePath;
+    }
+
+    /**
+     * Retrieve file location
+     *
+     * @return string
+     */
+    public function getFileLocation()
+    {
+        return $this->dir->getAbsolutePath($this->getFilePath());
+    }
+
+    /**
+     * Retrieve file content
+     *
+     * @return string
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function getFileContent()
+    {
+        $this->initFile();
+        return $this->dir->getDriver()->fileGetContents($this->getFileLocation());
+    }
+
+    /**
+     * Retrieve file size
+     *
+     * @return string
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function getFileSize()
+    {
+        $this->initFile();
+        $fileStat = $this->dir->stat($this->getFileLocation());
+        $size = isset($fileStat['size']) ? round($fileStat['size'], 2) : 0; // in bytes
+        return $size;
+    }
+
+    /**
+     * Flush file content
+     *
+     * @return void
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function flushFileContent()
+    {
+        $this->deleteFile();
+        $this->initFile();
+    }
+
+    /**
+     * Delete file content
+     *
+     * @return void
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function deleteFile()
+    {
+        $this->dir->getDriver()->deleteFile($this->getFileLocation());
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getMimeType()
+    {
+        $path = $this->getFileLocation();
+        $ext = substr($path, strrpos($path, '.') + 1);
+        $contentType = null;
+        if ($ext == $this->contentFormat) {
+            $contentType = self::DEFAULT_JSON_FILE_MIME_TYPE;
+        }
+
+        return $this->isMimeTypeValid($contentType) ? $contentType : null;
+    }
+
+    /**
+     * Check if given mime type is valid
+     *
+     * @param string $mimeType
+     * @return bool
+     */
+    private function isMimeTypeValid($mimeType)
+    {
+        return in_array($mimeType, $this->allowedMimeTypes);
+    }
+
+    /**
+     * Check if given filename is valid
+     *
+     * @param string $name
+     * @return bool
+     */
+    public function isFileNameValid($name)
+    {
+        // cannot contain \ / : * ? " < > |
+        if (!preg_match('/^[^\\/?*:";<>()|{}\\\\]+$/', $name)) {
+            return false;
+        }
+
+        return true;
+    }
+}

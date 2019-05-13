@@ -158,7 +158,7 @@ class IndexingQueueRepository implements IndexingQueueRepositoryInterface
         /** @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection $collection */
         $collection = $this->indexingQueueCollectionFactory->create();
 
-//        $this->collectionProcessor->process($criteria, $collection);
+        $this->collectionProcessor->process($criteria, $collection);
 
         /** @var Data\IndexingQueueSearchResultsInterface $searchResults */
         $searchResults = $this->searchResultsFactory->create();
@@ -208,9 +208,10 @@ class IndexingQueueRepository implements IndexingQueueRepositoryInterface
     private function getCollectionProcessor()
     {
         if (!$this->collectionProcessor) {
-            // @TODO - implement (version compatibility, etc...)
+            $this->collectionProcessor = \Magento\Framework\App\ObjectManager::getInstance()->get(
+                'Unbxd\ProductFeed\Model\Api\SearchCriteria\IndexingQueueCollectionProcessor'
+            );
         }
-
         return $this->collectionProcessor;
     }
 }

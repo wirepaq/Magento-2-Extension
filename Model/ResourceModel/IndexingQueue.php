@@ -176,16 +176,16 @@ class IndexingQueue extends AbstractDb
      */
     public function load(AbstractModel $object, $value, $field = null)
     {
-        $blockId = $this->getQueueId($object, $value, $field);
-        if ($blockId) {
-            $this->entityManager->load($object, $blockId);
+        $entityId = $this->getQueueId($object, $value, $field);
+        if ($entityId) {
+            $this->entityManager->load($object, $entityId);
         }
         return $this;
     }
 
     /**
      * @param AbstractModel $object
-     * @return $this
+     * @return $this|AbstractDb
      * @throws \Exception
      */
     public function save(AbstractModel $object)

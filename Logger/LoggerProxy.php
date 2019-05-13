@@ -96,7 +96,7 @@ class LoggerProxy implements LoggerInterface
      */
     public function create($type = 'default')
     {
-        if ($this->logger === null) {
+//        if ($this->logger === null) {
             switch ($this->loggerAlias) {
                 case self::LOGGER_ALIAS_FILE:
                     $this->logger = $this->fileFactory->create(
@@ -111,7 +111,7 @@ class LoggerProxy implements LoggerInterface
                     $this->logger = $this->fileFactory->create();
                     break;
             }
-        }
+//        }
 
         return $this->logger;
     }

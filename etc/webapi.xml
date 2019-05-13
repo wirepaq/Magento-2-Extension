@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+    <!-- Indexing Queue -->
+    <route url="/V1/unbxdIndexingQueue/:queueId" method="GET">
+        <service class="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdIndexingQueue/search" method="GET">
+        <service class="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxd-indexing-queue" method="POST">
+        <service class="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdIndexingQueue/:queueId" method="PUT">
+        <service class="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdIndexingQueue/:queueId" method="DELETE">
+        <service class="Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <!-- Feed View -->
+    <route url="/V1/unbxdFeedView/:feedViewId" method="GET">
+        <service class="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdFeedView/search" method="GET">
+        <service class="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdFeedView" method="POST">
+        <service class="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdFeedView/:feedViewId" method="PUT">
+        <service class="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/unbxdFeedView/:feedViewId" method="DELETE">
+        <service class="Unbxd\ProductFeed\Api\FeedViewRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+</routes>

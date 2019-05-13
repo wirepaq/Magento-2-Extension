@@ -59,6 +59,34 @@
                     color: green;
                 }
             }
+
+            .additional-information {
+                padding-bottom: 10px;
+                border-bottom: 1px solid #e3e3e3;
+
+                table {
+                    tr {
+                        th, td {
+                            vertical-align: middle;
+                            text-align: left;
+                            padding: .2rem .8rem;
+                        }
+
+                        td {
+                            border-left: 0.1rem dashed #d6d6d6;
+
+                            span[class*="grid-severity"] {
+                                min-width: 100px;
+                            }
+                        }
+                    }
+                }
+
+                a {
+                    display: block;
+                    margin-top: 10px;
+                }
+            }
         }
     }
 
@@ -172,6 +200,7 @@
 
         .log-content {
             width: 100%;
+            min-height: 100%;
             overflow: auto;
             margin: 0;
             padding: 5px;

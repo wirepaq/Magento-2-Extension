@@ -74,8 +74,7 @@ class AffectedEntities extends Column
     {
         if (isset($dataSource['data']['items'])) {
             foreach ($dataSource['data']['items'] as &$item) {
-                // @TODO - change key to 'affected_entities'
-                $item['data_for_processing'] = $this->decorateCell($item['data_for_processing']);
+                $item['affected_entities'] = $this->decorateCell($item['affected_entities']);
             }
         }
 

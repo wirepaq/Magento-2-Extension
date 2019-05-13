@@ -1,0 +1,16 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/**
+ * @var $block \Unbxd\ProductFeed\Block\Adminhtml\Indexing\Queue\Item\ViewDetails
+ */
+?>
+
+<?php
+    if ($grid = $block->getGridHtml()) {
+        echo $grid;
+    } else {
+        echo '<a href="' . $block->getCatalogUrl() .'" target="_blank">' . __($block->getLabel()) . '</a>';
+    }
+?>

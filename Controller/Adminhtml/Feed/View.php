@@ -32,7 +32,7 @@ class View extends ViewIndex
         $resultPage->setActiveMenu('Unbxd_ProductFeed::productfeed');
         $resultPage->addBreadcrumb(__('Product Feed'), __('Product Feed'));
         $resultPage->addBreadcrumb(__('Log View'), __('Log View'));
-        $resultPage->getConfig()->getTitle()->prepend(__('Unbxd | Product Feed Log View'));
+        $resultPage->getConfig()->getTitle()->prepend(__('Unbxd | Feed View'));
 
         return $resultPage;
     }

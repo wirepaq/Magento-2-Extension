@@ -191,7 +191,7 @@ class Handler extends \Magento\Framework\DataObject
         $model->setStoreId($storeId)
             ->setStatus(IndexingQueue::STATUS_PENDING)
             ->setExecutionTime(0)
-            ->setDataForProcessing($data)
+            ->setAffectedEntities($data)
             ->setNumberOfEntities($qty)
             ->setActionType($actionType);
 

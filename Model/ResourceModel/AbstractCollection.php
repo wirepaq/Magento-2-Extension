@@ -84,8 +84,8 @@ abstract class AbstractCollection extends \Magento\Framework\Model\ResourceModel
      * Add field filter to collection
      *
      * @param array|string $field
-     * @param string|int|array|null $condition
-     * @return $this
+     * @param null $condition
+     * @return \Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection|AbstractCollection
      */
     public function addFieldToFilter($field, $condition = null)
     {
@@ -126,7 +126,7 @@ abstract class AbstractCollection extends \Magento\Framework\Model\ResourceModel
             $store[] = Store::DEFAULT_STORE_ID;
         }
 
-        $this->addFilter('store', ['in' => $store], 'public');
+        $this->addFilter('store_id', ['in' => $store], 'public');
     }
 
     /**

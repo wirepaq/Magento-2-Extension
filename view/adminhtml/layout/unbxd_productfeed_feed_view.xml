@@ -16,7 +16,29 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
+            <block class="Unbxd\ProductFeed\Block\Adminhtml\LogViewer\Toolbar\FeedView" name="adminhtml.unbxd.productfeed.feedview.toolbar"/>
             <uiComponent name="unbxd_productfeed_feed_view_grid" />
+        </referenceContainer>
+        <referenceContainer name="before.body.end">
+            <block class="Unbxd\ProductFeed\Block\Adminhtml\LogViewer"
+                   name="adminhtml.unbxd.productfeed.logviewer.feedview.container"
+                   as="adminhtml.unbxd.productfeed.logviewer.feedview.container"
+                   template="Unbxd_ProductFeed::log-viewer.phtml"
+                   cacheable="false">
+                <arguments>
+                    <argument name="type" xsi:type="string">feed</argument>
+                    <argument name="jsLayout" xsi:type="array">
+                        <item name="components" xsi:type="array">
+                            <item name="unbxdProductFeedLogViewer" xsi:type="array">
+                                <item name="component" xsi:type="string">Unbxd_ProductFeed/js/view/log-viewer</item>
+                                <item name="children" xsi:type="array">
+                                    <!-- merge your components here -->
+                                </item>
+                            </item>
+                        </item>
+                    </argument>
+                </arguments>
+            </block>
         </referenceContainer>
     </body>
 </page>

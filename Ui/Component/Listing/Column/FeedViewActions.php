@@ -23,8 +23,8 @@ use Magento\Ui\Component\Listing\Columns\Column;
 class FeedViewActions extends Column
 {
     /** Url path */
-    const URL_PATH_VIEW = 'unbxd_productfeed/sync_view/view';
-    const URL_PATH_DELETE = 'unbxd_productfeed/sync_view/delete';
+    const URL_PATH_VIEW = 'unbxd_productfeed/feed_view/viewDetails';
+    const URL_PATH_DELETE = 'unbxd_productfeed/feed_view/delete';
 
     /**
      * @var \Magento\Framework\UrlInterface
@@ -77,17 +77,17 @@ class FeedViewActions extends Column
         if (isset($dataSource['data']['items'])) {
             foreach ($dataSource['data']['items'] as &$item) {
                 $name = $this->getData('name');
-                if (isset($item['id'])) {
+                if (isset($item['feed_id'])) {
                     $item[$name]['view'] = [
-                        'href' => $this->urlBuilder->getUrl($this->viewUrl, ['id' => $item['id']]),
+                        'href' => $this->urlBuilder->getUrl($this->viewUrl, ['id' => $item['feed_id']]),
                         'label' => __('View Details')
                     ];
                     $item[$name]['delete'] = [
-                        'href' => $this->urlBuilder->getUrl($this->deleteUrl, ['id' => $item['id']]),
+                        'href' => $this->urlBuilder->getUrl($this->deleteUrl, ['id' => $item['feed_id']]),
                         'label' => __('Delete'),
                         'confirm' => [
-                            'title' => __('Delete %1', $item['title']),
-                            'message' => __('Are you sure you want to delete a %1 record?', $item['title'])
+                            'title' => __('Delete %1', $item['feed_id']),
+                            'message' => __('Are you sure you want to delete a record #%1 ?', $item['feed_id'])
                         ]
                     ];
                 }

@@ -9,7 +9,7 @@
  * @email andyworkbase@gmail.com
  * @team MageCloud
  */
-namespace Magento\Catalog\Setup;
+namespace Unbxd\ProductFeed\Setup;
 
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
@@ -19,10 +19,21 @@ use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 
 /**
  * Class UpgradeData
- * @package Magento\Catalog\Setup
+ * @package Unbxd\ProductFeed\Setup
  */
 class UpgradeData implements UpgradeDataInterface
 {
+    /**
+     * Core config path/value pairs related to feed process
+     */
+    const FEED_PATH_FULL_STATE_FLAG = 'unbxd_catalog/feed/full_state_flag'; // is full catalog was sync or not
+    const FEED_PATH_INCREMENTAL_STATE_FLAG = 'unbxd_catalog/feed/incremental_state_flag'; // is separate product was sync or not
+    const FEED_PATH_FULL_LOCK_FLAG = 'unbxd_catalog/feed/full_lock_flag'; // flag to prevent duplicate full catalog sync process
+    const FEED_PATH_FULL_LOCK_TIME = 'unbxd_catalog/feed/full_lock_time'; // full catalog sync lock time
+    const FEED_PATH_LAST_OPERATION_TYPE = 'unbxd_catalog/feed/last_operation_type'; // full or incremental
+    const FEED_PATH_LAST_DATETIME = 'unbxd_catalog/feed/last_datetime'; // last sync datetime
+    const FEED_PATH_LAST_STATUS = 'unbxd_catalog/feed/last_status'; // last sync status
+
     /**
      * @var StoreManagerInterface
      */
@@ -34,16 +45,18 @@ class UpgradeData implements UpgradeDataInterface
     private $config;
 
     /**
-     * Default configuration data fields
+     * Default configuration core config data fields
      *
      * @var array
      */
     private $defaultConfigData = [
-        'unbxd_catalog/feed/full_state_flag' => 0,
-        'unbxd_catalog/feed/incremental_state_flag' => 0, // @TODO - not sure if this needed
-        'unbxd_catalog/feed/full_lock_flag' => 0,
-        'unbxd_catalog/feed/full_lock_time' => '',
-        'unbxd_catalog/feed/full_last_datetime' => '',
+        self::FEED_PATH_FULL_STATE_FLAG => 0,
+        self::FEED_PATH_INCREMENTAL_STATE_FLAG => 0,
+        self::FEED_PATH_FULL_STATE_FLAG => 0,
+        self::FEED_PATH_FULL_LOCK_TIME => 0,
+        self::FEED_PATH_LAST_OPERATION_TYPE => null,
+        self::FEED_PATH_LAST_DATETIME => null,
+        self::FEED_PATH_LAST_STATUS => null,
     ];
 
     /**
@@ -75,7 +88,23 @@ class UpgradeData implements UpgradeDataInterface
     {
         $setup->startSetup();
 
-        // @TODO - implement
+        $select = $setup->getConnection()->select()->from(
+            $setup->getTable('core_config_data'),
+            ['path']
+        )->where(
+            'path LIKE ?',
+            '%unbxd_catalog/feed/%'
+        );
+
+        $alreadyInserted = $setup->getConnection()->fetchAll($select);
+
+        foreach ($this->defaultConfigData as $path => $value) {
+            if (isset($alreadyInserted[$path])) {
+                continue;
+            }
+
+            $this->config->saveConfig($path, $value);
+        }
 
         $setup->endSetup();
     }

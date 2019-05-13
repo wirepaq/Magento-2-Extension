@@ -60,6 +60,18 @@ class DataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
         $this->collection = $indexingQueueCollectionFactory->create();
         $this->dataPersistor = $dataPersistor;
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
+        $this->meta = $this->prepareMeta($this->meta);
+    }
+
+    /**
+     * Prepares Meta
+     *
+     * @param array $meta
+     * @return array
+     */
+    public function prepareMeta(array $meta)
+    {
+        return $meta;
     }
 
     /**

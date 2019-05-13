@@ -16,7 +16,7 @@ use Magento\Framework\App\Helper\Context;
 use Magento\Catalog\Model\ResourceModel\Eav\AttributeFactory as EavAttributeFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
 use Magento\Eav\Model\Entity\Attribute\AttributeInterface;
-use Unbxd\ProductFeed\Model\Feed\Mapping\FieldInterface;
+use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 
 /**
  * Product feed attributes helper.
@@ -116,25 +116,40 @@ class AttributeHelper extends AbstractHelper
      */
     public function getFieldType(AttributeInterface $attribute)
     {
-        $type = FieldInterface::FIELD_TYPE_TEXT;
+        $type = FeedConfig::FIELD_TYPE_TEXT;
 
         if ($attribute->getSourceModel() == 'Magento\Eav\Model\Entity\Attribute\Source\Boolean') {
-            $type = FieldInterface::FIELD_TYPE_BOOL;
+            $type = FeedConfig::FIELD_TYPE_BOOL;
         } elseif ($attribute->getBackendType() == 'int') {
-            $type = FieldInterface::FIELD_TYPE_NUMBER;
-        } elseif ($attribute->getFrontendClass() == 'validate-digits') {
-            $type = FieldInterface::FIELD_TYPE_LONGTEXT;
-        } elseif ($attribute->getBackendType() == 'decimal' || $attribute->getFrontendClass() == 'validate-number') {
-            $type = FieldInterface::FIELD_TYPE_DECIMAL;
+            $type = FeedConfig::FIELD_TYPE_NUMBER;
+        } elseif ($attribute->getBackendType() == 'varchar') {
+            $type = FeedConfig::FIELD_TYPE_LONGTEXT;
+        } elseif (
+            $attribute->getBackendType() == 'decimal'
+            || $attribute->getFrontendClass() == 'validate-digits'
+            || $attribute->getFrontendClass() == 'validate-number'
+        ) {
+            $type = FeedConfig::FIELD_TYPE_DECIMAL;
         } elseif ($attribute->getBackendType() == 'datetime') {
-            $type = FieldInterface::FIELD_TYPE_DATE;
+            $type = FeedConfig::FIELD_TYPE_DATE;
         } elseif ($attribute->usesSource()) {
             $type = $attribute->getSourceModel()
-                ? FieldInterface::FIELD_TYPE_LONGTEXT
-                : FieldInterface::FIELD_TYPE_DECIMAL;
+                ? FeedConfig::FIELD_TYPE_NUMBER
+                : FeedConfig::FIELD_TYPE_DECIMAL;
         }
 
         return $type;
+    }
+
+    /**
+     * Check if field is multivalued.
+     *
+     * @param AttributeInterface $attribute Product attribute.
+     * @return bool
+     */
+    public function isFieldMultivalued(AttributeInterface $attribute)
+    {
+        return (bool) ($attribute->getBackendType() == 'varchar') && ($attribute->getFrontendInput() == 'multiselect');
     }
 
     /**
@@ -179,7 +194,7 @@ class AttributeHelper extends AbstractHelper
         if ($attribute->usesSource()) {
             $optionTextFieldName = $this->getOptionTextFieldName($attributeCode);
             $optionTextValues = $this->getIndexOptionsText($attribute, $storeId, $value);
-            // filter empty values. Not using array_filter here because it could remove "0" string from values.
+            // filter empty values, not using array_filter here because it could remove "0" string from values.
             $optionTextValues = array_diff(array_map('trim', $optionTextValues), ['', null, false]);
             $optionTextValues = array_values($optionTextValues);
             $values[$optionTextFieldName] = $optionTextValues;
@@ -246,7 +261,7 @@ class AttributeHelper extends AbstractHelper
 
         if (!isset($this->attributeOptionTextCache[$storeId][$attributeId][$optionId])) {
             $optionValue = $attribute->getSource()->getIndexOptionText($optionId);
-            if ($this->getFieldType($attribute) == FieldInterface::FIELD_TYPE_BOOL) {
+            if ($this->getFieldType($attribute) == FeedConfig::FIELD_TYPE_BOOL) {
                 $optionValue = $attribute->getStoreLabel($storeId);
             }
             $this->attributeOptionTextCache[$storeId][$attributeId][$optionId] = $optionValue;
@@ -281,7 +296,7 @@ class AttributeHelper extends AbstractHelper
      */
     private function prepareSimpleIndexAttributeValue(AttributeInterface $attribute, $value)
     {
-        if ($this->getFieldType($attribute) == FieldInterface::FIELD_TYPE_BOOL) {
+        if ($this->getFieldType($attribute) == FeedConfig::FIELD_TYPE_BOOL) {
             $value = boolval($value);
         } elseif ($attribute->getBackendType() == 'decimal') {
             $value = floatval($value);

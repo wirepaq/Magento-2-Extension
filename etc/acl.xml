@@ -18,6 +18,7 @@
         <resources>
             <resource id="Magento_Backend::admin">
                 <resource id="Magento_Backend::system">
+                    <resource id="Unbxd_ProductFeed::indexing_queue" title="Unbxd ProductFeed Indexing Queue" translate="title" />
                     <resource id="Unbxd_ProductFeed::productfeed" title="Unbxd ProductFeed" translate="title" />
                 </resource>
             </resource>

@@ -7,26 +7,57 @@
 <div class="unbxd-system-config-information-container catalog">
     <div class="block notification">
         <?php
-        $stateClassName = !$block->isCatalogSynchronized() ? 'warning' : 'success';
-        $message = !$block->isCatalogSynchronized()
-            ? __('Product catalog is not synchronized yet.')
-            : __('Product catalog is synchronized successfully.')
+        $isSynchronized = $block->isSynchronized();
+        $isSuccess = $block->getIsSuccess();
+        $stateClassName = $isSuccess ? 'success' : 'warning';
+        $message = $isSuccess
+            ? __('Product catalog is synchronized.')
+            : __('Product catalog is not synchronized.')
         ?>
-        <div class="messages">
-            <div class="message message-<?php echo $stateClassName ?>">
-                <?= /* @escapeNotVerified */ $message ?>
-                <?php if ($dateTime = $block->getLastCatalogSyncDatetime()): ?>
-                    <?= /* @escapeNotVerified */ __('Last synchronization - %1', $dateTime) ?>
-                    <!-- @TODO link to grid layout -->
+        <div class="messages-container">
+            <div class="messages">
+                <div class="message message-<?php echo $stateClassName ?>">
+                    <?= /* @escapeNotVerified */ $message ?>
+                </div>
+                <?php if ($isSynchronized): ?>
+                    <div class="additional-information">
+                        <p><?= /* @escapeNotVerified */ __('Last synchronization information:') ?></p>
+                        <table>
+                            <tbody>
+                                <?php if ($type = $block->getLastSynchronizationOperationType()): ?>
+                                    <tr>
+                                        <th><?= /* @escapeNotVerified */ __('Synchronization type') ?></th>
+                                        <td><?= /* @escapeNotVerified */ __($type) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php if ($dateTime = $block->getLastCatalogSyncDatetime()): ?>
+                                    <tr>
+                                        <th><?= /* @escapeNotVerified */ __('Datetime') ?></th>
+                                        <td><?= /* @escapeNotVerified */ __($dateTime) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                                <?php if ($status = $block->getLastSynchronizationStatusHtml()): ?>
+                                    <tr>
+                                        <th><?= /* @escapeNotVerified */ __('Status') ?></th>
+                                        <td><?= /* @escapeNotVerified */ __($status) ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                        <a href="<?php echo $this->getUrl('unbxd_productfeed/feed/view')?>">
+                            <?= /* @escapeNotVerified */ __('View details') ?>
+                        </a>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
     <div class="block content">
-        <p><?= /* @escapeNotVerified */ __('Possibility of product catalog synchronization:') ?></p>
+        <p><?= /* @escapeNotVerified */ __('Manual product catalog synchronization:') ?></p>
         <ul>
-            <li><a href="#unbxd_catalog_actions-head"><?= /* @escapeNotVerified */ __('manually') ?></a></li>
-            <li><?= /* @escapeNotVerified */ __('by configuration related <a href="#unbxd_catalog_cron-head">cron job</a>') ?></li>
+            <li><a href="#unbxd_catalog_actions-head">
+                    <?= /* @escapeNotVerified */ __('by actions below (see Manual Synchronization section)') ?></a>
+            </li>
             <li><?= /* @escapeNotVerified */ __('by cli commands: %1',
                     '<br/><code>php bin/magento unbxd:product-feed:full</code><br/>
                     <code>php bin/magento unbxd:product-feed:incremental</code>') ?></li>

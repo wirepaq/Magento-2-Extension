@@ -13,10 +13,10 @@ namespace Unbxd\ProductFeed\Model\ResourceModel\FeedView\Grid;
 
 use Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult;
 use Magento\Customer\Ui\Component\DataProvider\Document;
-use Magento\Framework\Data\Collection\Db\FetchStrategyInterface as FetchStrategy;
 use Magento\Framework\Data\Collection\EntityFactoryInterface as EntityFactory;
-use Magento\Framework\Event\ManagerInterface as EventManager;
 use Psr\Log\LoggerInterface as Logger;
+use Magento\Framework\Data\Collection\Db\FetchStrategyInterface as FetchStrategy;
+use Magento\Framework\Event\ManagerInterface as EventManager;
 
 /**
  * Class Collection
@@ -36,13 +36,13 @@ class Collection extends SearchResult
 
     /**
      * Collection constructor.
-     *
      * @param EntityFactory $entityFactory
      * @param Logger $logger
      * @param FetchStrategy $fetchStrategy
      * @param EventManager $eventManager
-     * @param string $mainTable
-     * @param string $resourceModel
+     * @param $mainTable
+     * @param $resourceModel
+     * @param \Magento\Framework\Stdlib\DateTime\DateTime $date
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function __construct(

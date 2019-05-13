@@ -63,19 +63,36 @@ class Price implements DataSourceProviderInterface
             $price = $priceReader->getPrice($priceDataRow);
             $originalPrice = $priceReader->getOriginalPrice($priceDataRow);
             $specialPrice = $priceReader->getSpecialPrice($priceDataRow);
+            $ifSpecialPriceNeedInclude = (bool) ($specialPrice && ($price != $specialPrice));
 
-            $indexData[$productId]['prices'] = [
-                'price' => $price,
-                'original_price' => $originalPrice,
-                'special_price' => $specialPrice,
-                'is_discount' => $price < $originalPrice
-            ];
+            $indexData[$productId]['price'] = $price;
+            $indexData[$productId]['original_price'] = $originalPrice;
+            if ($ifSpecialPriceNeedInclude) {
+                $indexData[$productId]['special_price'] = $specialPrice;
+                $indexData[$productId]['is_discount'] = (bool) ($price < $originalPrice);
+            }
 
             if (!isset($indexData[$productId]['indexed_attributes'])) {
                 $indexData[$productId]['indexed_attributes'] = ['price'];
-            } else if (!in_array('price', $indexData[$productId]['indexed_attributes'])) {
-                // add price only one time.
+                $indexData[$productId]['indexed_attributes'] = ['original_price'];
+                if ($ifSpecialPriceNeedInclude) {
+                    $indexData[$productId]['indexed_attributes'] = ['special_price'];
+                    $indexData[$productId]['indexed_attributes'] = ['is_discount'];
+                }
+            }
+            if (!in_array('price', $indexData[$productId]['indexed_attributes'])) {
                 $indexData[$productId]['indexed_attributes'][] = 'price';
+            }
+            if (!in_array('original_price', $indexData[$productId]['indexed_attributes'])) {
+                $indexData[$productId]['indexed_attributes'][] = 'original_price';
+            }
+            if ($ifSpecialPriceNeedInclude) {
+                if (!in_array('special_price', $indexData[$productId]['indexed_attributes'])) {
+                    $indexData[$productId]['indexed_attributes'][] = 'special_price';
+                }
+                if (!in_array('is_discount', $indexData[$productId]['indexed_attributes'])) {
+                    $indexData[$productId]['indexed_attributes'][] = 'is_discount';
+                }
             }
         }
 

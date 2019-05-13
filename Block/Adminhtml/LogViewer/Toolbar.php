@@ -15,7 +15,7 @@ namespace Unbxd\ProductFeed\Block\Adminhtml\LogViewer;
  * Class Toolbar
  * @package Unbxd\ProductFeed\Block\Adminhtml\LogViewer
  */
-class Toolbar extends \Magento\Backend\Block\Widget\Container
+abstract class Toolbar extends \Magento\Backend\Block\Widget\Container
 {
     /**
      * @param \Magento\Backend\Block\Widget\Context $context
@@ -33,33 +33,20 @@ class Toolbar extends \Magento\Backend\Block\Widget\Container
      */
     protected function _prepareLayout()
     {
-        $this->addButtons();
+        $this->addButtonData();
         return parent::_prepareLayout();
     }
 
     /**
-     * Add button to manage Cloudways service
-     *
-     * @param $label
+     * @return mixed
      */
-    private function addButtons()
-    {
-        $message = __('Are you sure do you want to clear indexing queue?');
-        $this->buttonList->add(
-            'clear',
-            [
-                'label' => __('Clear Queue'),
-                'class' => 'primary',
-                'onclick' => "confirmSetLocation('{$message}', '{$this->getActionUrl()}')",
-            ]
-        );
-    }
+    abstract protected function addButtonData();
 
     /**
      * @return string
      */
-    public function getActionUrl()
+    public function getActionUrl($path)
     {
-        return $this->getUrl('*/indexing_queue/deleteAll');
+        return $this->getUrl($path);
     }
 }

@@ -41,6 +41,12 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     const TYPE_REINDEX_FULL = 3; // full catalog
     /**#@-*/
 
+    /**#@+
+     * Label for full catalog reindex
+     */
+    const REINDEX_FULL_LABEL = 'Full Catalog Products';
+    /**#@-*/
+
     /**
      * @return void
      */
@@ -150,13 +156,13 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     }
 
     /**
-     * Retrieve data for processing
+     * Retrieve affected entities
      *
      * @return string
      */
-    public function getDataForProcessing()
+    public function getAffectedEntities()
     {
-        return $this->getData(self::DATA_FOR_PROCESSING);
+        return $this->getData(self::AFFECTED_ENTITIES);
     }
 
     /**
@@ -182,7 +188,7 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     /**
      * Retrieve status
      *
-     * @return string
+     * @return int
      */
     public function getStatus()
     {
@@ -197,6 +203,16 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     public function getAdditionalInformation()
     {
         return $this->getData(self::ADDITIONAL_INFORMATION);
+    }
+
+    /**
+     * Retrieve system information
+     *
+     * @return string
+     */
+    public function getSystemInformation()
+    {
+        return $this->getData(self::SYSTEM_INFORMATION);
     }
 
     /**
@@ -277,14 +293,14 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     }
 
     /**
-     * Set data for processing
+     * Set data for affected entities
      *
      * @param string $data
      * @return IndexingQueueInterface
      */
-    public function setDataForProcessing($data)
+    public function setAffectedEntities($data)
     {
-        return $this->setData(self::DATA_FOR_PROCESSING, $data);
+        return $this->setData(self::AFFECTED_ENTITIES, $data);
     }
 
     /**
@@ -312,7 +328,7 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     /**
      * Set status
      *
-     * @param string $status
+     * @param int $status
      * @return IndexingQueueInterface
      */
     public function setStatus($status)
@@ -329,5 +345,16 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     public function setAdditionalInformation($additionalInformation)
     {
         return $this->setData(self::ADDITIONAL_INFORMATION, $additionalInformation);
+    }
+
+    /**
+     * Set system information
+     *
+     * @param string $systemInformation
+     * @return IndexingQueueInterface
+     */
+    public function setSystemInformation($systemInformation)
+    {
+        return $this->setData(self::SYSTEM_INFORMATION, $systemInformation);
     }
 }

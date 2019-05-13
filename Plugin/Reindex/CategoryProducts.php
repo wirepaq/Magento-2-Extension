@@ -14,9 +14,9 @@ namespace Unbxd\ProductFeed\Plugin\Reindex;
 use Magento\Framework\Indexer\IndexerRegistry;
 use Unbxd\ProductFeed\Model\Indexer\Product as UnbxdProductIndexer;
 use Unbxd\ProductFeed\Model\IndexingQueue\Handler;
-use Magento\CatalogInventory\Api\Data\StockItemInterface;
 use Magento\Catalog\Model\ResourceModel\Category as CategoryResourceModel;
 use Magento\Framework\Model\AbstractModel;
+use Unbxd\ProductFeed\Helper\ProductHelper;
 
 /**
  * Class provides plugins to force reindex products after related category action processing
@@ -32,6 +32,11 @@ class CategoryProducts
     private $indexerRegistry;
 
     /**
+     * @var ProductHelper
+     */
+    private $productHelper;
+
+    /**
      * Indexer instance
      *
      * @var object
@@ -39,16 +44,19 @@ class CategoryProducts
     private $indexer = null;
 
     /**
-     * ProductReindexObserver constructor.
+     * CategoryProducts constructor.
      * @param IndexerRegistry $indexerRegistry
+     * @param ProductHelper $productHelper
      */
     public function __construct(
-        IndexerRegistry $indexerRegistry
+        IndexerRegistry $indexerRegistry,
+        ProductHelper $productHelper
     ) {
         $this->indexerRegistry = $indexerRegistry;
         if (!$this->indexer) {
             $this->indexer = $indexerRegistry->get(UnbxdProductIndexer::INDEXER_ID);
         }
+        $this->productHelper = $productHelper;
     }
 
     /**
@@ -66,11 +74,19 @@ class CategoryProducts
             if (!$this->indexer->isScheduled()) {
                 /** @var \Magento\Catalog\Model\Category $category */
                 $productIds = array_unique($category->getAffectedProductIds());
+                $validProductIds = [];
                 foreach ($productIds as $id) {
-                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    /** @var \Magento\Catalog\Model\Product $product */
+                    $product = $this->productHelper->getProduct($id);
+                    if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
+                        $validProductIds[] = $id;
+                        Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    }
                 }
-                // if indexer is 'Update on save' mode we need to rebuild related index data
-                $this->indexer->reindexList($productIds);
+                if (!empty($validProductIds)) {
+                    // if indexer is 'Update on save' mode we need to rebuild related index data
+                    $this->indexer->reindexList($validProductIds);
+                }
             }
         });
 
@@ -92,11 +108,19 @@ class CategoryProducts
             if (!$this->indexer->isScheduled()) {
                 /** @var \Magento\Catalog\Model\Category $category */
                 $productIds = array_unique($category->getAffectedProductIds());
+                $validProductIds = [];
                 foreach ($productIds as $id) {
-                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    /** @var \Magento\Catalog\Model\Product $product */
+                    $product = $this->productHelper->getProduct($id);
+                    if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
+                        Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                        $validProductIds[] = $id;
+                    }
                 }
-                // if indexer is 'Update on save' mode we need to rebuild related index data
-                $this->indexer->reindexList($productIds);
+                if (!empty($validProductIds)) {
+                    // if indexer is 'Update on save' mode we need to rebuild related index data
+                    $this->indexer->reindexList($validProductIds);
+                }
             }
         });
 

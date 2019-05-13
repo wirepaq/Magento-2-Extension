@@ -36,6 +36,11 @@ class IncrementalSync extends AbstractButton
             'id' => 'unbxd_incremental_sync',
             'label' => __('Synchronize')
         ];
+
+        if ($this->feedHelper->isFullCatalogSynchronized()) {
+            $this->isDisabled = false;
+        }
+
         if ($this->isDisabled) {
             $buttonData['disabled'] = 'disabled';
         }
