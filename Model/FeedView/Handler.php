@@ -171,10 +171,10 @@ class Handler extends \Magento\Framework\DataObject
     public function add($entityIds, $operationTypes, $storeId = '', $arguments = [])
     {
         if (empty($entityIds)) {
-            $data = FeedView::FEED_FULL_LABEL;
+            $affectedEntities = FeedView::FEED_FULL_LABEL;
             $qty = count($this->productHelper->getAllProductsIds());
         } else {
-            $data = (array) $this->convertIdsToString($entityIds);
+            $affectedEntities = (string) $this->convertIdsToString($entityIds);
             $qty = count($entityIds);
         }
 
@@ -189,7 +189,7 @@ class Handler extends \Magento\Framework\DataObject
         $model->setStoreId($storeId)
             ->setStatus(FeedView::STATUS_RUNNING)
             ->setExecutionTime(0)
-            ->setAffectedEntities($data)
+            ->setAffectedEntities($affectedEntities)
             ->setNumberOfEntities($qty)
             ->setOperationTypes($operationTypes);
 

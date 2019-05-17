@@ -65,10 +65,9 @@
                     <source_model>Unbxd\ProductFeed\Model\Config\Source\ProductTypes</source_model>
                     <comment><![CDATA[]]></comment>
                 </field>
-                <field id="special_attributes" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="1">
+                <field id="filter_attributes" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="1">
                     <label>Exclude Product(s) From Synchronization</label>
-                    <backend_model>Unbxd\ProductFeed\Model\Config\Backend\SpecialAttributes</backend_model>
-                    <source_model>Unbxd\ProductFeed\Model\Config\Source\SpecialAttributes</source_model>
+                    <source_model>Unbxd\ProductFeed\Model\Config\Source\FilterAttribute</source_model>
                     <comment><![CDATA[Exclude products from synchronization in specific state:
                     out of stock, disabled, not visible individually, with no image, etc.<br/>
                     Don't choose any one if you want all products to be synchronized.]]></comment>

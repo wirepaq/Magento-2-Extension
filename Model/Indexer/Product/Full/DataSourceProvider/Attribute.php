@@ -66,7 +66,6 @@ class Attribute extends AbstractAttribute implements DataSourceProviderInterface
         }
 
         $indexData = $this->filterCompositeProducts($indexData);
-
         $indexData = $this->addIndexedFields($indexData);
 
         return $indexData;
@@ -75,22 +74,18 @@ class Attribute extends AbstractAttribute implements DataSourceProviderInterface
     /**
      * @param $indexData
      * @return mixed
-     * @throws \Exception
      */
     private function addIndexedFields($indexData)
     {
         // add fields for schema
         $allAttributeFields = $this->getFields();
         $indexedAttributeFields = $this->getIndexedFields();
-        $defaultAttributeFields = $this->loadDefaultAttributeFields();
-        if (
-            !isset($indexData['fields'])
-            && !empty($allAttributeFields)
-            && !empty($indexedAttributeFields)
-            && !empty($defaultAttributeFields)
-        ) {
-            $mergedIndexedAttributes = array_merge_recursive($indexedAttributeFields, $defaultAttributeFields);
-            $indexData['fields'] = array_values(array_intersect_key($allAttributeFields, $mergedIndexedAttributes));
+        if (!empty($allAttributeFields) && !empty($indexedAttributeFields)) {
+            $fields = array_key_exists('fields', $indexData) ? $indexData['fields'] : [];
+            $indexData['fields'] = array_merge(
+                $fields,
+                array_intersect_key($allAttributeFields, $indexedAttributeFields)
+            );
         }
 
         return $indexData;
@@ -124,7 +119,7 @@ class Attribute extends AbstractAttribute implements DataSourceProviderInterface
                 }
                 $indexData[$productId]['indexed_attributes'][] = $attribute->getAttributeCode();
 
-                if (!array_key_exists($attribute->getAttributeCode(), $this->indexedFields)) {
+                if (!array_key_exists($attribute->getAttributeCode(), $this->indexedFields) && !empty($indexValues)) {
                     $this->indexedFields[$attribute->getAttributeCode()] = null;
                 }
             }

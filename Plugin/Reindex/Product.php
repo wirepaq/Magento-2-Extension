@@ -85,26 +85,6 @@ class Product
             }
         });
 
-//        if ($product->hasDataChanges()) {
-//            $diff = $this->compareArrayAssocRecursive2($product);
-
-//            $newValues = $this->compareArrayAssocRecursive($product->getData(), $product->getOrigData());
-//            $oldValues = $this->compareArrayAssocRecursive($product->getOrigData(), $product->getData());
-
-//            $newValues = array_diff_assoc($product->getData(), $product->getOrigData());
-//            $oldValues = array_diff_assoc($product->getOrigData(), $product->getData());
-//            $added     = array_diff_key($product->getData(), $product->getOrigData());
-//            $unset     = array_diff_key($product->getOrigData(), $product->getData());
-
-//            $attributes = $this->getAttributes($product);
-//            $diff = array_diff_key($attributes, $product->getData());
-
-//            $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
-//            $logger = new \Zend\Log\Logger();
-//            $logger->addWriter($writer);
-//            $logger->info(json_encode($diff, JSON_PRETTY_PRINT));
-//        }
-
         return $proceed($product);
     }
 
@@ -134,66 +114,5 @@ class Product
         });
 
         return $proceed($product);
-    }
-
-    public function compareArrayAssocRecursive2($product)
-    {
-        $diff = [];
-        $attributes = $product->getTypeInstance(true)->getEditableAttributes($product);
-
-        foreach ($product->getOrigData() as $key => $value) {
-            if ($product->dataHasChangedFor($key)) {
-                $diff[$key] = $product->getData($key);
-            }
-        }
-
-        return $diff;
-    }
-
-
-    public function compareArrayAssocRecursive($array1, $array2)
-    {
-        $diff = array();
-        foreach ($array1 as $key => $value) {
-            if (is_array($value)) {
-                if (!isset($array2[$key]) || !is_array($array2[$key])) {
-                    $diff[$key] = $value;
-                } else {
-                    $newDiff = $this->compareArrayAssocRecursive($value, $array2[$key]);
-                    if (!empty($newDiff)) {
-                        $diff[$key] = $newDiff;
-                    }
-                }
-            } elseif (!array_key_exists($key,$array2) || $array2[$key] !== $value) {
-                $diff[$key] = $value;
-            }
-        }
-
-        return $diff;
-    }
-
-    /**
-     * Retrieve product attributes
-     * if $groupId is null - retrieve all product attributes
-     *
-     * @param int  $groupId   Retrieve attributes of the specified group
-     * @return \Magento\Eav\Model\Entity\Attribute\AbstractAttribute[]
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function getAttributes($product, $groupId = null)
-    {
-        $productAttributes = $product->getTypeInstance()->getSetAttributes($product);
-        if ($groupId) {
-            $attributes = [];
-            foreach ($productAttributes as $attribute) {
-                if ($attribute->isInGroup($product->getAttributeSetId(), $groupId)) {
-                    $attributes[] = $attribute;
-                }
-            }
-        } else {
-            $attributes = $productAttributes;
-        }
-
-        return $attributes;
     }
 }

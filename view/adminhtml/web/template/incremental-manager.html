@@ -1,0 +1,46 @@
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<div class="incremental-modal" data-bind="afterRender: setModalElement, blockLoader: isLoading">
+    <div class="options">
+        <div class="messages">
+            <div class="message message-warning">
+                <!-- ko text: 'Please provide at least one product ID to perform this operation.' --><!-- /ko -->
+            </div>
+        </div>
+        <p class="note"><strong><!-- ko text: 'NOTE: ' --><!-- /ko --></strong>
+            <!-- ko text: 'It is recommended to use no more than 10 products at once' --><!-- /ko --></p>
+        <form class="form incremental-sync-form"
+              method="post"
+              data-bind="event: {submit: synchronize}"
+              id="incremental-sync-form">
+            <div class="fieldset" data-bind="attr: {'data-hasrequired': $t('* Required Fields')}">
+                <div class="field textarea required">
+                    <label class="label" for="product_ids">
+                        <span data-bind="i18n: 'Product IDs'"></span>
+                    </label>
+                    <div class="control">
+                        <textarea name="product-ids"
+                              id="product_ids"
+                              class="product-ids"
+                              ko-value="_productIds"
+                              data-bind="attr: {autocomplete: false}"
+                              data-validate="{required: true}"></textarea>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <p class="note"><!-- ko text: 'comma-separated product IDs' --><!-- /ko --></p>
+    </div>
+</div>

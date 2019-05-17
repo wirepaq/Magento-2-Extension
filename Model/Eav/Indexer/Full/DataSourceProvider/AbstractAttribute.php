@@ -14,7 +14,6 @@ namespace Unbxd\ProductFeed\Model\Eav\Indexer\Full\DataSourceProvider;
 use Magento\Eav\Model\Entity\Attribute\AttributeInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider\AbstractAttribute as ResourceModel;
 use Unbxd\ProductFeed\Helper\AttributeHelper as AttributeHelper;
-use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 
 /**
  * Class AbstractAttribute
@@ -23,7 +22,14 @@ use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 abstract class AbstractAttribute
 {
     /**
-     * Local cache for attributes
+     * Local cache for attributes by code
+     *
+     * @var array
+     */
+    protected $attributesByCode = [];
+
+    /**
+     * Local cache for attributes by ID
      *
      * @var array
      */
@@ -74,6 +80,7 @@ abstract class AbstractAttribute
      * @param ResourceModel $resourceModel
      * @param AttributeHelper $attributeHelper
      * @param array $indexedBackendModels
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function __construct(
         ResourceModel $resourceModel,
@@ -88,6 +95,7 @@ abstract class AbstractAttribute
             $this->indexedBackendModels = array_merge($indexedBackendModels, $this->indexedBackendModels);
         }
 
+        $this->initDefaultAttributes();
         $this->initAttributes();
     }
 
@@ -137,6 +145,46 @@ abstract class AbstractAttribute
     }
 
     /**
+     * Init default attributes.
+     *
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    private function initDefaultAttributes()
+    {
+        $attributesCodes = $this->loadDefaultAttributeFields();
+        if (!empty($attributesCodes)) {
+            // merge with store/website related fields
+            $attributesCodes = array_merge_recursive(array_flip($attributesCodes), ['store_id', 'website_id']);
+            foreach ($attributesCodes as $attributeCode) {
+                $attribute = $this->attributeHelper->initAttributeByCode($attributeCode);
+                if ($attributeId = $attribute->getId()) {
+                    $this->attributesByCode[$attributeCode] = $attribute;
+                    // collect attributes fields (use in feed operation)
+                    $this->initFields($attribute);
+                }
+                // add default attributes to indexed fields
+                if (!array_key_exists($attributeCode, $this->indexedFields)) {
+                    // collect attributes fields (use in feed operation)
+                    $this->indexedFields[$attributeCode] = null;
+                }
+            }
+            // try detect fields which are not like attribute and collect theirs options
+            $diffAttributes = array_diff_key(array_flip($attributesCodes), $this->attributesByCode);
+            if (!empty($diffAttributes)) {
+                foreach ($diffAttributes as $fieldName => $value) {
+                    if (!array_key_exists($fieldName, $this->fields)) {
+                        // collect attributes fields (use in feed operation)
+                        $this->fields[$fieldName] = $this->attributeHelper->getSpecificFieldOptions($fieldName);
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Init attributes.
      *
      * @return $this
@@ -149,7 +197,7 @@ abstract class AbstractAttribute
                 $attributeId = (int) $attribute->getId();
                 $this->attributesById[$attributeId] = $attribute;
                 $this->attributeIdsByTable[$attribute->getBackendTable()][] = $attributeId;
-                // collect attributes fields, maybe useful in feed operation
+                // collect attributes fields (use in feed operation)
                 $this->initFields($attribute);
             }
         }
@@ -182,28 +230,9 @@ abstract class AbstractAttribute
     private function initFields(AttributeInterface $attribute)
     {
         $fieldName = $attribute->getAttributeCode();
-        $fieldConfig = $this->attributeHelper->getMappingFieldOptions($attribute);
-        $isFieldMultivalued = $this->attributeHelper->isFieldMultivalued($attribute);
-
-        if ($attribute->usesSource()) {
-            $optionFieldName = $this->attributeHelper->getOptionTextFieldName($fieldName);
-            $fieldType = FeedConfig::FIELD_TYPE_TEXT;
-            $fieldOptions = [
-                'fieldName' => (string) $fieldName,
-                'dataType' => (string) $fieldType,
-                'multiValued' => (boolean) $isFieldMultivalued,
-            ];
-            $this->fields[$optionFieldName] = $fieldOptions;
+        if (!array_key_exists($fieldName, $this->fields)) {
+            $this->fields[$fieldName] = $this->attributeHelper->getFieldOptions($attribute);
         }
-
-        $fieldType = $this->attributeHelper->getFieldType($attribute);
-        $fieldOptions = [
-            'fieldName' => (string) $fieldName,
-            'dataType' => (string) $fieldType,
-            'multiValued' => (boolean) $isFieldMultivalued,
-        ];
-
-        $this->fields[$fieldName] = $fieldOptions;
 
         return $this;
     }

@@ -19,6 +19,7 @@ use Magento\Catalog\Model\Product\Media\Config as MediaConfig;
  * Data source used to append image data to product during indexing.
  *
  * Class Image
+ * @deprecated
  * @package Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider
  */
 class Image implements DataSourceProviderInterface

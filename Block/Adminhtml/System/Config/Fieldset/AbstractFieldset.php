@@ -112,6 +112,22 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     }
 
     /**
+     * @return string
+     */
+    public function getLastUploadId()
+    {
+        return $this->feedHelper->getLastUploadId();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSynchronizationAttempt()
+    {
+        return (bool) ($this->getLastUploadId());
+    }
+
+    /**
      * @return bool
      */
     public function isFullCatalogSynchronized()
@@ -133,7 +149,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     public function getLastCatalogSyncDatetime()
     {
         $date = $this->feedHelper->getLastSynchronizationDatetime();
-        if (!$this->isSynchronized() || !$date) {
+        if (!$this->isSynchronizationAttempt() || !$date) {
             return null;
         }
 
@@ -146,7 +162,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     public function getLastSynchronizationOperationType()
     {
         $type = $this->feedHelper->getLastSynchronizationOperationType();
-        if (!$this->isSynchronized() || !$type) {
+        if (!$this->isSynchronizationAttempt() || !$type) {
             return null;
         }
 
@@ -156,23 +172,16 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     /**
      * @return bool
      */
-    public function isSynchronized()
-    {
-        return (bool) ($this->isFullCatalogSynchronized() || $this->isIncrementalProductSynchronized());
-    }
-
-    /**
-     * @return bool
-     */
     public function getIsSuccess()
     {
-        return (bool) (($this->getStatus() == FeedView::STATUS_COMPLETE) && $this->isSynchronized());
+        return (bool) (($this->getLastSynchronizationStatus() == FeedView::STATUS_COMPLETE)
+            && $this->isSynchronizationAttempt());
     }
 
     /**
      * @return bool
      */
-    public function getStatus()
+    public function getLastSynchronizationStatus()
     {
         return (int) $this->feedHelper->getLastSynchronizationStatus();
     }
@@ -182,8 +191,8 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      */
     public function getLastSynchronizationStatusHtml()
     {
-        $status = $this->getStatus();
-        if (!$this->isSynchronized() || !$status) {
+        $status = $this->getLastSynchronizationStatus();
+        if (!$this->isSynchronizationAttempt() || !$status) {
             return null;
         }
 

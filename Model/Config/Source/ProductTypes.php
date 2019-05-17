@@ -20,6 +20,11 @@ use Magento\Framework\Option\ArrayInterface;
 class ProductTypes implements ArrayInterface
 {
     /**
+     * Constant for all supported product types
+     */
+    const ALL_KEY = 'all';
+
+    /**
      * Product type model
      *
      * @var \Magento\Catalog\Model\Product\TypeFactory
@@ -78,11 +83,21 @@ class ProductTypes implements ArrayInterface
             }
         }
 
-        if ($this->addAllTypes && !array_key_exists('all', $result)) {
-            $result = ['all' => __('All AVAILABLE TYPES')] + $result;
+        if ($this->addAllTypes && !array_key_exists(self::ALL_KEY, $result)) {
+            $result = [self::ALL_KEY => __('All AVAILABLE TYPES')] + $result;
         }
 
         return $result;
+    }
+
+    /**
+     * Get all supported product types
+     *
+     * @return array
+     */
+    public function getAllSupportedProductTypes()
+    {
+        return $this->supportedTypes;
     }
 
     /**
@@ -110,6 +125,7 @@ class ProductTypes implements ArrayInterface
                 'label' => $label
             ];
         }
+
         return $optionArray;
     }
 }

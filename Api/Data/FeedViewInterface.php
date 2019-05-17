@@ -169,7 +169,7 @@ interface FeedViewInterface
     /**
      * Set affected entities
      *
-     * @param int $affectedEntities
+     * @param string $affectedEntities
      * @return FeedViewInterface
      */
     public function setAffectedEntities($affectedEntities);

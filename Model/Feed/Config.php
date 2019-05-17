@@ -43,7 +43,7 @@ class Config
     const INCLUDE_SCHEMA = true;
 
     /**
-     *
+     * Default schema auto suggest field value
      */
     const DEFAULT_SCHEMA_AUTO_SUGGEST_FIELD_VALUE = false;
 
@@ -135,26 +135,25 @@ class Config
     const SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID   = 'category_path_id';
 
     /**
-     * @var array
-     */
-    private $mapSpecificFields = [
-        self::FIELD_KEY_ENTITY_ID => self::SPECIFIC_FIELD_KEY_UNIQUE_ID,
-        self::FIELD_KEY_PRODUCT_NAME => self::SPECIFIC_FIELD_KEY_TITLE,
-        self::FIELD_KEY_IMAGE_PATH => self::SPECIFIC_FIELD_KEY_IMAGE_URL,
-        self::FIELD_KEY_PRODUCT_URL_KEY => self::SPECIFIC_FIELD_KEY_PRODUCT_URL,
-        self::FIELD_KEY_STOCK_STATUS => self::SPECIFIC_FIELD_KEY_AVAILABILITY,
-        self::FIELD_KEY_CATEGORY_DATA => self::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID
-    ];
-
-    /**
+     * Mapping fields
+     *
      * @return array
      */
     public function getMapSpecificFields()
     {
-        return $this->mapSpecificFields;
+        return [
+            self::FIELD_KEY_ENTITY_ID => self::SPECIFIC_FIELD_KEY_UNIQUE_ID,
+            self::FIELD_KEY_PRODUCT_NAME => self::SPECIFIC_FIELD_KEY_TITLE,
+            self::FIELD_KEY_IMAGE_PATH => self::SPECIFIC_FIELD_KEY_IMAGE_URL,
+            self::FIELD_KEY_PRODUCT_URL_KEY => self::SPECIFIC_FIELD_KEY_PRODUCT_URL,
+            self::FIELD_KEY_STOCK_STATUS => self::SPECIFIC_FIELD_KEY_AVAILABILITY,
+            self::FIELD_KEY_CATEGORY_DATA => self::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID
+        ];
     }
 
     /**
+     * Available feed operation types
+     *
      * @return array
      */
     public function getAvailableOperationTypes()
@@ -164,6 +163,38 @@ class Config
             self::OPERATION_TYPE_ADD => __('Add'),
             self::OPERATION_TYPE_UPDATE => __('Update'),
             self::OPERATION_TYPE_DELETE => __('Delete')
+        ];
+    }
+
+    /**
+     * Parent product fields which contain children related information
+     *
+     * @return array
+     */
+    public function getParentChildrenRelatedFields()
+    {
+        return [
+            self::CHILD_PRODUCT_SKUS_FIELD_KEY,
+            self::CHILD_PRODUCT_IDS_FIELD_KEY,
+            self::CHILD_PRODUCT_ATTRIBUTES_FIELD_KEY,
+            self::CHILD_PRODUCT_CONFIGURABLE_ATTRIBUTES_FIELD_KEY
+        ];
+    }
+
+    /**
+     * Additional fields which must be excluded from feed content.
+     *
+     * @return array
+     */
+    public function getExcludedFields()
+    {
+        return [
+            'indexed_attributes',
+            'image_label',
+            'small_image',
+            'small_image_label',
+            'thumbnail',
+            'thumbnail_label'
         ];
     }
 }

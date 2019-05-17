@@ -11,6 +11,7 @@
  */
 namespace Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\Action;
 
+use Unbxd\ProductFeed\Model\Config\Source\FilterAttribute;
 use Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Indexer;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\EntityManager\MetadataPool;
@@ -18,6 +19,13 @@ use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Indexer\Table\StrategyInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use Magento\Catalog\Model\Product\Visibility;
+use Unbxd\ProductFeed\Helper\Data as HelperData;
+use Unbxd\ProductFeed\Model\FilterAttribute\FilterAttributeInterface;
+use Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Status as FilterAttributeStatus;
+use Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Inventory as FilterAttributeInventory;
+use Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Visibility as FilterAttributeVisibility;
+use Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Image as FilterAttributeImage;
 
 /**
  * Unbxd product full indexer resource model.
@@ -28,20 +36,14 @@ use Magento\Catalog\Model\Product\Attribute\Source\Status;
 class Full extends Indexer
 {
     /**
-     * Supported product types
-     *
-     * @var array
-     */
-    private $supportedTypes = [
-        \Magento\Catalog\Model\Product\Type::TYPE_SIMPLE,
-        \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE,
-        \Magento\GroupedProduct\Model\Product\Type\Grouped::TYPE_CODE
-    ];
-
-    /**
      * @var ObjectManagerInterface
      */
     private $objectManager;
+
+    /**
+     * @var HelperData
+     */
+    private $helperData = null;
 
     /**
      * Full constructor.
@@ -68,6 +70,43 @@ class Full extends Indexer
     }
 
     /**
+     * Retrieve supported product types
+     *
+     * @param $storeId
+     * @return array
+     */
+    private function getSupportedProductTypes($storeId)
+    {
+        return $this->getHelperData()->getAvailableProductTypes($storeId);
+    }
+
+    /**
+     * @param $storeId
+     * @return array
+     */
+    private function getFilterAttributes($storeId)
+    {
+        return $this->getHelperData()->getFilterAttributes($storeId);
+    }
+
+    /**
+     * Retrieve product SKU by related ID
+     *
+     * @param $entityId
+     * @return string
+     */
+    public function getProductSkuById($entityId)
+    {
+        $select = $this->getConnection()->select()
+            ->from(['e' => $this->getTable('catalog_product_entity')])
+            ->where('e.entity_id = ?', $entityId)
+            ->reset(\Magento\Framework\DB\Select::COLUMNS)
+            ->columns('sku');
+
+        return $this->getConnection()->fetchOne($select);
+    }
+
+    /**
      * Load a bulk of product data.
      *
      * @param $storeId
@@ -75,6 +114,7 @@ class Full extends Indexer
      * @param int $fromId
      * @param null $limit
      * @return array
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function getProducts($storeId, $productIds = [], $fromId = 0, $limit = null)
     {
@@ -92,14 +132,14 @@ class Full extends Indexer
         }
 
         $select->where('e.entity_id > ?', $fromId);
-        $select->where('e.type_id IN (?)', $this->supportedTypes);
+        $select->where('e.type_id IN (?)', $this->getSupportedProductTypes($storeId));
         $select->order('e.entity_id');
 
         return $this->connection->fetchAll($select);
     }
 
     /**
-     * Retrieve products relations by childrens
+     * Retrieve products relations by children
      *
      * @param $childrenIds
      * @return array
@@ -130,33 +170,25 @@ class Full extends Indexer
      */
     private function addCollectionFilters($select, $storeId)
     {
-        $this->addIsVisibleInStoreFilter($select, $storeId);
-        $this->addStatusFilter($select, $storeId);
+        /** @var FilterAttributeInterface[] $filterAttributes */
+        $filterAttributes = $this->getFilterAttributes($storeId);
+        if (empty($filterAttributes)) {
+            return $this;
+        }
 
-        return $this;
-    }
-
-    /**
-     * Filter the select to append only product visible into the catalog or search into the index.
-     *
-     * @param $select
-     * @param $storeId
-     * @return $this
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     */
-    private function addIsVisibleInStoreFilter($select, $storeId)
-    {
-        $rootCategoryId = $this->getRootCategoryId($storeId);
-        $indexTable = $this->getCatalogCategoryProductIndexTable($storeId);
-
-        $visibilityJoinCond = $this->getConnection()->quoteInto(
-            'visibility.product_id = e.entity_id AND visibility.store_id = ?',
-            $storeId
-        );
-
-        $select->useStraightJoin(true)
-            ->join(['visibility' => $indexTable], $visibilityJoinCond, ['visibility'])
-            ->where('visibility.category_id = ?', (int) $rootCategoryId);
+        foreach ($filterAttributes as $attribute) {
+            $attributeCode = $attribute->getAttributeCode();
+            $filterValue = $attribute->getValue();
+            if ($attributeCode == FilterAttributeStatus::ATTRIBUTE_CODE) {
+                $this->addStatusFilter($select, $filterValue, $storeId);
+            } else if ($attributeCode == FilterAttributeInventory::ATTRIBUTE_CODE) {
+                $this->addStockFilter($select, $filterValue, $storeId);
+            } else if ($attributeCode == FilterAttributeVisibility::ATTRIBUTE_CODE) {
+                $this->addIsVisibleInStoreFilter($select, $filterValue, $storeId);
+            } else if ($attributeCode == FilterAttributeImage::ATTRIBUTE_CODE) {
+                $this->addImageFilter($select, $filterValue, $storeId);
+            }
+        }
 
         return $this;
     }
@@ -165,11 +197,11 @@ class Full extends Indexer
      * Filter the select to append only enabled product into the index.
      *
      * @param $select
+     * @param $filterValue
      * @param $storeId
      * @return $this
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    private function addStatusFilter($select, $storeId)
+    private function addStatusFilter($select, $filterValue, $storeId)
     {
         $relatedTable = $this->getTable('catalog_product_entity_int');
 
@@ -182,16 +214,70 @@ class Full extends Indexer
 
         $statusAttributeId = $this->getConnection()->fetchOne($statusAttributeIdSelect, $bind);
 
-        $statusJoinCond = $this->getConnection()->quoteInto(
-            'status.entity_id = e.entity_id AND status.store_id = ?',
-            $storeId
-        );
+        $storeId = 0; // for all stores?
+        $conditions = ['status.entity_id = e.entity_id'];
+        $conditions[] = $this->getConnection()->quoteInto('status.store_id = ?', $storeId);
+        $conditions[] = $this->getConnection()->quoteInto('status.value = ?', $filterValue);
 
+        $statusJoinCond = join(' AND ', $conditions);
         $select->useStraightJoin(true)
             ->join(['status' => $relatedTable], $statusJoinCond, ['value AS status'])
-            ->where('status.attribute_id = ?', (int) $statusAttributeId)
-            ->where('status.value = ?', Status::STATUS_ENABLED);
+            ->where('status.attribute_id = ?', (int) $statusAttributeId);
 
+        return $this;
+    }
+
+    /**
+     * Filter the select to append only in stock product into the index.
+     *
+     * @param $select
+     * @param $filterValue
+     * @param $storeId
+     * @return $this
+     */
+    private function addStockFilter($select, $filterValue, $storeId)
+    {
+        // @TODO - not implemented
+        return $this;
+    }
+
+    /**
+     * Filter the select to append only product visible into the catalog or search into the index.
+     *
+     * @param $select
+     * @param $filterValue
+     * @param $storeId
+     * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function addIsVisibleInStoreFilter($select, $filterValue, $storeId)
+    {
+        $rootCategoryId = $this->getRootCategoryId($storeId);
+        $indexTable = $this->getCatalogCategoryProductIndexTable($storeId);
+
+        $conditions = ['visibility.product_id = e.entity_id'];
+        $conditions[] = $this->getConnection()->quoteInto('visibility.store_id = ?', $storeId);
+        $conditions[] = $this->getConnection()->quoteInto('visibility.visibility = ?', $filterValue);
+
+        $visibilityJoinCond = join(' AND ', $conditions);
+        $select->useStraightJoin(true)
+            ->join(['visibility' => $indexTable], $visibilityJoinCond, ['visibility'])
+            ->where('visibility.category_id = ?', (int) $rootCategoryId);
+
+        return $this;
+    }
+
+    /**
+     * Filter the select to append only product with images into the index.
+     *
+     * @param $select
+     * @param $filterValue
+     * @param $storeId
+     * @return $this
+     */
+    private function addImageFilter($select, $filterValue, $storeId)
+    {
+        // @TODO - not implemented
         return $this;
     }
 
@@ -218,5 +304,18 @@ class Full extends Indexer
         }
 
         return $indexTable;
+    }
+
+    /**
+     * @return HelperData
+     */
+    private function getHelperData()
+    {
+        if (null == $this->helperData) {
+            /** @var HelperData productTypesSource */
+            $this->helperData = $this->objectManager->get(HelperData::class);
+        }
+
+        return $this->helperData;
     }
 }

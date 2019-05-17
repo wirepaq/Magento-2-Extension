@@ -38,6 +38,11 @@ use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Api\SimpleDataObjectConverter;
 
+ini_set('xdebug.max_nesting_level', -1);
+ini_set('xdebug.var_display_max_depth', -1);
+ini_set('xdebug.var_display_max_children', -1);
+ini_set('xdebug.var_display_max_data', -1);
+
 /**
  * Class Manager
  *
@@ -155,23 +160,23 @@ class Manager
     /**
      * Feed catalog data
      *
-     * @var null|array
+     * @var array
      */
-    private $catalog = null;
+    private $catalog = [];
 
     /**
      * Feed schema data
      *
-     * @var null|array
+     * @var array
      */
-    private $schema = null;
+    private $schema = [];
 
     /**
      * Full feed data
      *
-     * @var null|array
+     * @var array
      */
-    private $fullFeed = null;
+    private $fullFeed = [];
 
     /**
      * Local cache for feed file manager
@@ -271,7 +276,7 @@ class Manager
     }
 
     /**
-     * Start profiling
+     * Start profiling to collect additional system information during execution
      *
      * @return $this
      */
@@ -283,7 +288,7 @@ class Manager
     }
 
     /**
-     * Stops profiling
+     * Stop profiling to collect additional system information during execution
      *
      * @return $this
      */
@@ -330,7 +335,7 @@ class Manager
         $this->startProfiler();
 
         $this->prepareData($index);
-        $this->buildFeed($index);
+        $this->buildFeed();
         $this->serializeFeed();
         $this->writeFeed();
         $this->sendFeed();
@@ -349,85 +354,22 @@ class Manager
      * @return $this
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function prepareData(array &$index)
+    public function prepareData(array $index)
     {
         $this->logger->info('Prepare feed content based on index data.');
-
-        $websiteIdKey = 'website_id';
-        $entityIdKey = Config::FIELD_KEY_ENTITY_ID;
-        $urlKeyKey = Config::FIELD_KEY_PRODUCT_URL_KEY;
-        $imageKey = Config::FIELD_KEY_IMAGE_PATH;
-        $categoryKey = Config::FIELD_KEY_CATEGORY_DATA;
-        $visibilityKey = ProductInterface::VISIBILITY;
-
         $this->logger->info('Dispatch event: ' . $this->eventPrefix . '_prepare_data_before.');
         $this->eventManager->dispatch($this->eventPrefix . '_prepare_data_before',
             ['index' => $index, 'feed_manager' => $this]
         );
 
-        foreach ($index as $productId => &$data) {
-            if (is_int($productId)) {
-                $defaultStoreId = $this->getStore()->getId();
-                $storeId = isset($data[Store::STORE_ID]) ? $data[Store::STORE_ID] : $defaultStoreId;
-                $data[Store::STORE_ID] = $storeId;
+        $schemaFields = array_key_exists('fields', $index) ? $index['fields'] : false;
 
-                $websiteId = isset($data[$websiteIdKey])
-                    ? $data[$websiteIdKey]
-                    : $this->getWebsite($defaultStoreId)->getId();
-                $data[$websiteIdKey] = $websiteId;
-
-                // append child data to parent
-                if (
-                    isset($data[Config::CHILD_PRODUCT_IDS_FIELD_KEY])
-                    && !empty($data[Config::CHILD_PRODUCT_IDS_FIELD_KEY])
-                ) {
-                    $this->appendChildDataToParent($index, $data, $data[Config::CHILD_PRODUCT_IDS_FIELD_KEY]);
-                }
-                // filter index data helper fields
-                $this->filterFields($data);
-
-                // prepare unique_id field
-                if (isset($data[$entityIdKey]) && !empty($data[$entityIdKey])) {
-                    $data[Config::SPECIFIC_FIELD_KEY_UNIQUE_ID] = $data[$entityIdKey];
-                    unset($data[$entityIdKey]);
-                }
-                // prepare product_url field
-                if (isset($data[$urlKeyKey]) && !empty($data[$urlKeyKey])) {
-                    $productUrl = $this->buildProductUrl($data[$urlKeyKey], $storeId);
-                    if ($productUrl) {
-                        $data[Config::SPECIFIC_FIELD_KEY_PRODUCT_URL] = $productUrl;
-                        unset($data[$urlKeyKey]);
-                    }
-                }
-                // prepare image_url field
-                if (isset($data[$imageKey]) && !empty($data[$imageKey])) {
-                    $imageUrl = $this->imageDataHandler->getImageUrl($data[$imageKey]);
-                    if ($imageUrl) {
-                        $data[Config::SPECIFIC_FIELD_KEY_IMAGE_URL] = $imageUrl;
-                    }
-                } else {
-                    // if image doesn't exist just add default placeholder
-                    $data[Config::SPECIFIC_FIELD_KEY_IMAGE_URL] = $this->imageDataHandler->getDefaultImagePlaceHolderUrl();
-                }
-                unset($data[$imageKey]);
-
-                // prepare category_path_id field
-                if (isset($data[$categoryKey]) && !empty($data[$categoryKey])) {
-                    $categoryData = $this->buildCategoryList($data[$categoryKey]);
-                    if (!empty($categoryData)) {
-                        $data[Config::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID] = $categoryData;
-                        unset($data[$categoryKey]);
-                    }
-                }
-                // prepare visibility field
-                if (isset($data[$visibilityKey]) && !empty($data[$visibilityKey])) {
-                    $data[$visibilityKey] = $this->getVisibilityTypeLabel($data[$visibilityKey]);
-                }
-
-                // change array keys to needed format
-                $data = $this->formatArrayKeysToCamelCase($data);
-            }
+        if ($schemaFields) {
+            $this->buildSchemaFields($schemaFields);
+            unset($index['fields']);
         }
+
+        $this->buildCatalogData($index);
 
         $this->logger->info('Dispatch event: ' . $this->eventPrefix . '_prepare_data_after.');
         $this->eventManager->dispatch($this->eventPrefix . '_prepare_data_after',
@@ -438,43 +380,172 @@ class Manager
     }
 
     /**
+     * @param array $fields
+     * @return $this
+     */
+    private function buildSchemaFields(array $fields)
+    {
+        if (empty($fields)) {
+            $this->logger->error('Can\'t prepare schema fields. Index data is empty.');
+            return $this;
+        }
+
+        $excludedFields = $this->feedConfig->getExcludedFields();
+        $mapSpecificFields = $this->feedConfig->getMapSpecificFields();
+        foreach ($fields as $fieldCode => &$fieldData) {
+            if (in_array($fieldCode, $excludedFields)) {
+                unset($fields[$fieldCode]);
+            }
+            if (array_key_exists($fieldCode, $mapSpecificFields)) {
+                $fieldData['fieldName'] = $mapSpecificFields[$fieldCode];
+            }
+            //convert to needed format
+            $fieldData['fieldName'] = SimpleDataObjectConverter::snakeCaseToCamelCase($fieldData['fieldName']);
+        }
+
+        //@TODO - filter schema fields by operation types
+
+        $this->schema = [
+            Config::SCHEMA_FIELD_KEY => array_values($fields)
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @param array $index
+     * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function buildCatalogData(array $index)
+    {
+        if (empty($index)) {
+            $this->logger->error('Can\'t prepare catalog data. Index data is empty.');
+            return $this;
+        }
+
+        $websiteIdKey = 'website_id';
+        $entityIdKey = Config::FIELD_KEY_ENTITY_ID;
+        $nameKey = Config::FIELD_KEY_PRODUCT_NAME;
+        $urlKeyKey = Config::FIELD_KEY_PRODUCT_URL_KEY;
+        $imageKey = Config::FIELD_KEY_IMAGE_PATH;
+        $categoryKey = Config::FIELD_KEY_CATEGORY_DATA;
+        $visibilityKey = ProductInterface::VISIBILITY;
+
+        $output = [];
+        foreach ($index as $productId => &$data) {
+            $defaultStoreId = $this->getStore()->getId();
+            $storeId = isset($data[Store::STORE_ID]) ? $data[Store::STORE_ID] : $defaultStoreId;
+            $data[Store::STORE_ID] = $storeId;
+
+            $websiteId = isset($data[$websiteIdKey])
+                ? $data[$websiteIdKey]
+                : $this->getWebsite($defaultStoreId)->getId();
+            $data[$websiteIdKey] = $websiteId;
+
+            // append child data to parent
+            if (
+                isset($data[Config::CHILD_PRODUCT_IDS_FIELD_KEY])
+                && !empty($data[Config::CHILD_PRODUCT_IDS_FIELD_KEY])
+            ) {
+                $this->appendChildDataToParent($index, $data, $data[Config::CHILD_PRODUCT_IDS_FIELD_KEY]);
+            }
+            // filter index data helper fields
+            $this->filterFields($data);
+
+            // prepare title field
+            if (isset($data[$nameKey]) && !empty($data[$nameKey])) {
+                $data[Config::SPECIFIC_FIELD_KEY_TITLE] = $data[$nameKey];
+                unset($data[$nameKey]);
+            }
+            // prepare unique_id field
+            if (isset($data[$entityIdKey]) && !empty($data[$entityIdKey])) {
+                $data[Config::SPECIFIC_FIELD_KEY_UNIQUE_ID] = $data[$entityIdKey];
+                unset($data[$entityIdKey]);
+            }
+            // prepare product_url field
+            if (isset($data[$urlKeyKey]) && !empty($data[$urlKeyKey])) {
+                $productUrl = $this->buildProductUrl($data[$urlKeyKey], $storeId);
+                if ($productUrl) {
+                    $data[Config::SPECIFIC_FIELD_KEY_PRODUCT_URL] = $productUrl;
+                    unset($data[$urlKeyKey]);
+                }
+            }
+            // prepare image_url field
+            if (isset($data[$imageKey]) && !empty($data[$imageKey])) {
+                $imageUrl = $this->imageDataHandler->getImageUrl($data[$imageKey]);
+                if ($imageUrl) {
+                    $data[Config::SPECIFIC_FIELD_KEY_IMAGE_URL] = $imageUrl;
+                    unset($data[$imageKey]);
+                }
+            }
+            // prepare category_path_id field
+            if (isset($data[$categoryKey]) && !empty($data[$categoryKey])) {
+                $categoryData = $this->buildCategoryList($data[$categoryKey]);
+                if (!empty($categoryData)) {
+                    $data[Config::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID] = $categoryData;
+                    unset($data[$categoryKey]);
+                }
+            }
+            // prepare visibility field
+            if (isset($data[$visibilityKey]) && !empty($data[$visibilityKey])) {
+                $data[$visibilityKey] = $this->getVisibilityTypeLabel($data[$visibilityKey]);
+            }
+
+            // change array keys to needed format
+            $this->formatArrayKeysToCamelCase($data);
+
+            // combine data by type of operations
+            $operationKey = array_key_exists('action', $data)
+                ? trim($data['action'])
+                : (!$this->isUpdateFullCatalog() ? Config::OPERATION_TYPE_ADD : Config::OPERATION_TYPE_UPDATE);
+
+            $output[$operationKey][Config::CATALOG_ITEMS_FIELD_KEY][] = $data;
+        }
+
+        if (!empty($output)) {
+            $this->catalog = $output;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if current operation is full catalog product re-sync
+     *
+     * @return string
+     */
+    private function isUpdateFullCatalog()
+    {
+        return (bool) ($this->type == FeedConfig::FEED_TYPE_FULL) && $this->feedHelper->isFullCatalogSynchronized();
+    }
+
+    /**
      * Build feed content to needed format based on prepared index data
      *
-     * @param $preparedData
      * @return $this|bool
      */
-    private function buildFeed($preparedData)
+    private function buildFeed()
     {
         $this->logger->info('Build feed content.');
 
-        if (empty($preparedData)) {
-            $this->logger->info('Can\'t build feed content. Prepared data are empty.');
+        if (empty($this->schema) || empty($this->catalog)) {
+            $this->logger->info('Can\'t build feed content. Prepared data is empty.');
             return false;
         }
 
-        // schema fields
-        $schema = isset($preparedData['fields']) ? $preparedData['fields'] : [];
-        if (!empty($schema) && !isset($preparedData[Config::SCHEMA_FIELD_KEY]) && Config::INCLUDE_SCHEMA) {
-            $this->schema = [
-                Config::SCHEMA_FIELD_KEY => $schema
-            ];
-            unset($preparedData['fields']);
+        if (!empty($this->schema) && Config::INCLUDE_SCHEMA) {
+            $this->fullFeed = array_merge($this->fullFeed, $this->schema);
         }
 
-        // catalog product data
-        if (!empty($preparedData) && Config::INCLUDE_CATALOG) {
-            $this->catalog = [
-                Config::OPERATION_TYPE_ADD => [
-                    Config::CATALOG_ITEMS_FIELD_KEY => array_values($preparedData)
-                ]
-            ];
+        if (!empty($this->catalog) && Config::INCLUDE_CATALOG) {
+            $this->fullFeed = array_merge($this->fullFeed, $this->catalog);
         }
 
-        // full feed
-        if ($this->schema && $this->catalog) {
+        if (!empty($this->fullFeed)) {
             $this->fullFeed = [
-                Config::FEED_FIELD_KEY => [
-                    Config::CATALOG_FIELD_KEY => array_merge($this->schema, $this->catalog)
+                FeedConfig::FEED_FIELD_KEY => [
+                    FeedConfig::CATALOG_FIELD_KEY => $this->fullFeed
                 ]
             ];
         }
@@ -542,7 +613,7 @@ class Manager
     {
         $this->logger->info('Send feed to service.');
 
-        $params = $this->prepareFileParameters();
+        $params = $this->buildFileParameters();
         if (empty($params)) {
             $this->logger->error('File parameters for request are empty.');
             return $this;
@@ -576,7 +647,7 @@ class Manager
      * @return array
      * @throws \Magento\Framework\Exception\FileSystemException
      */
-    private function prepareFileParameters()
+    private function buildFileParameters()
     {
         /** @var \Unbxd\ProductFeed\Model\Feed\Api\Connector $connectorManager */
         $connectorManager = $this->getConnectorManager();
@@ -592,20 +663,24 @@ class Manager
         $fileName = $fileManager->getFileName();
         $fileMimeType = $fileManager->getMimeType();
 
-        // add file config (use in case if 'POST' method not use)
+        // add file config (use in case if 'POST' method not specified)
         $connectorManager->prepareFileConfig([
             'name' => $fileName,
             'path' => $filePath,
             'size' => $fileManager->getFileSize()
         ]);
 
-        if (function_exists('curl_file_create')) {
-            $params['file'] = curl_file_create($filePath, $fileMimeType, $fileName);
-        } else {
-            $params['file'] = "@$filePath;filename="
-                . ($fileName ?: basename($filePath))
-                . ($fileMimeType ? ";type=$fileMimeType" : '');
-        }
+//        if (function_exists('curl_file_create')) {
+//            $params['file'] = curl_file_create($filePath, $fileMimeType, $fileName);
+//        } else {
+//            $params['file'] = "@$filePath;filename="
+//                . ($fileName ?: basename($filePath))
+//                . ($fileMimeType ? ";type=$fileMimeType" : '');
+//        }
+
+        $params['file'] = "@$filePath;filename="
+            . ($fileName ?: basename($filePath))
+            . ($fileMimeType ? ";type=$fileMimeType" : '');
 
         return $params;
     }
@@ -639,9 +714,13 @@ class Manager
         $this->feedHelper->setLastSynchronizationStatus(FeedView::STATUS_RUNNING);
 
         // filter schema fields
-        $ids = array_filter($ids, function($value) {
-            return is_int($value);
-        });
+        $ids = array_filter(
+            $ids,
+            function ($value) {
+                return filter_var($value, FILTER_VALIDATE_INT);
+            }
+        );
+
         // @TODO - need to figure out with stores
         // create feed view for current execution
         $storeId = 1;
@@ -663,7 +742,8 @@ class Manager
     {
         $this->logger->info('Update config statistics.');
 
-        $status = $response->getIsSuccess() ? FeedView::STATUS_COMPLETE : FeedView::STATUS_ERROR;
+        $isSuccess = (bool) $response->getIsSuccess();
+        $status = $isSuccess ? FeedView::STATUS_COMPLETE : FeedView::STATUS_ERROR;
         $type = $this->type;
 
         $this->feedHelper->setFullSynchronizationLocked($this->isFeedLock)
@@ -675,10 +755,20 @@ class Manager
             $this->feedHelper->setFullSynchronizationLockedTime($this->lockedTime);
         }
         if ($type == FeedConfig::FEED_TYPE_FULL) {
-            $this->feedHelper->setFullCatalogSynchronizedStatus(true);
+            $this->feedHelper->setFullCatalogSynchronizedStatus($isSuccess);
         }
         if ($type == FeedConfig::FEED_TYPE_INCREMENTAL) {
-            $this->feedHelper->setIncrementalProductSynchronizedStatus(true);
+            $this->feedHelper->setIncrementalProductSynchronizedStatus($isSuccess);
+        }
+
+        $responseBody = $response->getResponseBodyAsArray();
+        if (!empty($responseBody)) {
+            $uploadId = array_key_exists(FeedResponse::RESPONSE_FIELD_UPLOAD_ID, $responseBody)
+                ? $responseBody[FeedResponse::RESPONSE_FIELD_UPLOAD_ID]
+                : false;
+            if ($uploadId) {
+                $this->feedHelper->setLastUploadId($uploadId);
+            }
         }
 
         return $this;
@@ -738,8 +828,12 @@ class Manager
         // reset local cache to initial state
         $this->reset();
 
-        // clean file
-        $this->getFileManager()->deleteFile();
+        /** @var \Unbxd\ProductFeed\Model\Feed\FileManager $fileManager */
+        $fileManager = $this->getFileManager();
+        if ($fileManager->isExist()) {
+            // clean file if exist
+            $fileManager->deleteFile();
+        }
 
         return $this;
     }
@@ -783,16 +877,12 @@ class Manager
      */
     private function filterParentFieldsChildrenRelated(array &$data)
     {
-        $fields = [
-            Config::CHILD_PRODUCT_SKUS_FIELD_KEY,
-            Config::CHILD_PRODUCT_IDS_FIELD_KEY,
-            Config::CHILD_PRODUCT_ATTRIBUTES_FIELD_KEY,
-            Config::CHILD_PRODUCT_CONFIGURABLE_ATTRIBUTES_FIELD_KEY
-        ];
-
-        foreach ($fields as $field) {
-            if (array_key_exists($field, $data)) {
-                unset($data[$field]);
+        $excludedFields = $this->feedConfig->getParentChildrenRelatedFields();
+        if (!empty($excludedFields)) {
+            foreach ($excludedFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    unset($data[$field]);
+                }
             }
         }
 
@@ -805,18 +895,12 @@ class Manager
      */
     private function filterAdditionalFields(array &$data)
     {
-        $fields = [
-            'indexed_attributes',
-            'small_image',
-            'thumbnail',
-            'image_label',
-            'small_image_label',
-            'thumbnail_label'
-        ];
-
-        foreach ($fields as $field) {
-            if (array_key_exists($field, $data)) {
-                unset($data[$field]);
+        $excludedFields = $this->feedConfig->getExcludedFields();
+        if (!empty($excludedFields)) {
+            foreach ($excludedFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    unset($data[$field]);
+                }
             }
         }
 
@@ -894,7 +978,11 @@ class Manager
                 continue;
             }
 
-            $pathData = explode('/', $urlPath);
+            if (strpos($urlPath, '/') !== false) {
+                $pathData = explode('/', $urlPath);
+            } else {
+                $pathData = [$urlPath];
+            }
             if (!empty($pathData)) {
                 $path = '';
                 $urlPart = '';
@@ -908,7 +996,7 @@ class Manager
             }
         }
 
-        return $result;
+        return array_unique($result, SORT_REGULAR);
     }
 
     /**
@@ -985,51 +1073,41 @@ class Manager
     }
 
     /**
-     * @param $data
-     * @return array
+     * @param array $data
+     * @return $this
      */
-    private function formatChildArrayKeys($data)
+    private function formatChildArrayKeys(array &$data)
     {
-        $result = [];
-        array_walk($data, function ($value, $key) use (&$result) {
+        foreach ($data as $key => $value) {
             $newKey = sprintf(
                 '%s%s',
                 Config::CHILD_PRODUCT_FIELD_PREFIX,
                 ucfirst(SimpleDataObjectConverter::snakeCaseToCamelCase($key))
-                );
-            $result[$newKey] = $value;
-        });
+            );
+            $data[$newKey] = $value;
+            if ($newKey != $key) {
+                unset($data[$key]);
+            }
+        }
 
-        return $result;
-    }
-
-
-    /**
-     * @param $data
-     * @return array
-     */
-    private function formatArrayKeysToCamelCase($data)
-    {
-        $result = [];
-        array_walk($data, function ($value, $key) use (&$result) {
-            $result[SimpleDataObjectConverter::snakeCaseToCamelCase($key)] = $value;
-        });
-
-        return $result;
+        return $this;
     }
 
     /**
      * @param array $data
-     * @return array
+     * @return $this
      */
-    private function formatArrayKeysToVariant($data)
+    private function formatArrayKeysToCamelCase(array &$data)
     {
-        $result = [];
-        array_walk($data, function ($value, $key) use (&$result) {
-            $result[Config::CHILD_PRODUCT_FIELD_PREFIX . '_' . $key] = $value;
-        });
+        foreach ($data as $key => $value) {
+            $newKey = SimpleDataObjectConverter::snakeCaseToCamelCase($key);
+            $data[$newKey] = $value;
+            if ($newKey != $key) {
+                unset($data[$key]);
+            }
+        }
 
-        return $result;
+        return $this;
     }
 
     /**

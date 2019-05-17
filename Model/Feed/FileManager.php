@@ -22,9 +22,10 @@ use Magento\Framework\Filesystem\Directory\WriteInterface;
 class FileManager
 {
     /**
-     * Default file data
+     * Default file mime types
      */
     const DEFAULT_JSON_FILE_MIME_TYPE = 'application/json';
+    const DEFAULT_ZIP_FILE_MIME_TYPE = 'application/zip';
 
     /**
      * @var WriteInterface
@@ -40,7 +41,8 @@ class FileManager
      * @var array
      */
     private $defaultMimeTypes = [
-        self::DEFAULT_JSON_FILE_MIME_TYPE
+        self::DEFAULT_JSON_FILE_MIME_TYPE,
+        self::DEFAULT_ZIP_FILE_MIME_TYPE
     ];
 
     /**
@@ -51,12 +53,12 @@ class FileManager
     /**
      * @var string
      */
-    private $contentFormat = null;
+    private $filePath = null;
 
     /**
      * @var string
      */
-    private $filePath = null;
+    private $contentFormat = null;
 
     /**
      * @var array

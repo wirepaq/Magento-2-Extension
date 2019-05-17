@@ -14,6 +14,7 @@ namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Price as ResourceModel;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price\PriceReaderInterface;
+use Unbxd\ProductFeed\Helper\AttributeHelper;
 
 /**
  * Data source used to append prices data to product during indexing.
@@ -29,6 +30,11 @@ class Price implements DataSourceProviderInterface
     private $resourceModel;
 
     /**
+     * @var AttributeHelper
+     */
+    private $attributeHelper;
+
+    /**
      * @var PriceReaderInterface[]
      */
     private $priceReaderPool = [];
@@ -36,13 +42,16 @@ class Price implements DataSourceProviderInterface
     /**
      * Price constructor.
      * @param ResourceModel $resourceModel
+     * @param AttributeHelper $attributeHelper
      * @param array $priceReaderPool
      */
     public function __construct(
         ResourceModel $resourceModel,
+        AttributeHelper $attributeHelper,
         $priceReaderPool = []
     ) {
         $this->resourceModel = $resourceModel;
+        $this->attributeHelper = $attributeHelper;
         $this->priceReaderPool = $priceReaderPool;
     }
 
@@ -54,6 +63,7 @@ class Price implements DataSourceProviderInterface
     public function appendData($storeId, array $indexData)
     {
         $priceData = $this->resourceModel->loadPriceData($storeId, array_keys($indexData));
+        $indexedFields = [];
         foreach ($priceData as $priceDataRow) {
             $productId = (int) $priceDataRow['entity_id'];
             $productTypeId = $indexData[$productId]['type_id'];
@@ -62,39 +72,37 @@ class Price implements DataSourceProviderInterface
 
             $price = $priceReader->getPrice($priceDataRow);
             $originalPrice = $priceReader->getOriginalPrice($priceDataRow);
-            $specialPrice = $priceReader->getSpecialPrice($priceDataRow);
-            $ifSpecialPriceNeedInclude = (bool) ($specialPrice && ($price != $specialPrice));
-
             $indexData[$productId]['price'] = $price;
-            $indexData[$productId]['original_price'] = $originalPrice;
-            if ($ifSpecialPriceNeedInclude) {
-                $indexData[$productId]['special_price'] = $specialPrice;
-                $indexData[$productId]['is_discount'] = (bool) ($price < $originalPrice);
+
+            if (!in_array('price', $indexedFields)) {
+                $fields[] = 'price';
             }
 
+            $includeOriginal = (bool) ($price != $originalPrice);
+            if ($includeOriginal) {
+                $indexData[$productId]['original_price'] = $originalPrice;
+
+                if (!in_array('original_price', $indexedFields)) {
+                    $fields[] = 'original_price';
+                }
+            }
             if (!isset($indexData[$productId]['indexed_attributes'])) {
                 $indexData[$productId]['indexed_attributes'] = ['price'];
                 $indexData[$productId]['indexed_attributes'] = ['original_price'];
-                if ($ifSpecialPriceNeedInclude) {
-                    $indexData[$productId]['indexed_attributes'] = ['special_price'];
-                    $indexData[$productId]['indexed_attributes'] = ['is_discount'];
+            } else {
+                if (!in_array('price', $indexData[$productId]['indexed_attributes'])) {
+                    $indexData[$productId]['indexed_attributes'][] = 'price';
                 }
-            }
-            if (!in_array('price', $indexData[$productId]['indexed_attributes'])) {
-                $indexData[$productId]['indexed_attributes'][] = 'price';
-            }
-            if (!in_array('original_price', $indexData[$productId]['indexed_attributes'])) {
-                $indexData[$productId]['indexed_attributes'][] = 'original_price';
-            }
-            if ($ifSpecialPriceNeedInclude) {
-                if (!in_array('special_price', $indexData[$productId]['indexed_attributes'])) {
-                    $indexData[$productId]['indexed_attributes'][] = 'special_price';
-                }
-                if (!in_array('is_discount', $indexData[$productId]['indexed_attributes'])) {
-                    $indexData[$productId]['indexed_attributes'][] = 'is_discount';
+                if (
+                    $includeOriginal
+                    && !in_array('original_price', $indexData[$productId]['indexed_attributes'])
+                ) {
+                    $indexData[$productId]['indexed_attributes'][] = 'original_price';
                 }
             }
         }
+
+        $this->attributeHelper->appendSpecificIndexedFields($indexData, $indexedFields);
 
         return $indexData;
     }

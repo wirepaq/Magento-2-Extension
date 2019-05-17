@@ -12,10 +12,7 @@
 namespace Unbxd\ProductFeed\Helper;
 
 use Unbxd\ProductFeed\Helper\Data as HelperData;
-use Unbxd\ProductFeed\Setup\UpgradeData;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
-use Magento\Store\Model\StoreManagerInterface;
+use Unbxd\ProductFeed\Model\FeedView;
 
 /**
  * Class Feed
@@ -24,17 +21,45 @@ use Magento\Store\Model\StoreManagerInterface;
 class Feed extends HelperData
 {
     /**
+     * Core config path/value pairs related to feed process
+     */
+    const FEED_PATH_FULL_STATE_FLAG = 'unbxd_catalog/feed/full_state_flag'; // is full catalog was sync or not
+    const FEED_PATH_INCREMENTAL_STATE_FLAG = 'unbxd_catalog/feed/incremental_state_flag'; // is separate product was sync or not
+    const FEED_PATH_FULL_LOCK_FLAG = 'unbxd_catalog/feed/full_lock_flag'; // flag to prevent duplicate full catalog sync process
+    const FEED_PATH_FULL_LOCK_TIME = 'unbxd_catalog/feed/full_lock_time'; // full catalog sync lock time
+    const FEED_PATH_LAST_OPERATION_TYPE = 'unbxd_catalog/feed/last_operation_type'; // full or incremental
+    const FEED_PATH_LAST_DATETIME = 'unbxd_catalog/feed/last_datetime'; // last sync datetime
+    const FEED_PATH_LAST_STATUS = 'unbxd_catalog/feed/last_status'; // last sync status
+    const FEED_PATH_LAST_UPLOAD_ID = 'unbxd_catalog/feed/last_upload_id'; // last sync upload id (from response if any)
+
+    /**
      * Synchronization status
      */
     const STATUS_SUCCESS = 'success';
     const STATUS_ERROR = 'error';
 
     /**
+     * Default configuration core config data fields
+     *
+     * @var array
+     */
+    private $defaultConfigDataFields = [
+        self::FEED_PATH_FULL_STATE_FLAG => 0,
+        self::FEED_PATH_INCREMENTAL_STATE_FLAG => 0,
+        self::FEED_PATH_FULL_STATE_FLAG => 0,
+        self::FEED_PATH_FULL_LOCK_TIME => 0,
+        self::FEED_PATH_LAST_OPERATION_TYPE => null,
+        self::FEED_PATH_LAST_DATETIME => null,
+        self::FEED_PATH_LAST_STATUS => null,
+        self::FEED_PATH_LAST_UPLOAD_ID => null,
+    ];
+
+    /**
      * @return bool
      */
     public function isFullCatalogSynchronized()
     {
-        return (bool) $this->getConfigValue(UpgradeData::FEED_PATH_FULL_STATE_FLAG);
+        return (bool) $this->getConfigValue(self::FEED_PATH_FULL_STATE_FLAG);
     }
 
     /**
@@ -42,7 +67,7 @@ class Feed extends HelperData
      */
     public function isIncrementalProductSynchronized()
     {
-        return (bool) $this->getConfigValue(UpgradeData::FEED_PATH_INCREMENTAL_STATE_FLAG);
+        return (bool) $this->getConfigValue(self::FEED_PATH_INCREMENTAL_STATE_FLAG);
     }
 
     /**
@@ -50,7 +75,7 @@ class Feed extends HelperData
      */
     public function isFullSynchronizationLocked()
     {
-        return (bool) $this->getConfigValue(UpgradeData::FEED_PATH_FULL_LOCK_FLAG);
+        return (bool) $this->getConfigValue(self::FEED_PATH_FULL_LOCK_FLAG);
     }
 
     /**
@@ -58,7 +83,7 @@ class Feed extends HelperData
      */
     public function getFullSynchronizationLockedTime()
     {
-        return $this->getConfigValue(UpgradeData::FEED_PATH_FULL_LOCK_TIME);
+        return $this->getConfigValue(self::FEED_PATH_FULL_LOCK_TIME);
     }
 
     /**
@@ -66,7 +91,7 @@ class Feed extends HelperData
      */
     public function getLastSynchronizationOperationType()
     {
-        return $this->getConfigValue(UpgradeData::FEED_PATH_LAST_OPERATION_TYPE);
+        return $this->getConfigValue(self::FEED_PATH_LAST_OPERATION_TYPE);
     }
 
     /**
@@ -74,7 +99,7 @@ class Feed extends HelperData
      */
     public function getLastSynchronizationDatetime()
     {
-        return $this->getConfigValue(UpgradeData::FEED_PATH_LAST_DATETIME);
+        return $this->getConfigValue(self::FEED_PATH_LAST_DATETIME);
     }
 
     /**
@@ -82,7 +107,15 @@ class Feed extends HelperData
      */
     public function getLastSynchronizationStatus()
     {
-        return $this->getConfigValue(UpgradeData::FEED_PATH_LAST_STATUS);
+        return $this->getConfigValue(self::FEED_PATH_LAST_STATUS);
+    }
+
+    /**
+     * @return string
+     */
+    public function getLastUploadId()
+    {
+        return $this->getConfigValue(self::FEED_PATH_LAST_UPLOAD_ID);
     }
 
     /**
@@ -91,7 +124,7 @@ class Feed extends HelperData
      */
     public function setFullCatalogSynchronizedStatus($status)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_FULL_STATE_FLAG, $status);
+        $this->updateConfigValue(self::FEED_PATH_FULL_STATE_FLAG, $status);
 
         return $this;
     }
@@ -102,7 +135,7 @@ class Feed extends HelperData
      */
     public function setIncrementalProductSynchronizedStatus($status)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_INCREMENTAL_STATE_FLAG, $status);
+        $this->updateConfigValue(self::FEED_PATH_INCREMENTAL_STATE_FLAG, $status);
 
         return $this;
     }
@@ -113,7 +146,7 @@ class Feed extends HelperData
      */
     public function setFullSynchronizationLocked($status)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_FULL_LOCK_FLAG, $status);
+        $this->updateConfigValue(self::FEED_PATH_FULL_LOCK_FLAG, $status);
 
         return $this;
     }
@@ -124,7 +157,7 @@ class Feed extends HelperData
      */
     public function setFullSynchronizationLockedTime($time)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_FULL_LOCK_TIME, $time);
+        $this->updateConfigValue(self::FEED_PATH_FULL_LOCK_TIME, $time);
 
         return $this;
     }
@@ -135,7 +168,7 @@ class Feed extends HelperData
      */
     public function setLastSynchronizationOperationType($type)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_LAST_OPERATION_TYPE, $type);
+        $this->updateConfigValue(self::FEED_PATH_LAST_OPERATION_TYPE, $type);
 
         return $this;
     }
@@ -146,7 +179,7 @@ class Feed extends HelperData
      */
     public function setLastSynchronizationDatetime($datetime)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_LAST_DATETIME, $datetime);
+        $this->updateConfigValue(self::FEED_PATH_LAST_DATETIME, $datetime);
 
         return $this;
     }
@@ -157,7 +190,54 @@ class Feed extends HelperData
      */
     public function setLastSynchronizationStatus($status)
     {
-        $this->updateConfigValue(UpgradeData::FEED_PATH_LAST_STATUS, $status);
+        $this->updateConfigValue(self::FEED_PATH_LAST_STATUS, $status);
+
+        return $this;
+    }
+
+    /**
+     * @param $uploadId
+     * @return $this
+     */
+    public function setLastUploadId($uploadId)
+    {
+        $this->updateConfigValue(self::FEED_PATH_LAST_UPLOAD_ID, $uploadId);
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLastSynchronizationSuccess()
+    {
+        $lastSyncStatus = $this->getLastSynchronizationStatus();
+        $isSuccess = false;
+        if ($lastSyncStatus && ($lastSyncStatus == FeedView::STATUS_COMPLETE)) {
+            $isSuccess = true;
+        }
+
+        return $isSuccess;
+    }
+
+    /**
+     * @return array
+     */
+    public function getDefaultConfigFields()
+    {
+        return $this->defaultConfigDataFields;
+    }
+
+    /**
+     * Reset config value to init state
+     *
+     * @return $this
+     */
+    public function resetConfigFields()
+    {
+        foreach ($this->defaultConfigDataFields as $path => $value) {
+            $this->updateConfigValue($path, $value);
+        }
 
         return $this;
     }

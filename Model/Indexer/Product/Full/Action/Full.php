@@ -70,6 +70,7 @@ class Full
      * @param int $fromId
      * @param null $limit
      * @return array
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     private function getProducts($storeId, $productIds = [], $fromId = 0, $limit = null)
     {
@@ -176,7 +177,9 @@ class Full
             if (!empty($deletedCandidateIds)) {
                 // mark deleted product in index data
                 foreach ($deletedCandidateIds as $id) {
-                    $fullIndex[$id]['action'] = 'delete';
+                    if (!$this->resourceModel->getProductSkuById($id)) {
+                        $fullIndex[$id]['action'] = 'delete';
+                    }
                 }
             }
         }

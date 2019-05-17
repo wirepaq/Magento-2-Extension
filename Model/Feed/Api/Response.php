@@ -45,6 +45,13 @@ class Response extends DataObject
     const HTTP_RESPONSE_CODE_INTERNAL_SERVER_ERROR = '500';
 
     /**
+     * API Response fields
+     */
+    const RESPONSE_FIELD_TIMESTAMP = 'timeStamp';
+    const RESPONSE_FIELD_FILENAME = 'fileName';
+    const RESPONSE_FIELD_UPLOAD_ID = 'uploadId';
+
+    /**
      * @var HelperData
      */
     protected $helperData;
@@ -66,7 +73,11 @@ class Response extends DataObject
      *
      * @var array
      */
-    private $requiredResponseParams = ['fileName', 'uploadId', 'timeStamp'];
+    private $requiredResponseParams = [
+        self::RESPONSE_FIELD_TIMESTAMP,
+        self::RESPONSE_FIELD_FILENAME,
+        self::RESPONSE_FIELD_UPLOAD_ID
+    ];
 
     /**
      * Response HTTP code form API request
@@ -81,6 +92,13 @@ class Response extends DataObject
      * @var string
      */
     private $body = '';
+
+    /**
+     * Response body from API request as array
+     *
+     * @var array
+     */
+    private $bodyAsArray = [];
 
     /**
      * Response message from API request
@@ -159,7 +177,7 @@ class Response extends DataObject
 
             if ($this->getIsSuccess()) {
                 if (!$this->validateSuccessResponse()) {
-                    // trow exception or just log information about this?
+                    // @TODO - throw exception or just log information about this?
 
                 }
             }
@@ -249,12 +267,14 @@ class Response extends DataObject
      */
     public function getResponseBodyAsArray()
     {
-        $body = $this->getResponseBody();
-        if ($body && is_string($body) && (strlen($body) > 0)) {
-            return $this->serializer->unserialize($body);
+        if (empty($this->bodyAsArray)) {
+            $body = $this->getResponseBody();
+            if ($body && is_string($body) && (strlen($body) > 0)) {
+                $this->bodyAsArray = $this->serializer->unserialize($body);
+            }
         }
 
-        return [];
+        return $this->bodyAsArray;
     }
 
     /**
@@ -330,7 +350,7 @@ class Response extends DataObject
     }
 
     /**
-     * @return \Magento\Framework\Phrase|mixed|null
+     * @return $this
      */
     public function setErrorMessageByCode()
     {
@@ -342,18 +362,44 @@ class Response extends DataObject
             return $this;
         }
 
+        $responseBody = $this->getResponseBodyAsArray();
+        $errorMessage = array_key_exists('message', $responseBody) ? $responseBody['message'] : 'N/A';
         switch ($code) {
             case self::HTTP_RESPONSE_CODE_AUTHENTICATION_FAILURE:
-                $message = __('API response error: Invalid Authorization Credentials. Please contact support.');
+                $message = __(
+                    sprintf(
+                        'API Response Error. Invalid Authorization Credentials. <br/> Code - %s. <br/> Message - %s.',
+                        $code,
+                        $errorMessage
+                    )
+                );
                 break;
             case self::HTTP_RESPONSE_CODE_BAD_REQUEST:
-                $message = __('API response error: Bad Request. Please contact support.');
+                $message = __(
+                    sprintf(
+                        'API Response Error. Bad Request.<br/> Code - %s.<br/> Message - %s.',
+                        $code,
+                        $errorMessage
+                    )
+                );
                 break;
             case self::HTTP_RESPONSE_CODE_INTERNAL_SERVER_ERROR:
-                $message = __('API response error: Internal Server Error. Please contact support.');
+                $message = __(
+                    sprintf(
+                        'API Response Error. Internal Server Error.<br/> Code - %s.<br/> Message - %s.',
+                        $code,
+                        $errorMessage
+                    )
+                );
                 break;
             default:
-                $message = __('API response error: Unexpected Error. Please contact support.');
+                $message = __(
+                    sprintf(
+                        'API Response Error. Unexpected Error.<br/> Code - %s.<br/> Message - %s.',
+                        $code,
+                        $errorMessage
+                    )
+                );
                 break;
         }
 
@@ -411,7 +457,7 @@ class Response extends DataObject
         $errorsResult = [];
         if (!empty($errors)) {
             foreach ($errors as $code => $message) {
-                $errorsResult[] = sprintf('API Response Code: %s. %s', $code, $message);
+                $errorsResult[] = $message;
             }
         }
 

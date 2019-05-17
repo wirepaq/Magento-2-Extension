@@ -16,16 +16,14 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Magento\Framework\App\State as AppState;
-use Magento\Framework\Event\Manager as EventManager;
-use Unbxd\ProductFeed\Helper\Data as HelperData;
+use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 use Unbxd\ProductFeed\Helper\ProductHelper;
 use Unbxd\ProductFeed\Model\CronManager;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as ReindexAction;
 use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
+use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Magento\Store\Model\Store;
-use Magento\Store\Model\StoreManager;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
@@ -43,14 +41,9 @@ class Incremental extends Command
     protected $appState;
 
     /**
-     * @var EventManager
+     * @var FeedHelper
      */
-    protected $eventManager;
-
-    /**
-     * @var HelperData
-     */
-    private $helperData;
+    private $feedHelper;
 
     /**
      * @var ProductHelper
@@ -78,10 +71,9 @@ class Incremental extends Command
     protected $storeManager;
 
     /**
-     * Full constructor.
+     * Incremental constructor.
      * @param AppState $state
-     * @param EventManager $eventManager
-     * @param HelperData $helperData
+     * @param FeedHelper $feedHelper
      * @param ProductHelper $productHelper
      * @param CronManager $cronManager
      * @param ReindexAction $reindexAction
@@ -90,8 +82,7 @@ class Incremental extends Command
      */
     public function __construct(
         AppState $state,
-        EventManager $eventManager,
-        HelperData $helperData,
+        FeedHelper $feedHelper,
         ProductHelper $productHelper,
         CronManager $cronManager,
         ReindexAction $reindexAction,
@@ -100,8 +91,7 @@ class Incremental extends Command
     ) {
         parent::__construct();
         $this->appState = $state;
-        $this->eventManager = $eventManager;
-        $this->helperData = $helperData;
+        $this->feedHelper = $feedHelper;
         $this->productHelper = $productHelper;
         $this->cronManager = $cronManager;
         $this->reindexAction = $reindexAction;
@@ -141,7 +131,7 @@ class Incremental extends Command
         $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
 
         // check authorization credentials
-        if (!$this->helperData->isAuthorizationCredentialsSetup()) {
+        if (!$this->feedHelper->isAuthorizationCredentialsSetup()) {
             $output->writeln("<error>Please check authorization credentials to perform this operation.</error>");
             return false;
         }
@@ -172,11 +162,13 @@ class Incremental extends Command
             $stores = [$storeId];
         }
 
+        // try to collect child product ids if any
+        $this->collectAllProductIds($productIds);
+
         // pre process actions
         $this->preProcessActions($output);
 
         $errors = [];
-        $feedExecutionResult = false;
         $start = microtime(true);
         if (!empty($stores)) {
             foreach ($stores as $storeId) {
@@ -194,7 +186,7 @@ class Incremental extends Command
 
                 try {
                     $output->writeln("<info>Execute feed...</info>");
-                    $feedExecutionResult = $this->feedManager->execute($index);
+                    $this->feedManager->execute($index, FeedConfig::FEED_TYPE_INCREMENTAL);
                 } catch (\Exception $e) {
                     $output->writeln("<error>Feed execution error: {$e->getMessage()}</error>");
                     $errors[$storeId] = $e->getMessage();
@@ -203,9 +195,17 @@ class Incremental extends Command
             }
         }
 
-        if (!empty($errors) || !$feedExecutionResult) {
+        $errorMessage = 'Synchronization failed for store(s) with ID(s): %s. See feed view logs for additional information';
+        $isSuccess = $this->feedHelper->isLastSynchronizationSuccess();
+
+        if (!empty($errors)) {
             $affectedIds = implode(',', array_keys($errors));
-            $output->writeln("<error>Synchronization failed for store(s): {$affectedIds}</error>");
+            $errorMessage = sprintf($errorMessage, $affectedIds);
+            $output->writeln("<error>{$errorMessage}</error>");
+        } else if (!$isSuccess) {
+            $affectedIds = implode(',', array_values($stores));
+            $errorMessage = sprintf($errorMessage, $affectedIds);
+            $output->writeln("<error>{$errorMessage}</error>");
         } else {
             $output->writeln("<info>Synchronization success</info>");
         }
@@ -218,6 +218,21 @@ class Incremental extends Command
         $this->postProcessActions($output);
 
         return true;
+    }
+
+    /**
+     * @param array $ids
+     */
+    private function collectAllProductIds(array &$ids)
+    {
+        foreach ($ids as $id) {
+            $childIds = array_unique(array_filter($this->productHelper->getChildProductIds($id)));
+            if (!empty($childIds)) {
+                foreach ($childIds as $groupKey => $child) {
+                    $ids = array_unique(array_merge_recursive($ids, array_values($child)));
+                }
+            }
+        }
     }
 
     /**

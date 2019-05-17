@@ -197,7 +197,8 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
     private function executeAction($ids, $reindexType, $storeId)
     {
         // if run reindex via command line it will take all of the catalog product data and do reindex
-        // in our case full catalog synchronization will be only available manually from backend ()
+        // in our case full catalog synchronization will be only available manually from backend
+        // (Stores -> Configuration -> Unbxd -> Catalog -> Manual Synchronization)
         // or via separate cli command - php bin/magento unbxd:product-feed:full (or incremental if it's related
         // with separate products), so to prevent duplicate full catalog synchronization we just omit this operation.
         // NOTE*: empty ids means that the full catalog product must be reindex.

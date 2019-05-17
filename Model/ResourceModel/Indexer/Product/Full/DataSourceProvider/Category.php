@@ -132,6 +132,7 @@ class Category extends Indexer
     }
 
     /**
+     * @TODO - temporary solution, refactor in future
      * Prepare category indexed data.
      *
      * @param $productIds
@@ -178,13 +179,16 @@ class Category extends Indexer
                 $ids = explode('/', $path);
                 if (!empty($ids)) {
                     foreach ($ids as $id) {
-                        $relatedData[] = [
-                            'category_id' => $id,
-                            'product_id' => $productId,
-                            'related' => in_array($id, $categoryIds)
-                        ];
-                        if (!in_array($id, $allIds)) {
-                            array_push($allIds, $id);
+                        if ($id) {
+                            $relatedData[] = [
+                                'category_id' => $id,
+                                'product_id' => $productId,
+                                'related' => in_array($id, $categoryIds)
+                            ];
+
+                            if (!in_array($id, $allIds)) {
+                                array_push($allIds, $id);
+                            }
                         }
                     }
                 }
@@ -205,14 +209,14 @@ class Category extends Indexer
 
         $select = $this->getConnection()->select()
             ->from(['ccev' => $this->getTable('catalog_category_entity_varchar')])
-            ->where('ccev.entity_id IN(?)', $allIds)
+            ->where('ccev.entity_id IN (?)', $allIds)
             ->where('ccev.attribute_id <> ?', $displayModeAttributeId)
             ->reset(\Magento\Framework\DB\Select::COLUMNS)
             ->columns('attribute_id', 'ccev')
             ->columns('ccev.entity_id AS category_id', 'ccev')
             ->columns('value', 'ccev');
 
-        $output = [];
+        $result = [];
         foreach ($this->getConnection()->fetchAll($select) as $key => $row) {
             $attributeId = isset($row['attribute_id']) ? (int) $row['attribute_id'] : null;
             $categoryId = isset($row['category_id']) ? (int) $row['category_id'] : null;
@@ -221,37 +225,48 @@ class Category extends Indexer
                 continue;
             }
 
-            $productIdCandidate = null;
-            $related = false;
             foreach ($helperData as $data) {
                 if (isset($data['category_id']) && ($data['category_id'] == $categoryId)) {
-                    $productIdCandidate = isset($data['product_id']) ? (int) $data['product_id'] : $productIdCandidate;
-                    $related = isset($data['related']) ? (int) $data['related'] : $related;
-                    break;
-                }
-            }
-
-            if ($productIdCandidate) {
-                if (!array_key_exists($categoryId, $output)) {
-                    $output[$categoryId] = [
+                    if ($attributeId == $nameAttributeId) {
+                        $key = 'name';
+                    }
+                    if ($attributeId == $urlKeyAttributeId) {
+                        $key = 'url_key';
+                    }
+                    if ($attributeId == $urlPathAttributeId) {
+                        $key = 'url_path';
+                    }
+                    $result[] = [
                         'category_id' => $categoryId,
-                        'product_id' => $productIdCandidate,
-                        'related' => $related
+                        'product_id' => $data['product_id'],
+                        'related' => $data['related'],
+                        $key => $value
                     ];
-                }
-                if ($attributeId == $nameAttributeId) {
-                    $output[$categoryId]['name'] = $value;
-                }
-                if ($attributeId == $urlKeyAttributeId) {
-                    $output[$categoryId]['url_key'] = $value;
-                }
-                if ($attributeId == $urlPathAttributeId) {
-                    $output[$categoryId]['url_path'] = $value;
                 }
             }
         }
 
-        return array_values($output);
+        $output = [];
+        foreach ($result as $key => $data) {
+            $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : null;
+            $productId = isset($data['product_id']) ? (int) $data['product_id'] : null;
+
+            $filteredArray = array_filter($result, function($item) use ($categoryId, $productId) {
+                return ($item['category_id'] == $categoryId) && ($item['product_id'] == $productId);
+            });
+
+            $output[$key] = $data;
+            if (!empty($filteredArray)) {
+                foreach ($filteredArray as $item) {
+                    unset($item['category_id']);
+                    unset($item['product_id']);
+                    unset($item['related']);
+                    $output[$key] = array_merge($output[$key], $item);
+                }
+            }
+        }
+
+        return array_unique($output, SORT_REGULAR);
     }
 
     /**

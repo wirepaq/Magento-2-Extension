@@ -49,16 +49,18 @@
         </arguments>
     </type>
 
-    <type name="Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttributesProvider">
+    <!-- START: filter products -->
+    <type name="Unbxd\ProductFeed\Model\FilterAttribute\FilterAttributeProvider">
         <arguments>
             <argument name="attributes" xsi:type="array">
-                <item name="catalog.value" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\Disabled</item>
-                <item name="stock.is_in_stock" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\OutOfStock</item>
-                <item name="visibility" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\Visibility</item>
-                <item name="no_image" xsi:type="object">Unbxd\ProductFeed\Model\Rule\Condition\Product\SpecialAttribute\NoImage</item>
+                <item name="status" xsi:type="object">Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Status</item>
+                <item name="stock_status" xsi:type="object">Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Inventory</item>
+                <item name="visibility" xsi:type="object">Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Visibility</item>
+                <item name="image" xsi:type="object">Unbxd\ProductFeed\Model\FilterAttribute\Attributes\Image</item>
             </argument>
         </arguments>
     </type>
+    <!-- END: filter products -->
 
     <!-- START: grids/collections -->
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
@@ -142,7 +144,6 @@
     </type>
     <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Attribute">
         <arguments>
-            <!-- @TODO - add attribute helper? -->
             <argument name="resourceModel" xsi:type="object">Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Attribute</argument>
         </arguments>
     </type>
@@ -163,7 +164,6 @@
                 <item name="price" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price</item>
                 <item name="inventory" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Inventory</item>
                 <item name="category" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Category</item>
-                <!--<item name="image" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Image</item>-->
             </argument>
         </arguments>
     </type>
@@ -202,6 +202,7 @@
             <argument name="contentFormat" xsi:type="string">json</argument>
             <argument name="allowedMimeTypes" xsi:type="array">
                 <item name="json" xsi:type="string">application/json</item>
+                <item name="zip" xsi:type="string">application/zip</item>
             </argument>
         </arguments>
     </type>

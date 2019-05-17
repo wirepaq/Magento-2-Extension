@@ -135,6 +135,13 @@ class Image
     private $imageCacheSubDir = null;
 
     /**
+     * Local cache for current working directory
+     *
+     * @var null
+     */
+    private $rootPath = null;
+
+    /**
      * Image constructor.
      * @param ViewConfigInterface $viewConfig
      * @param ProductImage $productImage
@@ -302,7 +309,7 @@ class Image
      *
      * @return string|null
      */
-    private function getImageCacheSubDir()
+    private function getImageCacheSubUrl()
     {
         if (null == $this->imageCacheSubDir) {
             $this->imageCacheSubDir = sprintf(
@@ -325,10 +332,9 @@ class Image
     public function getImageUrl($imagePath)
     {
         // try to retrieve cache url
-        $url = $this->getImageCacheSubDir() . $imagePath;
-        // @TODO - add check if file exist, if not try to retrieve non cached image
-        $isCacheImageExist = false;
-        if (!$isCacheImageExist) {
+        $url = $this->getImageCacheSubUrl() . $imagePath;
+        $imagePath = $this->getRootPath() . substr($url, strpos($url, '/pub'));
+        if (!file_exists($imagePath)) {
             // non cache url
             $url = $this->catalogProductMediaConfig->getMediaUrl($imagePath);
         }
@@ -376,7 +382,7 @@ class Image
      * @param string $string
      * @return array|bool
      */
-    protected function parseSize($string)
+    private function parseSize($string)
     {
         $size = explode('x', strtolower($string));
         if (sizeof($size) == 2) {
@@ -384,5 +390,23 @@ class Image
         }
 
         return false;
+    }
+
+    /**
+     * Retrieve current working root directory. Init if needed
+     *
+     * @return bool|string|null
+     */
+    private function getRootPath()
+    {
+        if (null == $this->rootPath) {
+            $rootPath = getcwd();
+            if (!$rootPath) {
+                $rootPath = substr(__DIR__, 0, strpos(__DIR__, '/app'));
+            }
+            $this->rootPath = $rootPath;
+        }
+
+        return $this->rootPath;
     }
 }

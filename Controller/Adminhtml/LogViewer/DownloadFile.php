@@ -22,8 +22,8 @@ use Magento\Framework\Exception\LocalizedException;
 class DownloadFile extends LogViewer
 {
     /**
-     * @return \Magento\Backend\Model\View\Result\Redirect
-     * @throws \Exception
+     * @return \Magento\Backend\Model\View\Result\Redirect|\Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
+     * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function execute()
     {

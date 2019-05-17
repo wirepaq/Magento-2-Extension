@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Category as ResourceModel;
+use Unbxd\ProductFeed\Helper\AttributeHelper;
 
 /**
  * Data source used to append categories data to product during indexing.
@@ -28,13 +29,21 @@ class Category implements DataSourceProviderInterface
     private $resourceModel;
 
     /**
-     * CategoryData constructor.
+     * @var AttributeHelper
+     */
+    private $attributeHelper;
+
+    /**
+     * Category constructor.
      * @param ResourceModel $resourceModel
+     * @param AttributeHelper $attributeHelper
      */
     public function __construct(
-        ResourceModel $resourceModel
+        ResourceModel $resourceModel,
+        AttributeHelper $attributeHelper
     ) {
         $this->resourceModel = $resourceModel;
+        $this->attributeHelper = $attributeHelper;
     }
 
     /**
@@ -45,6 +54,7 @@ class Category implements DataSourceProviderInterface
     public function appendData($storeId, array $indexData)
     {
         $categoryData = $this->resourceModel->loadCategoryData($storeId, array_keys($indexData));
+        $indexedFields = [];
         foreach ($categoryData as $categoryDataRow) {
             $productId = (int) $categoryDataRow['product_id'];
             unset($categoryDataRow['product_id']);
@@ -63,7 +73,13 @@ class Category implements DataSourceProviderInterface
             }
 
             $indexData[$productId]['category'][] = array_filter($categoryDataRow);
+
+            if (!in_array('category', $indexedFields)) {
+                $indexedFields[] = 'category';
+            }
         }
+
+        $this->attributeHelper->appendSpecificIndexedFields($indexData, $indexedFields);
 
         return $indexData;
     }

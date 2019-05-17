@@ -4,14 +4,37 @@
 
 /** @var \Unbxd\ProductFeed\Block\Adminhtml\Common $block */
 ?>
-
+<?php
+    $jsonConfig = $block->getJsonConfig();
+    $formKey = $block->getFormKey()
+?>
 <script type="text/x-magento-init">
     {
         "*": {
             "unbxdCommon": {
-                "config": <?= /* @escapeNotVerified */ $block->getJsonConfig() ?>,
-                "formKey": "<?= /* @escapeNotVerified */ $block->getFormKey() ?>"
+                "config": <?= /* @escapeNotVerified */ $jsonConfig ?>,
+                "formKey": "<?= /* @escapeNotVerified */ $formKey ?>"
             }
         }
     }
 </script>
+
+<div id="incrementalManager" data-bind="scope: 'incrementalManager'" style="display: none">
+    <!-- ko template: getTemplate() --><!-- /ko -->
+    <script type="text/x-magento-init">
+        {
+            "*": {
+                "Magento_Ui/js/core/app": {
+                    "components": {
+                        "incrementalManager": {
+                            "component": "Unbxd_ProductFeed/js/view/incremental-manager",
+                            "template": "Unbxd_ProductFeed/incremental-manager",
+                            "jsonConfig": <?= /* @escapeNotVerified */ $jsonConfig ?>,
+                            "formKey": "<?= /* @escapeNotVerified */ $formKey ?>"
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</div>

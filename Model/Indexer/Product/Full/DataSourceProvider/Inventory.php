@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider\Inventory as ResourceModel;
+use Unbxd\ProductFeed\Helper\AttributeHelper;
 
 /**
  * Data source used to append inventory data to product during indexing.
@@ -28,13 +29,21 @@ class Inventory implements DataSourceProviderInterface
     private $resourceModel;
 
     /**
-     * InventoryData constructor.
+     * @var AttributeHelper
+     */
+    private $attributeHelper;
+
+    /**
+     * Inventory constructor.
      * @param ResourceModel $resourceModel
+     * @param AttributeHelper $attributeHelper
      */
     public function __construct(
-        ResourceModel $resourceModel
+        ResourceModel $resourceModel,
+        AttributeHelper $attributeHelper
     ) {
         $this->resourceModel = $resourceModel;
+        $this->attributeHelper = $attributeHelper;
     }
 
     /**
@@ -45,13 +54,19 @@ class Inventory implements DataSourceProviderInterface
     public function appendData($storeId, array $indexData)
     {
         $inventoryData = $this->resourceModel->loadInventoryData($storeId, array_keys($indexData));
+        $indexedFields = [];
         foreach ($inventoryData as $inventoryDataRow) {
             $productId = (int) $inventoryDataRow['product_id'];
             $isInStock = (bool) $inventoryDataRow['stock_status'];
             $qty = (int) $inventoryDataRow['qty'];
-            // for compatibility with unbxd service
             $indexData[$productId]['availability'] = $isInStock;
+
+            if (!in_array('stock_status', $indexedFields)) {
+                $indexedFields[] = 'stock_status';
+            }
         }
+
+        $this->attributeHelper->appendSpecificIndexedFields($indexData, $indexedFields);
 
         return $indexData;
     }

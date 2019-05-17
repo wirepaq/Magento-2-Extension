@@ -19,7 +19,7 @@ define([
 ], function (
     $,
     _,
-    managerAction,
+    actionManager,
     alert,
     confirm,
     $t
@@ -32,8 +32,7 @@ define([
             formKey: '',
             triggers: {
                 checkCron: 'unbxd_check_cron',
-                fullSync: 'unbxd_full_sync',
-                incrementalSync: 'unbxd_incremental_sync',
+                fullSync: 'unbxd_full_sync'
             },
             params: {
                 'isAjax': true
@@ -64,8 +63,6 @@ define([
                 .on('click', $.proxy(this._checkCron, this));
             $('#' + this.options.triggers.fullSync)
                 .on('click', $.proxy(this._full, this));
-            $('#' + this.options.triggers.incrementalSync)
-                .on('click', $.proxy(this._incremental, this));
         },
 
         /**
@@ -84,7 +81,7 @@ define([
                 };
 
             $.extend(params, self.options.params);
-            managerAction(actionUrl, 'POST', params);
+            actionManager(actionUrl, 'POST', params);
 
             return true;
         },
@@ -114,15 +111,16 @@ define([
 
             confirm({
                 title: $.mage.__('Confirmation'),
-                content: $.mage.__('Are you sure do you want to run synchronization with ' +
+                content: $.mage.__('Are you sure do you want to run full catalog product synchronization with ' +
                     '<a href="http://unbxd.com"><strong>Unbxd</strong></a> service?' + '<br/><br/>' +
-                    '<strong>' + 'NOTE: ' +  '</strong>' + 'Please make sure the related cron job is configured ' +
+                    '<strong>' + 'NOTE: ' +  '</strong>' + 'This operation will be added to queue. ' +
+                    'Please make sure the related cron job is configured ' +
                     'to perform this operation.'),
                 actions: {
                     /** @inheritdoc */
                     confirm: function () {
                         $.extend(params, self.options.params);
-                        managerAction(actionUrl, 'POST', params);
+                        actionManager(actionUrl, 'POST', params);
                     },
 
                     /** @inheritdoc */
@@ -133,14 +131,6 @@ define([
             });
 
             return false;
-        },
-
-        /**
-         * @param event
-         * @private
-         */
-        _incremental: function (event) {
-            
         }
     });
 

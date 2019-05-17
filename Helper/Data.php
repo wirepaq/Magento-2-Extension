@@ -19,6 +19,10 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Unbxd\ProductFeed\Model\Config\Backend\Cron;
+use Unbxd\ProductFeed\Model\Config\Source\ProductTypes;
+use Unbxd\ProductFeed\Model\Config\Source\FilterAttribute;
+use Unbxd\ProductFeed\Model\FilterAttribute\FilterAttributeProvider;
+use Unbxd\ProductFeed\Model\FilterAttribute\FilterAttributeInterface;
 
 /**
  * Class Data
@@ -45,7 +49,7 @@ class Data extends AbstractHelper
      * catalog section
      */
     const XML_PATH_CATALOG_AVAILABLE_PRODUCT_TYPES = 'unbxd_catalog/general/available_product_types';
-    const XML_PATH_CATALOG_EXCLUDE_PRODUCTS_SPECIAL_ATTRIBUTES = 'unbxd_catalog/general/special_attributes';
+    const XML_PATH_CATALOG_EXCLUDE_PRODUCTS_FILTER_ATTRIBUTES = 'unbxd_catalog/general/filter_attributes';
     const XML_PATH_CATALOG_INDEXING_QUEUE_ENABLED = 'unbxd_catalog/indexing/enabled_queue';
     const XML_PATH_CATALOG_CRON_ENABLED = 'unbxd_catalog/cron/enabled';
     const XML_PATH_CATALOG_CRON_TYPE = 'unbxd_catalog/cron/cron_type';
@@ -85,26 +89,42 @@ class Data extends AbstractHelper
     protected $storeManager;
 
     /**
+     * @var ProductTypes
+     */
+    protected $productTypes;
+
+    /**
+     * @var FilterAttributeProvider
+     */
+    protected $filterAttributeProvider;
+
+    /**
      * Data constructor.
      * @param \Magento\Framework\App\Helper\Context $context
-     * @param StoreManagerInterface $storeManager
      * @param ConfigInterface $configInterface
      * @param ConfigWriter $configWriter
      * @param ConfigValueInterface $configData
+     * @param StoreManagerInterface $storeManager
+     * @param ProductTypes $productTypes
+     * @param FilterAttributeProvider $filterAttributeProvider
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
-        StoreManagerInterface $storeManager,
         ConfigInterface $configInterface,
         ConfigWriter $configWriter,
-        ConfigValueInterface $configData
+        ConfigValueInterface $configData,
+        StoreManagerInterface $storeManager,
+        ProductTypes $productTypes,
+        FilterAttributeProvider $filterAttributeProvider
     ) {
         parent::__construct($context);
         $this->scopeConfig = $context->getScopeConfig();
-        $this->storeManager = $storeManager;
         $this->configInterface = $configInterface;
         $this->configWriter = $configWriter;
         $this->configData = $configData;
+        $this->storeManager = $storeManager;
+        $this->productTypes = $productTypes;
+        $this->filterAttributeProvider = $filterAttributeProvider;
     }
 
     /**
@@ -246,6 +266,8 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Retrieve all product types supported by Unbxd service
+     *
      * @param null $store
      * @return array
      */
@@ -260,6 +282,11 @@ class Data extends AbstractHelper
         $types = [];
         if ($value) {
             $types = explode(',', $value);
+            if (!empty($types)) {
+                if (in_array(ProductTypes::ALL_KEY, $types)) {
+                    $types = $this->productTypes->getAllSupportedProductTypes();
+                }
+            }
         }
 
         return $types;
@@ -267,12 +294,12 @@ class Data extends AbstractHelper
 
     /**
      * @param null $store
-     * @return array
+     * @return array|FilterAttributeInterface[]
      */
-    public function getSpecialAttributesForExcludeProducts($store = null)
+    public function getFilterAttributes($store = null)
     {
         $value = $this->scopeConfig->getValue(
-            self::XML_PATH_CATALOG_EXCLUDE_PRODUCTS_SPECIAL_ATTRIBUTES,
+            self::XML_PATH_CATALOG_EXCLUDE_PRODUCTS_FILTER_ATTRIBUTES,
             ScopeInterface::SCOPE_STORE,
             $store
         );
@@ -280,6 +307,22 @@ class Data extends AbstractHelper
         $attributes = [];
         if ($value) {
             $attributes = explode(',', $value);
+            if (!empty($attributes)) {
+                if (in_array(FilterAttribute::DON_NOT_EXCLUDE_KEY, $attributes)) {
+                    return [];
+                }
+
+                $result = [];
+                foreach ($attributes as $attributeCode) {
+                    /** @var FilterAttributeInterface $attribute */
+                    $attribute = $this->filterAttributeProvider->getAttribute($attributeCode);
+                    if ($attribute) {
+                        $result[] = $attribute;
+                    }
+                }
+
+                return $result;
+            }
         }
 
         return $attributes;
@@ -357,6 +400,8 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Check whether manual synchronization enabled or not
+     *
      * @param null $store
      * @return bool
      */
@@ -370,6 +415,8 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Check whether instance search page enabled or not
+     *
      * @param null $store
      * @return bool
      */

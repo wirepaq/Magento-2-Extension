@@ -10,7 +10,7 @@ $jobs = $block->getCronJobs();
 <?php if (empty($jobs)): ?>
     <div class="messages">
         <div class="message message-warning">
-            <?= /* @escapeNotVerified */ __('Empty jobs data. Cron is not running.') ?>
+            <?= /* @escapeNotVerified */ __('There are no jobs in the last 24 hours.') ?>
         </div>
     </div>
 <?php else: ?>

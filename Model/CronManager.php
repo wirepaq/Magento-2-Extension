@@ -258,6 +258,12 @@ class CronManager
      */
     public function runJobs()
     {
+        // check if cron is configured
+        if (!$this->helperData->isCronConfigured()) {
+            $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
+            return false;
+        }
+
         // check authorization keys
         if (!$this->helperData->isAuthorizationCredentialsSetup()) {
             $this->logger->error('Please check authorization credentials to perform this operation.');
@@ -274,9 +280,11 @@ class CronManager
 
         /** @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection $jobs */
         $jobs = $this->getJobCollection();
-        $jobs->addFieldToFilter('status', ['eq' => IndexingQueue::STATUS_PENDING])
+        $jobs->addFieldToFilter(IndexingQueueInterface::STATUS,
+                ['eq' => IndexingQueue::STATUS_PENDING]
+            )
             ->setPageSize(self::DEFAULT_JOBS_LIMIT_PER_RUN)
-            ->setOrder('queue_id');
+            ->setOrder(IndexingQueueInterface::QUEUE_ID);
 
         if (!$jobs->getSize()) {
             $this->logger->info('There are no jobs for processing.');
@@ -348,10 +356,13 @@ class CronManager
             }
         }
 
-        if (!empty($indexData)) {
-            $type = $this->lockFullReindex ? FeedConfig::FEED_TYPE_FULL : FeedConfig::FEED_TYPE_INCREMENTAL;
-            $this->feedManager->execute($indexData, $type);
+        if (empty($indexData)) {
+            $this->logger->error('Can\'t execute feed. Empty index data.');
+            return false;
         }
+
+        $type = $this->lockFullReindex ? FeedConfig::FEED_TYPE_FULL : FeedConfig::FEED_TYPE_INCREMENTAL;
+        $this->feedManager->execute($indexData, $type);
 
         $this->reset();
 

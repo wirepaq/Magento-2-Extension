@@ -169,14 +169,16 @@ class Handler extends \Magento\Framework\DataObject
      */
     public function add($entityIds, $actionType, $storeId = '', $arguments = [])
     {
-        $data = IndexingQueue::REINDEX_FULL_LABEL;
-        $qty = count($this->productHelper->getAllProductsIds());
-        if (!empty($entityIds)) {
+        if (empty($entityIds)) {
+            $affectedEntities = IndexingQueue::REINDEX_FULL_LABEL;
+            $qty = count($this->productHelper->getAllProductsIds());
+        } else {
             // queue for row/list reindex action
-            $data = $this->convertIdsToString($entityIds);
+            $affectedEntities = (string) $this->convertIdsToString($entityIds);
             $qty = count($entityIds);
-            if ($qty == 1) {
-                $actionType = IndexingQueue::TYPE_REINDEX_ROW;
+            $actionType = IndexingQueue::TYPE_REINDEX_ROW;
+            if ($qty > 1) {
+                $actionType = IndexingQueue::TYPE_REINDEX_LIST;
             }
         }
 
@@ -191,7 +193,7 @@ class Handler extends \Magento\Framework\DataObject
         $model->setStoreId($storeId)
             ->setStatus(IndexingQueue::STATUS_PENDING)
             ->setExecutionTime(0)
-            ->setAffectedEntities($data)
+            ->setAffectedEntities($affectedEntities)
             ->setNumberOfEntities($qty)
             ->setActionType($actionType);
 

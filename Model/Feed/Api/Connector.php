@@ -61,6 +61,7 @@ class Connector
      * @var array
      */
     private $headers = [
+//        self::CONTENT_TYPE_HEADER_JSON,
 //        self::CONTENT_TYPE_HEADER_MULTIPART
     ];
 
@@ -132,17 +133,6 @@ class Connector
     }
 
     /**
-     * As for API Keys field in configuration we use type 'obscure' we need to decrypt value before use
-     *
-     * @param $value
-     * @return string
-     */
-    private function getDecryptedKey($value)
-    {
-        return $this->encryptor->decrypt(trim($value));
-    }
-
-    /**
      * @param array $headers
      */
     private function setHeaders(array $headers)
@@ -163,6 +153,7 @@ class Connector
      */
     private function resetHeaders()
     {
+        $this->headers = [];
         $this->setHeaders([]);
 
         return true;
@@ -189,6 +180,7 @@ class Connector
      */
     private function resetParams()
     {
+        $this->params = [];
         $this->setParams([]);
 
         return true;
@@ -299,13 +291,13 @@ class Connector
     /**
      * Prepare API url for request
      *
-     * @param string $feedType
+     * @param string $type
      * @return bool
      */
-    private function prepareApiUrl($feedType = FeedConfig::FEED_TYPE_FULL)
+    private function prepareApiUrl($type = FeedConfig::FEED_TYPE_FULL)
     {
         $apiEndpoint = $this->helperData->getFullFeedApiEndpoint();
-        if ($feedType == FeedConfig::FEED_TYPE_INCREMENTAL) {
+        if ($type == FeedConfig::FEED_TYPE_INCREMENTAL) {
             $apiEndpoint = $this->helperData->getIncrementalFeedApiEndpoint();
         }
 
@@ -319,6 +311,8 @@ class Connector
     }
 
     /**
+     * Prepare file options for request in case if 'POST' method not use
+     *
      * @param $config
      * @return bool
      */
@@ -360,10 +354,12 @@ class Connector
     }
 
     /**
+     * Prepare and execute API call
+     *
      * @param array $params
      * @param array $headers
-     * @param string $method
-     * @param string $feedType
+     * @param $method
+     * @param string $type
      * @return $this
      * @throws \Exception
      */
@@ -371,9 +367,9 @@ class Connector
         $params = [],
         $headers = [],
         $method = \Zend_Http_Client::POST,
-        $feedType = FeedConfig::FEED_TYPE_FULL
+        $type = FeedConfig::FEED_TYPE_FULL
     ) {
-        $this->buildRequest($params, $headers, $method, $feedType);
+        $this->buildRequest($params, $headers, $method, $type);
         $this->call();
 
         return $this;
@@ -384,8 +380,8 @@ class Connector
      *
      * @param array $params
      * @param array $headers
-     * @param string $method
-     * @param string $feedType
+     * @param $method
+     * @param string $type
      * @return $this
      * @throws \Exception
      */
@@ -393,13 +389,13 @@ class Connector
         $params = [],
         $headers = [],
         $method = \Zend_Http_Client::POST,
-        $feedType = FeedConfig::FEED_TYPE_FULL
+        $type = FeedConfig::FEED_TYPE_FULL
     ) {
         if (!$this->prepareAuthorizationParams()) {
             $this->doError(__('Please provide API credentials to perform this operation.'));
         }
 
-        if (!$this->prepareApiUrl($feedType)) {
+        if (!$this->prepareApiUrl($type)) {
             $this->doError(__('API url must be set up before using API calls.'));
         }
 
@@ -422,29 +418,28 @@ class Connector
     {
         try {
             /** @var \Magento\Framework\HTTP\Adapter\Curl $curl */
-            $curl = $this->curlFactory->create();
+            $httpAdapter = $this->curlFactory->create();
             if ($this->getIsIncludeFileConfig()) {
-                $curl->setOptions($this->getFileConfig());
+                $httpAdapter->setOptions($this->getFileConfig());
             }
-            $body = $this->getParams();
-            $curl->write(
+            $httpAdapter->write(
                 $this->getRequestMethod(),
                 $this->getApiUrl(),
                 '1.1',
                 $this->getHeaders(),
-                !empty($body) ? $this->serializer->serialize($body) : ''
+                $this->getParams()
             );
 
-            $result = $curl->read();
-            if ($curl->getErrno()) {
+            $result = $httpAdapter->read();
+            if ($httpAdapter->getErrno()) {
                 $this->doError(sprintf(
                     'API service connection error #%s: %s',
-                    $curl->getErrno(),
-                    $curl->getError()
+                    $httpAdapter->getErrno(),
+                    $httpAdapter->getError()
                 ));
             }
             $this->getResponseManager()->apply($result);
-            $curl->close();
+            $httpAdapter->close();
         } catch (\Exception $e) {
             $this->doError(__($e->getMessage()));
         }

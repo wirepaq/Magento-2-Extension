@@ -11,11 +11,13 @@
  */
 namespace Unbxd\ProductFeed\Helper;
 
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Catalog\Model\ResourceModel\Eav\AttributeFactory as EavAttributeFactory;
 use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as AttributeCollectionFactory;
 use Magento\Eav\Model\Entity\Attribute\AttributeInterface;
+use Magento\Catalog\Api\Data\EavAttributeInterface;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 
 /**
@@ -83,12 +85,26 @@ class AttributeHelper extends AbstractHelper
     }
 
     /**
-     * Parse attribute to get mapping field creation parameters.
+     * Retrieve a new product attribute instance by code.
+     *
+     * @param $attributeCode
+     * @return \Magento\Catalog\Model\ResourceModel\Eav\Attribute
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function initAttributeByCode($attributeCode)
+    {
+        $attribute = $this->attributeFactory->create();
+        $attribute->loadByCode(\Magento\Catalog\Model\Product::ENTITY, $attributeCode);
+        return $attribute;
+    }
+
+    /**
+     * Parse attribute to get additional field options
      *
      * @param AttributeInterface $attribute Product attribute.
      * @return array
      */
-    public function getMappingFieldOptions(AttributeInterface $attribute)
+    public function getAdditionalFieldOptions(AttributeInterface $attribute)
     {
         $options = [
             'is_searchable' => $attribute->getIsSearchable(),
@@ -117,28 +133,95 @@ class AttributeHelper extends AbstractHelper
     public function getFieldType(AttributeInterface $attribute)
     {
         $type = FeedConfig::FIELD_TYPE_TEXT;
-
-        if ($attribute->getSourceModel() == 'Magento\Eav\Model\Entity\Attribute\Source\Boolean') {
+        if ($this->isFieldBool($attribute)) {
             $type = FeedConfig::FIELD_TYPE_BOOL;
-        } elseif ($attribute->getBackendType() == 'int') {
+        } elseif ($this->isFieldNumber($attribute)) {
             $type = FeedConfig::FIELD_TYPE_NUMBER;
-        } elseif ($attribute->getBackendType() == 'varchar') {
+        } elseif ($this->isFieldLongText($attribute)) {
             $type = FeedConfig::FIELD_TYPE_LONGTEXT;
-        } elseif (
-            $attribute->getBackendType() == 'decimal'
-            || $attribute->getFrontendClass() == 'validate-digits'
-            || $attribute->getFrontendClass() == 'validate-number'
-        ) {
+        } elseif ($this->isFieldDecimal($attribute)) {
             $type = FeedConfig::FIELD_TYPE_DECIMAL;
-        } elseif ($attribute->getBackendType() == 'datetime') {
+        } elseif ($this->isFieldDatetime($attribute)) {
             $type = FeedConfig::FIELD_TYPE_DATE;
-        } elseif ($attribute->usesSource()) {
-            $type = $attribute->getSourceModel()
-                ? FeedConfig::FIELD_TYPE_NUMBER
-                : FeedConfig::FIELD_TYPE_DECIMAL;
         }
 
         return $type;
+    }
+
+    /**
+     * Check if field is bool type.
+     *
+     * @param AttributeInterface $attribute
+     * @return bool
+     */
+    public function isFieldBool(AttributeInterface $attribute)
+    {
+        $specificStaticBoolAttributes = ['has_options', 'required_options'];
+        return (bool) ($attribute->getSourceModel() == \Magento\Eav\Model\Entity\Attribute\Source\Boolean::class)
+            || in_array($attribute->getAttributeCode(), $specificStaticBoolAttributes);
+    }
+
+    /**
+     * Check if field is number type.
+     *
+     * @param AttributeInterface $attribute Product attribute.
+     * @return bool
+     */
+    public function isFieldNumber(AttributeInterface $attribute)
+    {
+        return (bool) ($attribute->getBackendType() == 'int')
+            || ($attribute->getBackendType() == 'varchar')
+            && (
+                ($attribute->getFrontendInput() == 'select')
+                    || ($attribute->getFrontendInput() == 'multiselect')
+            );
+    }
+
+    /**
+     * Check if field is long text type.
+     *
+     * @param AttributeInterface $attribute
+     * @return bool
+     */
+    public function isFieldLongText(AttributeInterface $attribute)
+    {
+        return (bool) ($attribute->getBackendType() == 'varchar') && ($attribute->getFrontendInput() == 'textarea');
+    }
+
+    /**
+     * Check if field is decimal type.
+     *
+     * @param AttributeInterface $attribute
+     * @return bool
+     */
+    public function isFieldDecimal(AttributeInterface $attribute)
+    {
+        return (bool) ($attribute->getBackendType() == 'decimal')
+            || ($attribute->getFrontendClass() == 'validate-digits')
+            || ($attribute->getFrontendClass() == 'validate-number');
+    }
+
+    /**
+     * Check if field is datetime type.
+     *
+     * @param AttributeInterface $attribute
+     * @return bool
+     */
+    public function isFieldDatetime(AttributeInterface $attribute)
+    {
+        return (bool) ($attribute->getBackendType() == 'datetime')
+            || (($attribute->getBackendType() == 'static') && ($attribute->getFrontendInput() == 'date'));
+    }
+
+    /**
+     * Check if field is text type.
+     *
+     * @param AttributeInterface $attribute
+     * @return bool
+     */
+    public function isFieldText(AttributeInterface $attribute)
+    {
+        return (bool) ($attribute->getBackendType() == 'varchar') && ($attribute->getFrontendInput() == 'text');
     }
 
     /**
@@ -346,5 +429,87 @@ class AttributeHelper extends AbstractHelper
         }
 
         return $attributeId;
+    }
+
+    /**
+     * Prepare field options for feed schema data
+     *
+     * @param AttributeInterface $attribute
+     * @param bool $includeAdditionalMapOptions
+     * @return array
+     */
+    public function getFieldOptions(AttributeInterface $attribute, $includeAdditionalMapOptions = false)
+    {
+        $fieldName = $attribute->getAttributeCode();
+        $fieldType = $this->getFieldType($attribute);
+        $isFieldMultivalued = $this->isFieldMultivalued($attribute);
+
+        $fieldOptions = [
+            'fieldName' => (string) $fieldName,
+            'dataType' => (string) $fieldType,
+            'multiValued' => (boolean) $isFieldMultivalued,
+            'autoSuggest' => FeedConfig::DEFAULT_SCHEMA_AUTO_SUGGEST_FIELD_VALUE
+        ];
+
+        if ($includeAdditionalMapOptions) {
+            $additionalOptions = $this->getAdditionalFieldOptions($attribute);
+            $fieldOptions['additionalOptions'] = $additionalOptions;
+        }
+
+        return $fieldOptions;
+    }
+
+    /**
+     * Prepare specific field options for feed schema data
+     *
+     * @param $fieldName
+     * @return array
+     */
+    public function getSpecificFieldOptions($fieldName)
+    {
+        $fieldType = FeedConfig::FIELD_TYPE_NUMBER;
+        if (($fieldName == ProductInterface::TYPE_ID) || ($fieldName == 'category')) {
+            $fieldType = FeedConfig::FIELD_TYPE_TEXT;
+        } else if (($fieldName == 'price') || ($fieldName == 'original_price')) {
+            $fieldType = FeedConfig::FIELD_TYPE_DECIMAL;
+        } else if ($fieldName == 'stock_status') {
+            $fieldType = FeedConfig::FIELD_TYPE_BOOL;
+        }
+
+        $multiValued = ($fieldName != 'category') ? false : true;
+        $fieldOptions = [
+            'fieldName' => (string) $fieldName,
+            'dataType' => (string) $fieldType,
+            'multiValued' => $multiValued,
+            'autoSuggest' => FeedConfig::DEFAULT_SCHEMA_AUTO_SUGGEST_FIELD_VALUE
+        ];
+
+        return $fieldOptions;
+    }
+
+    /**
+     * Append indexed fields to index data (use for build feed schema)
+     *
+     * @param array $indexData
+     * @param array $fields
+     * @return bool
+     */
+    public function appendSpecificIndexedFields(array &$indexData, array $fields)
+    {
+        if (empty($fields)) {
+            return false;
+        }
+
+        $indexedFields = array_key_exists('fields', $indexData) ? $indexData['fields'] : [];
+        foreach ($fields as $field) {
+            $fieldOptions = $this->getSpecificFieldOptions($field);
+            if (!empty($indexedFields)) {
+                $indexData['fields'] = array_merge_recursive($indexData['fields'], [$field => $fieldOptions]);
+            } else {
+                $indexData['fields'][$field] = $fieldOptions;
+            }
+        }
+
+        return true;
     }
 }

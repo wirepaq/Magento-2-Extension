@@ -26,6 +26,33 @@
     .block {
         margin-bottom: 1rem;
 
+        .title {
+            display: inline-block;
+            cursor: pointer;
+            position: relative;
+
+            &:before {
+                content: '\e616';
+                font-size: 1.8rem;
+                position: absolute;
+                right: -30px;
+                top: 0;
+                font-family: 'Admin Icons';
+                font-style: normal;
+                font-weight: normal;
+                line-height: 1;
+                speak: none;
+            }
+        }
+
+        &.active {
+            .title {
+                &:before {
+                    content: '\e615';
+                }
+            }
+        }
+
         &:last-child {
             margin-bottom: 0;
         }
@@ -59,37 +86,36 @@
                     color: green;
                 }
             }
+        }
 
-            .additional-information {
-                padding-bottom: 10px;
-                border-bottom: 1px solid #e3e3e3;
+        &.additional-information {
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e3e3e3;
 
-                table {
-                    tr {
-                        th, td {
-                            vertical-align: middle;
-                            text-align: left;
-                            padding: .2rem .8rem;
-                        }
+            table {
+                tr {
+                    th, td {
+                        vertical-align: middle;
+                        text-align: left;
+                        padding: .2rem .8rem;
+                    }
 
-                        td {
-                            border-left: 0.1rem dashed #d6d6d6;
+                    td {
+                        border-left: 0.1rem dashed #d6d6d6;
 
-                            span[class*="grid-severity"] {
-                                min-width: 100px;
-                            }
+                        span[class*="grid-severity"] {
+                            min-width: 100px;
                         }
                     }
                 }
+            }
 
-                a {
-                    display: block;
-                    margin-top: 10px;
-                }
+            a {
+                display: block;
+                margin-top: 10px;
             }
         }
     }
-
 
     &.catalog {
         .content {
@@ -211,3 +237,34 @@
     }
 }
 
+
+.incremental-synchronization-container {
+    left: auto;
+    right: 0;
+    min-width: 700px;
+
+    .note {
+        font-size: 13px;
+    }
+
+    .form {
+        ~ .note {
+            text-align: right;
+        }
+
+        .fieldset {
+            margin: 5px 0;
+
+            .label {
+                display: none;
+            }
+
+            textarea {
+                width: 100%;
+                min-height: 150px;
+                padding: 10px;
+                resize: initial;
+            }
+        }
+    }
+}

@@ -35,7 +35,9 @@ class Feed
     }
 
     /**
-     * Run indexing/feed operation(s)
+     * Run indexing/feed operation(s) by schedule
+     *
+     * @throws \Exception
      */
     public function execute()
     {
