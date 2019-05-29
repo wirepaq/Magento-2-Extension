@@ -47,9 +47,15 @@ class Response extends DataObject
     /**
      * API Response fields
      */
-    const RESPONSE_FIELD_TIMESTAMP = 'timeStamp';
-    const RESPONSE_FIELD_FILENAME = 'fileName';
     const RESPONSE_FIELD_UPLOAD_ID = 'uploadId';
+    const RESPONSE_FIELD_STATUS_VALUE_INDEXING = 'INDEXING';
+    const RESPONSE_FIELD_STATUS_VALUE_FAILED = 'FAILED';
+    const RESPONSE_FIELD_STATUS_VALUE_INDEXED = 'INDEXED';
+
+    /**
+     * The delay time after which a repeated API request is started to check the uploaded status
+     */
+    const DELAY_TIME_FOR_CHECK_UPLOADED_STATUS = 60; // in seconds
 
     /**
      * @var HelperData
@@ -67,17 +73,6 @@ class Response extends DataObject
      * @var null
      */
     private $response = null;
-
-    /**
-     * Required response params on success API call
-     *
-     * @var array
-     */
-    private $requiredResponseParams = [
-        self::RESPONSE_FIELD_TIMESTAMP,
-        self::RESPONSE_FIELD_FILENAME,
-        self::RESPONSE_FIELD_UPLOAD_ID
-    ];
 
     /**
      * Response HTTP code form API request
@@ -106,6 +101,18 @@ class Response extends DataObject
      * @var string
      */
     private $message = '';
+
+    /**
+     * Upload ID from API response
+     *
+     * @var null
+     */
+    private $uploadId = null;
+
+    /**
+     * @var int
+     */
+    private $uploadedSize = 0;
 
     /**
      * @var bool
@@ -165,9 +172,16 @@ class Response extends DataObject
             if ($code = $resultResponse->getStatus()) {
                 $this->setResponseCode($code);
             }
-            if ($body = $resultResponse->getBody()) {
+
+            $body = $resultResponse->getBody();
+            if ($this->isStringIsNumeric($body)) {
+                // in case if API request related to retrieve only uploaded size
+                $this->setUploadedSize($body);
+                return $this;
+            } else {
                 $this->setResponseBody($body);
             }
+
             if ($message = $resultResponse->getMessage()) {
                 $this->setResponseMessage($message);
             }
@@ -175,41 +189,20 @@ class Response extends DataObject
             $this->setIsSuccess();
             $this->setIsError();
 
-            if ($this->getIsSuccess()) {
-                if (!$this->validateSuccessResponse()) {
-                    // @TODO - throw exception or just log information about this?
-
-                }
-            }
-
             if ($this->getIsError()) {
                 // error message maybe come from body?
                 $this->setErrorMessageByCode();
+            }
+
+            if ($this->getIsSuccess()) {
+                // use for check upload status (additional API call)
+                $this->setUploadId();
             }
         }
 
         $this->setResponseData();
 
         return $this;
-    }
-
-    /**
-     * Validate success response body data.
-     *
-     * @return bool
-     */
-    public function validateSuccessResponse()
-    {
-        $bodyData = $this->getResponseBodyAsArray();
-        if (!empty($bodyData) && !empty($this->requiredResponseParams)) {
-            foreach ($this->requiredResponseParams as $key => $value) {
-                if (!array_key_exists($key, $bodyData)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -263,15 +256,29 @@ class Response extends DataObject
     }
 
     /**
+     * @param $size
+     */
+    public function setUploadedSize($size)
+    {
+        $this->uploadedSize = $size;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUploadedSize()
+    {
+        return $this->uploadedSize;
+    }
+
+    /**
      * @return array|bool|float|int|mixed|string|null
      */
     public function getResponseBodyAsArray()
     {
-        if (empty($this->bodyAsArray)) {
-            $body = $this->getResponseBody();
-            if ($body && is_string($body) && (strlen($body) > 0)) {
-                $this->bodyAsArray = $this->serializer->unserialize($body);
-            }
+        $body = $this->getResponseBody();
+        if ($body && is_string($body) && (strlen($body) > 0)) {
+            $this->bodyAsArray = $this->serializer->unserialize($body);
         }
 
         return $this->bodyAsArray;
@@ -294,6 +301,27 @@ class Response extends DataObject
     public function getResponseMessage()
     {
         return $this->message;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setUploadId()
+    {
+        $bodyData = $this->getResponseBodyAsArray();
+        if (array_key_exists(self::RESPONSE_FIELD_UPLOAD_ID, $bodyData)) {
+            $this->uploadId = $bodyData[self::RESPONSE_FIELD_UPLOAD_ID];
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getUploadId()
+    {
+        return $this->uploadId;
     }
 
     /**
@@ -465,6 +493,15 @@ class Response extends DataObject
     }
 
     /**
+     * @param $string
+     * @return bool
+     */
+    private function isStringIsNumeric($string)
+    {
+        return (bool) (is_numeric($string) && ($string == round($string, 0)));
+    }
+
+    /**
      * @return $this
      */
     public function setResponseData()
@@ -473,6 +510,7 @@ class Response extends DataObject
             'code' => $this->getResponseCode(),
             'body' => $this->getResponseBody(),
             'message' => $this->getResponseMessage(),
+            'upload_id' => $this->getUploadId(),
             'is_success' => $this->getIsSuccess(),
             'is_error' => $this->getIsError(),
             'errors' => $this->getErrors()

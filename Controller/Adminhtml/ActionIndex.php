@@ -18,12 +18,10 @@ use Magento\Ui\Component\MassAction\Filter as MassActionFilter;
 use Unbxd\ProductFeed\Model\CronManager;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Helper\ProductHelper;
-
 use Unbxd\ProductFeed\Model\IndexingQueue;
 use Unbxd\ProductFeed\Model\IndexingQueueFactory;
 use Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\CollectionFactory as IndexingQueueCollectionFactory;
-
 use Unbxd\ProductFeed\Model\FeedView;
 use Unbxd\ProductFeed\Model\FeedViewFactory;
 use Unbxd\ProductFeed\Api\FeedViewRepositoryInterface;
@@ -45,8 +43,6 @@ abstract class ActionIndex extends Action
      */
     protected $massActionFilter;
 
-
-
     /**
      * @var IndexingQueue
      */
@@ -67,8 +63,6 @@ abstract class ActionIndex extends Action
      */
     protected $indexingQueueCollectionFactory;
 
-
-
     /**
      * @var FeedView
      */
@@ -88,8 +82,6 @@ abstract class ActionIndex extends Action
      * @var FeedViewCollectionFactory
      */
     protected $feedViewCollectionFactory;
-
-
 
     /**
      * @var CronManager
@@ -137,15 +129,12 @@ abstract class ActionIndex extends Action
         Action\Context $context,
         PageFactory $resultPageFactory,
         MassActionFilter $massActionFilter,
-
         IndexingQueueFactory $indexingQueueFactory,
         IndexingQueueRepositoryInterface $indexingQueueRepository,
         IndexingQueueCollectionFactory $indexingQueueCollectionFactory,
-
         FeedViewFactory $feedViewFactory,
         FeedViewRepositoryInterface $feedViewRepository,
         FeedViewCollectionFactory $feedViewCollectionFactory,
-
         CronManager $cronManager,
         \Magento\Framework\App\Response\Http\FileFactory $fileFactory,
         HelperData $helperData,
@@ -155,21 +144,18 @@ abstract class ActionIndex extends Action
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
         $this->massActionFilter = $massActionFilter;
-
         $this->indexingQueueFactory = $indexingQueueFactory
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueFactory::class);
         $this->indexingQueueRepository = $indexingQueueRepository
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueRepositoryInterface::class);
         $this->indexingQueueCollectionFactory = $indexingQueueCollectionFactory
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueCollectionFactory::class);
-
         $this->feedViewFactory = $feedViewFactory
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(FeedViewFactory::class);
         $this->feedViewRepository = $feedViewRepository
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(FeedViewRepositoryInterface::class);
         $this->feedViewCollectionFactory = $feedViewCollectionFactory
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(FeedViewCollectionFactory::class);
-
         $this->cronManager = $cronManager;
         $this->fileFactory = $fileFactory;
         $this->helperData = $helperData;

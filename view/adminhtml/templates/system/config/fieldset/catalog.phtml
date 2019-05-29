@@ -60,6 +60,16 @@
                             <td><?= /* @escapeNotVerified */ __($uploadId) ?></td>
                         </tr>
                     <?php endif; ?>
+                    <?php if ($uploadedSize = $block->getUploadedSize()): ?>
+                        <tr>
+                            <th><?= /* @escapeNotVerified */ __('Total Uploaded Size') ?></th>
+                            <td><?= /* @escapeNotVerified */ __(
+                                    sprintf('%s (children products are not counted)',
+                                        $uploadedSize)
+                                ) ?>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
                     </tbody>
                 </table>
                 <a href="<?php echo $this->getUrl('unbxd_productfeed/feed/view')?>">

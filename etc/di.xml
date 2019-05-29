@@ -200,6 +200,7 @@
         <arguments>
             <argument name="fileName" xsi:type="string">unbxdFeed</argument>
             <argument name="contentFormat" xsi:type="string">json</argument>
+            <argument name="archiveFormat" xsi:type="string">zip</argument>
             <argument name="allowedMimeTypes" xsi:type="array">
                 <item name="json" xsi:type="string">application/json</item>
                 <item name="zip" xsi:type="string">application/zip</item>

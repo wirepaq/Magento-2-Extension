@@ -23,17 +23,19 @@
                 <api_endpoint>
                     <full>http://feed.unbxd.io/api/%s/upload/catalog/full</full>
                     <incremental>http://feed.unbxd.io/api/%s/upload/catalog/delta</incremental>
+                    <full_uploaded_status>http://feed.unbxd.io/api/%s/catalog/%s/status</full_uploaded_status>
+                    <incremental_uploaded_status>http://feed.unbxd.io/api/%s/catalog/delta/%s/status</incremental_uploaded_status>
+                    <uploaded_size>http://feed.unbxd.io/api/%s/catalog/size</uploaded_size>
                 </api_endpoint>
             </general>
         </unbxd_setup>
         <unbxd_catalog>
             <general>
                 <available_product_types>simple,configurable,grouped</available_product_types>
-                <special_attributes>all</special_attributes>
+                <filter_attributes>disabled</filter_attributes>
             </general>
             <indexing>
                 <enable_product_indexing>1</enable_product_indexing>
-                <product_index_prefix>magento2_</product_index_prefix>
             </indexing>
             <cron>
                 <enabled>0</enabled>

@@ -22,15 +22,24 @@ class Config
      */
     const FEED_FULL_API_ENDPOINT_DEFAULT = 'http://feed.unbxd.io/api/%s/upload/catalog/full';
     const FEED_INCREMENTAL_API_ENDPOINT_DEFAULT = 'http://feed.unbxd.io/api/%s/upload/catalog/delta';
+    const FEED_FULL_UPLOADED_STATUS_API_ENDPOINT_DEFAULT = 'http://feed.unbxd.io/api/%s/catalog/%s/status';
+    const FEED_INCREMENTAL_UPLOADED_STATUS_API_ENDPOINT_DEFAULT = 'http://feed.unbxd.io/api/%s/catalog/delta/%s/status';
+    const FEED_UPLOADED_SIZE_API_ENDPOINT_DEFAULT = 'http://feed.unbxd.io/api/%s/catalog/size';
 
     /**
      * Feed types:
      *
      *  full - full catalog product synchronization
      *  incremental - separate product(s) synchronization
+     *  full_uploaded_status - feed upload status for a given upload id
+     *  incremental_uploaded_status - incremental feed upload status for a given upload id
+     *  uploaded_size - the number of records present.
      */
     const FEED_TYPE_FULL = 'full';
     const FEED_TYPE_INCREMENTAL = 'incremental';
+    const FEED_TYPE_FULL_UPLOADED_STATUS = 'full_uploaded_status';
+    const FEED_TYPE_INCREMENTAL_UPLOADED_STATUS = 'incremental_uploaded_status';
+    const FEED_TYPE_UPLOADED_SIZE = 'uploaded_size';
 
     /**
      * Flag to check whether or not include catalog fields to feed data
@@ -86,6 +95,11 @@ class Config
     const CHILD_PRODUCT_FIELD_PREFIX = 'v';
 
     /**
+     * Child product (variant) field unique ID
+     */
+    const CHILD_PRODUCT_FIELD_VARIANT_ID = 'variant_id';
+
+    /**
      * Default batch size for prepare feed data
      */
     const DEFAULT_BATCH_SIZE_PREPARE_FEED_DATA = 1000;
@@ -94,6 +108,11 @@ class Config
      * Default batch size for write feed data
      */
     const DEFAULT_BATCH_SIZE_WRITE_FEED_DATA = 1000;
+
+    /**
+     * Check whether Unbxd service support post method curl file create param
+     */
+    const CURL_FILE_CREATE_POST_PARAM_SUPPORT = true;
 
     /**
      * Feed operation types (e.g. add new product, update product data, delete product)

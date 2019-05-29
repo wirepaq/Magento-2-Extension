@@ -14,6 +14,7 @@ namespace Unbxd\ProductFeed\Model\Indexer\Product\Full\Action;
 use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\Action\Full as ResourceModel;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 use Unbxd\ProductFeed\Logger\LoggerInterface;
+use Unbxd\ProductFeed\Helper\Data as HelperData;
 
 /**
  * Unbxd product feed full indexer.
@@ -39,6 +40,11 @@ class Full
     private $logger;
 
     /**
+     * @var HelperData
+     */
+    private $helperData;
+
+    /**
      * @var integer
      */
     private $batchRowsCount;
@@ -48,17 +54,20 @@ class Full
      * @param ResourceModel $resourceModel
      * @param DataSourceProvider $dataSourceProvider
      * @param LoggerInterface $logger
+     * @param HelperData $helperData
      * @param $batchRowsCount
      */
     public function __construct(
         ResourceModel $resourceModel,
         DataSourceProvider $dataSourceProvider,
         LoggerInterface $logger,
+        HelperData $helperData,
         $batchRowsCount
     ) {
         $this->resourceModel = $resourceModel;
         $this->dataSourceProvider = $dataSourceProvider;
         $this->logger = $logger;
+        $this->helperData = $helperData;
         $this->batchRowsCount = $batchRowsCount;
     }
 
@@ -92,17 +101,26 @@ class Full
         // magento is only sending children ids here.
         // ensure to reindex also the parents product ids, if any.
         if (!empty($productIds)) {
-            $productIds = array_unique(
-                array_merge($productIds, $this->resourceModel->getRelationsByChild($productIds))
-            );
+            $relationsByChild = $this->resourceModel->getRelationsByChild($productIds);
+            if (!empty($relationsByChild)) {
+                // @TODO - need to check if this needed
+//                $productIds = array_unique(array_merge($productIds, $relationsByChild));
+            }
         }
 
         $products = $this->getProducts($storeId, $productIds, $productId);
         $result = [];
         foreach ($products as $productData) {
             $productId = (int) $productData['entity_id'];
+            // check if product related to parent product, if so - mark it (use for filtering index data in feed process)
+            $parentId = $this->resourceModel->getRelatedParentProduct($productId);
+            if ($parentId && ($parentId != $productId)) {
+                $productData['parent_id'] = (int) $parentId;
+            };
             $productData['has_options'] = (bool) $productData['has_options'];
             $productData['required_options'] = (bool) $productData['required_options'];
+            $productData['created_at'] = (string) $this->helperData->formatDateTime($productData['created_at']);
+            $productData['updated_at'] = (string) $this->helperData->formatDateTime($productData['updated_at']);
             $result[$productId] = $productData;
         }
 

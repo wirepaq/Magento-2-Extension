@@ -22,15 +22,42 @@ class Feed extends HelperData
 {
     /**
      * Core config path/value pairs related to feed process
+     *
+     * is full catalog was sync or not
      */
-    const FEED_PATH_FULL_STATE_FLAG = 'unbxd_catalog/feed/full_state_flag'; // is full catalog was sync or not
-    const FEED_PATH_INCREMENTAL_STATE_FLAG = 'unbxd_catalog/feed/incremental_state_flag'; // is separate product was sync or not
-    const FEED_PATH_FULL_LOCK_FLAG = 'unbxd_catalog/feed/full_lock_flag'; // flag to prevent duplicate full catalog sync process
-    const FEED_PATH_FULL_LOCK_TIME = 'unbxd_catalog/feed/full_lock_time'; // full catalog sync lock time
-    const FEED_PATH_LAST_OPERATION_TYPE = 'unbxd_catalog/feed/last_operation_type'; // full or incremental
-    const FEED_PATH_LAST_DATETIME = 'unbxd_catalog/feed/last_datetime'; // last sync datetime
-    const FEED_PATH_LAST_STATUS = 'unbxd_catalog/feed/last_status'; // last sync status
-    const FEED_PATH_LAST_UPLOAD_ID = 'unbxd_catalog/feed/last_upload_id'; // last sync upload id (from response if any)
+    const FEED_PATH_FULL_STATE_FLAG = 'unbxd_catalog/feed/full_state_flag';
+    /**
+     * is separate product was sync or not
+     */
+    const FEED_PATH_INCREMENTAL_STATE_FLAG = 'unbxd_catalog/feed/incremental_state_flag';
+    /**
+     * flag to prevent duplicate full catalog sync process
+     */
+    const FEED_PATH_FULL_LOCK_FLAG = 'unbxd_catalog/feed/full_lock_flag';
+    /**
+     * full catalog sync lock time
+     */
+    const FEED_PATH_FULL_LOCK_TIME = 'unbxd_catalog/feed/full_lock_time';
+    /**
+     * full or incremental
+     */
+    const FEED_PATH_LAST_OPERATION_TYPE = 'unbxd_catalog/feed/last_operation_type';
+    /**
+     * last sync datetime
+     */
+    const FEED_PATH_LAST_DATETIME = 'unbxd_catalog/feed/last_datetime';
+    /**
+     * last sync status
+     */
+    const FEED_PATH_LAST_STATUS = 'unbxd_catalog/feed/last_status';
+    /*
+     * last sync upload id (from response if any)
+     */
+    const FEED_PATH_LAST_UPLOAD_ID = 'unbxd_catalog/feed/last_upload_id';
+    /**
+     * uploaded feed size
+     */
+    const FEED_PATH_UPLOADED_SIZE = 'unbxd_catalog/feed/uploaded_size';
 
     /**
      * Synchronization status
@@ -52,6 +79,7 @@ class Feed extends HelperData
         self::FEED_PATH_LAST_DATETIME => null,
         self::FEED_PATH_LAST_STATUS => null,
         self::FEED_PATH_LAST_UPLOAD_ID => null,
+        self::FEED_PATH_UPLOADED_SIZE => 0
     ];
 
     /**
@@ -116,6 +144,14 @@ class Feed extends HelperData
     public function getLastUploadId()
     {
         return $this->getConfigValue(self::FEED_PATH_LAST_UPLOAD_ID);
+    }
+
+    /**
+     * @return string
+     */
+    public function getUploadedSize()
+    {
+        return $this->getConfigValue(self::FEED_PATH_UPLOADED_SIZE);
     }
 
     /**
@@ -202,6 +238,17 @@ class Feed extends HelperData
     public function setLastUploadId($uploadId)
     {
         $this->updateConfigValue(self::FEED_PATH_LAST_UPLOAD_ID, $uploadId);
+
+        return $this;
+    }
+
+    /**
+     * @param $size
+     * @return $this
+     */
+    public function setUploadedSize($size)
+    {
+        $this->updateConfigValue(self::FEED_PATH_UPLOADED_SIZE, $size);
 
         return $this;
     }

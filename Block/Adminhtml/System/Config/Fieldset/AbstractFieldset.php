@@ -120,6 +120,14 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     }
 
     /**
+     * @return string
+     */
+    public function getUploadedSize()
+    {
+        return $this->feedHelper->getUploadedSize();
+    }
+
+    /**
      * @return bool
      */
     public function isSynchronizationAttempt()

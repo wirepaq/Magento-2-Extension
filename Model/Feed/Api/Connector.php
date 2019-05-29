@@ -12,11 +12,10 @@
 namespace Unbxd\ProductFeed\Model\Feed\Api;
 
 use Magento\Framework\HTTP\Adapter\CurlFactory;
-use Magento\Framework\Encryption\EncryptorInterface;
+use Unbxd\ProductFeed\Model\Feed\Api\Response\Factory as ResponseFactory;
 use Unbxd\ProductFeed\Model\Serializer;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
-use Unbxd\ProductFeed\Model\Feed\Api\Response\Factory as ResponseFactory;
 
 /**
  * Class Connector
@@ -25,7 +24,7 @@ use Unbxd\ProductFeed\Model\Feed\Api\Response\Factory as ResponseFactory;
 class Connector
 {
     /**
-     * Content-Type HTTP header for json.
+     * Content-Type HTTP header types
      */
     const CONTENT_TYPE_HEADER_JSON = "Content-Type: application/json";
     const CONTENT_TYPE_HEADER_MULTIPART = "Content-Type: multipart/form-data";
@@ -39,11 +38,6 @@ class Connector
      * @var ResponseFactory
      */
     private $responseFactory;
-
-    /**
-     * @var EncryptorInterface
-     */
-    protected $encryptor;
 
     /**
      * @var HelperData
@@ -60,10 +54,7 @@ class Connector
      *
      * @var array
      */
-    private $headers = [
-//        self::CONTENT_TYPE_HEADER_JSON,
-//        self::CONTENT_TYPE_HEADER_MULTIPART
-    ];
+    private $headers = [];
 
     /**
      * API request params
@@ -94,18 +85,6 @@ class Connector
     private $siteKey = '';
 
     /**
-     * Local cache for file options
-     *
-     * @var array
-     */
-    protected $fileConfig = [];
-
-    /**
-     * @var bool
-     */
-    protected $isIncludeFileConfig = false;
-
-    /**
      * @var \Unbxd\ProductFeed\Model\Feed\Api\Response
      */
     private $responseManager = null;
@@ -114,20 +93,17 @@ class Connector
      * Connector constructor.
      * @param CurlFactory $curlFactory
      * @param ResponseFactory $responseFactory
-     * @param EncryptorInterface $encryptor
      * @param HelperData $helperData
      * @param Serializer $serializer
      */
     public function __construct(
         CurlFactory $curlFactory,
         ResponseFactory $responseFactory,
-        EncryptorInterface $encryptor,
         HelperData $helperData,
         Serializer $serializer
     ) {
         $this->curlFactory = $curlFactory;
         $this->responseFactory = $responseFactory;
-        $this->encryptor = $encryptor;
         $this->helperData = $helperData;
         $this->serializer = $serializer ?: \Magento\Framework\App\ObjectManager::getInstance()->get(Serializer::class);
     }
@@ -149,14 +125,14 @@ class Connector
     }
 
     /**
-     * @return bool
+     * @return $this
      */
-    private function resetHeaders()
+    public function resetHeaders()
     {
         $this->headers = [];
-        $this->setHeaders([]);
+        $this->setHeaders($this->headers);
 
-        return true;
+        return $this;
     }
 
     /**
@@ -176,14 +152,14 @@ class Connector
     }
 
     /**
-     * @return bool
+     * @return $this
      */
-    private function resetParams()
+    public function resetParams()
     {
         $this->params = [];
-        $this->setParams([]);
+        $this->setParams($this->params);
 
-        return true;
+        return $this;
     }
 
     /**
@@ -235,38 +211,6 @@ class Connector
     }
 
     /**
-     * @param array $config
-     */
-    public function setFileConfig(array $config)
-    {
-        $this->fileConfig = $config;
-    }
-
-    /**
-     * @return array
-     */
-    public function getFileConfig()
-    {
-        return $this->fileConfig;
-    }
-
-    /**
-     * @param $flag
-     */
-    private function setIsIncludeFileConfig($flag)
-    {
-        $this->isIncludeFileConfig = (bool) $flag;
-    }
-
-    /**
-     * @return bool
-     */
-    private function getIsIncludeFileConfig()
-    {
-        return $this->isIncludeFileConfig;
-    }
-
-    /**
      * Prepare API authorization params for request
      *
      * @return bool
@@ -294,50 +238,36 @@ class Connector
      * @param string $type
      * @return bool
      */
-    private function prepareApiUrl($type = FeedConfig::FEED_TYPE_FULL)
+    private function prepareApiUrl($type)
     {
-        $apiEndpoint = $this->helperData->getFullFeedApiEndpoint();
-        if ($type == FeedConfig::FEED_TYPE_INCREMENTAL) {
-            $apiEndpoint = $this->helperData->getIncrementalFeedApiEndpoint();
-        }
-
         if (!$siteKey = $this->getSiteKey()) {
             return false;
         }
 
-        $this->setApiUrl(sprintf($apiEndpoint, $siteKey));
-
-        return true;
-    }
-
-    /**
-     * Prepare file options for request in case if 'POST' method not use
-     *
-     * @param $config
-     * @return bool
-     */
-    public function prepareFileConfig($config)
-    {
-        if (empty($config)) {
-            return false;
+        if ($type == FeedConfig::FEED_TYPE_FULL) {
+            $apiEndpoint = $this->helperData->getFullFeedApiEndpoint();
+            $this->setApiUrl(sprintf($apiEndpoint, $siteKey));
+        } else if ($type == FeedConfig::FEED_TYPE_INCREMENTAL) {
+            $apiEndpoint = $this->helperData->getIncrementalFeedApiEndpoint();
+            $this->setApiUrl(sprintf($apiEndpoint, $siteKey));
+        } else if ($type == FeedConfig::FEED_TYPE_FULL_UPLOADED_STATUS) {
+            $apiEndpoint = $this->helperData->getFullUploadedStatusApiEndpoint();
+            $uploadId = $this->getResponseManager()->getUploadId();
+            if (!$uploadId) {
+                return false;
+            }
+            $this->setApiUrl(sprintf($apiEndpoint, $siteKey, $uploadId));
+        } else if ($type == FeedConfig::FEED_TYPE_INCREMENTAL_UPLOADED_STATUS) {
+            $apiEndpoint = $this->helperData->getIncrementalUploadedStatusApiEndpoint();
+            $uploadId = $this->getResponseManager()->getUploadId();
+            if (!$uploadId) {
+                return false;
+            }
+            $this->setApiUrl(sprintf($apiEndpoint, $siteKey, $uploadId));
+        } else if ($type == FeedConfig::FEED_TYPE_UPLOADED_SIZE) {
+            $apiEndpoint = $this->helperData->getUploadedSizeApiEndpoint();
+            $this->setApiUrl(sprintf($apiEndpoint, $siteKey));
         }
-
-        $file = isset($config['name']) ? trim($config['name']) : null;
-        $path = isset($config['path']) ? trim($config['path']) : null;
-        $size = isset($config['size']) ? trim($config['size']) : 0;
-
-        $result = [];
-        $isValid = (bool) $file && (bool) $path && (bool) $size;
-        if ($isValid) {
-            $result = [
-                CURLOPT_UPLOAD => true,
-                CURLOPT_FILE => $file,
-                CURLOPT_INFILE => $path,
-                CURLOPT_INFILESIZE => $size
-            ];
-        }
-
-        $this->setFileConfig($result);
 
         return true;
     }
@@ -356,20 +286,20 @@ class Connector
     /**
      * Prepare and execute API call
      *
-     * @param array $params
-     * @param array $headers
-     * @param $method
      * @param string $type
+     * @param string $method
+     * @param array $headers
+     * @param array $params
      * @return $this
      * @throws \Exception
      */
     public function execute(
-        $params = [],
-        $headers = [],
+        $type = FeedConfig::FEED_TYPE_FULL,
         $method = \Zend_Http_Client::POST,
-        $type = FeedConfig::FEED_TYPE_FULL
+        $headers = [],
+        $params = []
     ) {
-        $this->buildRequest($params, $headers, $method, $type);
+        $this->buildRequest($type, $method, $headers, $params);
         $this->call();
 
         return $this;
@@ -378,18 +308,18 @@ class Connector
     /**
      * Build API request
      *
-     * @param array $params
-     * @param array $headers
-     * @param $method
      * @param string $type
+     * @param string $method
+     * @param array $headers
+     * @param array $params
      * @return $this
      * @throws \Exception
      */
     private function buildRequest(
-        $params = [],
-        $headers = [],
+        $type = FeedConfig::FEED_TYPE_FULL,
         $method = \Zend_Http_Client::POST,
-        $type = FeedConfig::FEED_TYPE_FULL
+        $headers = [],
+        $params = []
     ) {
         if (!$this->prepareAuthorizationParams()) {
             $this->doError(__('Please provide API credentials to perform this operation.'));
@@ -399,12 +329,8 @@ class Connector
             $this->doError(__('API url must be set up before using API calls.'));
         }
 
-        $this->setParams($params);
-        if (!$method || ($method != \Zend_Http_Client::POST) && !empty($this->getFileConfig())) {
-            $this->resetParams();
-            $this->setIsIncludeFileConfig(true);
-        }
         $this->setHeaders($headers);
+        $this->setParams($params);
         $this->setRequestMethod($method);
 
         return $this;
@@ -417,17 +343,15 @@ class Connector
     public function call()
     {
         try {
-            /** @var \Magento\Framework\HTTP\Adapter\Curl $curl */
+            /** @var \Magento\Framework\HTTP\Adapter\Curl $httpAdapter */
             $httpAdapter = $this->curlFactory->create();
-            if ($this->getIsIncludeFileConfig()) {
-                $httpAdapter->setOptions($this->getFileConfig());
-            }
+            $body = !empty($this->getParams()) ? $this->getParams() : '';
             $httpAdapter->write(
                 $this->getRequestMethod(),
                 $this->getApiUrl(),
                 '1.1',
                 $this->getHeaders(),
-                $this->getParams()
+                $body
             );
 
             $result = $httpAdapter->read();

@@ -75,7 +75,7 @@ class Full extends Indexer
      * @param $storeId
      * @return array
      */
-    private function getSupportedProductTypes($storeId)
+    private function getSupportedProductTypes($storeId = null)
     {
         return $this->getHelperData()->getAvailableProductTypes($storeId);
     }
@@ -158,6 +158,29 @@ class Full extends Indexer
             ->where('child_id IN (?)', array_map('intval', $childrenIds));
 
         return $this->getConnection()->fetchCol($select);
+    }
+
+    /**
+     * Retrieve related parent product if any
+     *
+     * @param $childrenId
+     * @return string
+     * @throws \Exception
+     */
+    public function getRelatedParentProduct($childrenId)
+    {
+        $metadata = $this->getEntityMetaData(\Magento\Catalog\Api\Data\ProductInterface::class);
+        $entityTable = $this->getTable($metadata->getEntityTable());
+        $relationTable = $this->getTable('catalog_product_relation');
+        $joinCondition = sprintf('relation.parent_id = entity.%s', $metadata->getLinkField());
+
+        $select = $this->getConnection()->select()
+            ->from(['relation' => $relationTable], ['parent_id'])
+            ->join(['entity' => $entityTable], $joinCondition, [$metadata->getIdentifierField()])
+            ->where('child_id = ?', $childrenId)
+            ->where('entity.type_id IN (?)', $this->getSupportedProductTypes());
+
+        return $this->getConnection()->fetchOne($select);
     }
 
     /**

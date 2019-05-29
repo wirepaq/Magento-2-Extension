@@ -19,6 +19,7 @@ use Magento\Catalog\Model\ResourceModel\Product\Attribute\CollectionFactory as A
 use Magento\Eav\Model\Entity\Attribute\AttributeInterface;
 use Magento\Catalog\Api\Data\EavAttributeInterface;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
+use Unbxd\ProductFeed\Helper\Data as HelperData;
 
 /**
  * Product feed attributes helper.
@@ -44,6 +45,11 @@ class AttributeHelper extends AbstractHelper
     private $attributeCollectionFactory;
 
     /**
+     * @var HelperData
+     */
+    private $helperData;
+
+    /**
      * @var array
      */
     private $storeAttributes = [];
@@ -63,15 +69,18 @@ class AttributeHelper extends AbstractHelper
      * @param Context $context
      * @param EavAttributeFactory $attributeFactory
      * @param AttributeCollectionFactory $collectionFactory
+     * @param Data $helperData
      */
     public function __construct(
         Context $context,
         EavAttributeFactory $attributeFactory,
-        AttributeCollectionFactory $collectionFactory
+        AttributeCollectionFactory $collectionFactory,
+        HelperData $helperData
     ) {
         parent::__construct($context);
         $this->attributeFactory = $attributeFactory;
         $this->attributeCollectionFactory = $collectionFactory;
+        $this->helperData = $helperData;
     }
 
     /**
@@ -135,13 +144,11 @@ class AttributeHelper extends AbstractHelper
         $type = FeedConfig::FIELD_TYPE_TEXT;
         if ($this->isFieldBool($attribute)) {
             $type = FeedConfig::FIELD_TYPE_BOOL;
-        } elseif ($this->isFieldNumber($attribute)) {
-            $type = FeedConfig::FIELD_TYPE_NUMBER;
-        } elseif ($this->isFieldLongText($attribute)) {
+        } else if ($this->isFieldLongText($attribute)) {
             $type = FeedConfig::FIELD_TYPE_LONGTEXT;
-        } elseif ($this->isFieldDecimal($attribute)) {
+        } else if ($this->isFieldDecimal($attribute)) {
             $type = FeedConfig::FIELD_TYPE_DECIMAL;
-        } elseif ($this->isFieldDatetime($attribute)) {
+        } else if ($this->isFieldDatetime($attribute)) {
             $type = FeedConfig::FIELD_TYPE_DATE;
         }
 
@@ -169,12 +176,8 @@ class AttributeHelper extends AbstractHelper
      */
     public function isFieldNumber(AttributeInterface $attribute)
     {
-        return (bool) ($attribute->getBackendType() == 'int')
-            || ($attribute->getBackendType() == 'varchar')
-            && (
-                ($attribute->getFrontendInput() == 'select')
-                    || ($attribute->getFrontendInput() == 'multiselect')
-            );
+        return (bool) (($attribute->getBackendType() == 'int') || ($attribute->getBackendType() == 'varchar'))
+            && (($attribute->getFrontendInput() == 'select') || ($attribute->getFrontendInput() == 'multiselect'));
     }
 
     /**
@@ -221,7 +224,8 @@ class AttributeHelper extends AbstractHelper
      */
     public function isFieldText(AttributeInterface $attribute)
     {
-        return (bool) ($attribute->getBackendType() == 'varchar') && ($attribute->getFrontendInput() == 'text');
+        return (bool) ($attribute->getBackendType() == 'varchar') && ($attribute->getFrontendInput() == 'text')
+            || (($attribute->getBackendType() == 'int') && ($attribute->getFrontendInput() == 'multiselect'));
     }
 
     /**
@@ -254,6 +258,10 @@ class AttributeHelper extends AbstractHelper
         $values = [];
 
         $mapperKey = 'simple_' . $attribute->getId();
+
+        if ($this->isFieldDatetime($attribute)) {
+            $value = $this->helperData->formatDateTime($value);
+        }
 
         if (!isset($this->attributeMappers[$mapperKey])) {
             $this->attributeMappers[$mapperKey] = function ($value) use ($attribute) {
@@ -467,10 +475,8 @@ class AttributeHelper extends AbstractHelper
      */
     public function getSpecificFieldOptions($fieldName)
     {
-        $fieldType = FeedConfig::FIELD_TYPE_NUMBER;
-        if (($fieldName == ProductInterface::TYPE_ID) || ($fieldName == 'category')) {
-            $fieldType = FeedConfig::FIELD_TYPE_TEXT;
-        } else if (($fieldName == 'price') || ($fieldName == 'original_price')) {
+        $fieldType = FeedConfig::FIELD_TYPE_TEXT;
+        if (($fieldName == 'price') || ($fieldName == 'original_price')) {
             $fieldType = FeedConfig::FIELD_TYPE_DECIMAL;
         } else if ($fieldName == 'stock_status') {
             $fieldType = FeedConfig::FIELD_TYPE_BOOL;

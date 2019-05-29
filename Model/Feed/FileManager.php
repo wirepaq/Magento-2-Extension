@@ -61,6 +61,11 @@ class FileManager
     private $contentFormat = null;
 
     /**
+     * @var null
+     */
+    private $archiveFormat = null;
+
+    /**
      * @var array
      */
     private $allowedMimeTypes = [];
@@ -70,6 +75,7 @@ class FileManager
      * @param Filesystem $filesystem
      * @param null $fileName
      * @param null $contentFormat
+     * @param null $archiveFormat
      * @param array $allowedMimeTypes
      * @throws \Magento\Framework\Exception\FileSystemException
      */
@@ -77,10 +83,12 @@ class FileManager
         Filesystem $filesystem,
         $fileName = null,
         $contentFormat = null,
+        $archiveFormat = null,
         array $allowedMimeTypes = []
     ) {
         $this->fileName = $fileName;
         $this->contentFormat = $contentFormat;
+        $this->archiveFormat = $archiveFormat;
         $this->filePath = sprintf(
             '%s%s%s.%s',
             $this->subDir,
@@ -117,7 +125,7 @@ class FileManager
     }
 
     /**
-     * Check if log file exist
+     * Check if feed file exist
      *
      * @return bool
      */
@@ -146,7 +154,7 @@ class FileManager
      */
     public function getFileName()
     {
-        return $this->fileName;
+        return sprintf('%s.%s', $this->fileName, $this->contentFormat);
     }
 
     /**
@@ -160,13 +168,33 @@ class FileManager
     }
 
     /**
-     * Retrieve file sub path location
+     * Retrieve file archive format
      *
      * @return string
      */
-    private function getFilePath()
+    public function getArchiveFormat()
     {
-        return $this->filePath;
+        return $this->archiveFormat;
+    }
+
+    /**
+     * Retrieve file sub path location
+     *
+     * @param bool $isArchive
+     * @return string
+     */
+    private function getFilePath($isArchive = false)
+    {
+        $path = $this->filePath;
+        if ($isArchive) {
+            $path = preg_replace(
+                sprintf('/\.%s$/i', $this->getContentFormat()),
+                sprintf('.%s', $this->getArchiveFormat()),
+                $path
+            );
+        }
+
+        return $path;
     }
 
     /**
@@ -238,6 +266,8 @@ class FileManager
         $contentType = null;
         if ($ext == $this->contentFormat) {
             $contentType = self::DEFAULT_JSON_FILE_MIME_TYPE;
+        } else if ($ext == $this->archiveFormat) {
+            $contentType = self::DEFAULT_ZIP_FILE_MIME_TYPE;
         }
 
         return $this->isMimeTypeValid($contentType) ? $contentType : null;

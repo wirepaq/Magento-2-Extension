@@ -23,6 +23,7 @@ use Unbxd\ProductFeed\Model\Config\Source\ProductTypes;
 use Unbxd\ProductFeed\Model\Config\Source\FilterAttribute;
 use Unbxd\ProductFeed\Model\FilterAttribute\FilterAttributeProvider;
 use Unbxd\ProductFeed\Model\FilterAttribute\FilterAttributeInterface;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 
 /**
  * Class Data
@@ -44,6 +45,9 @@ class Data extends AbstractHelper
      */
     const XML_PATH_FULL_FEED_API_ENDPOINT = 'unbxd_setup/general/api_endpoint/full';
     const XML_PATH_INCREMENTAL_FEED_API_ENDPOINT = 'unbxd_setup/general/api_endpoint/incremental';
+    const XML_PATH_FULL_UPLOADED_STATUS = 'unbxd_setup/general/api_endpoint/full_uploaded_status';
+    const XML_PATH_INCREMENTAL_UPLOADED_STATUS = 'unbxd_setup/general/api_endpoint/incremental_uploaded_status';
+    const XML_PATH_UPLOADED_SIZE = 'unbxd_setup/general/api_endpoint/uploaded_size';
 
     /**
      * catalog section
@@ -99,6 +103,11 @@ class Data extends AbstractHelper
     protected $filterAttributeProvider;
 
     /**
+     * @var TimezoneInterface
+     */
+    protected $dateTime;
+
+    /**
      * Data constructor.
      * @param \Magento\Framework\App\Helper\Context $context
      * @param ConfigInterface $configInterface
@@ -107,6 +116,7 @@ class Data extends AbstractHelper
      * @param StoreManagerInterface $storeManager
      * @param ProductTypes $productTypes
      * @param FilterAttributeProvider $filterAttributeProvider
+     * @param TimezoneInterface $dateTime
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
@@ -115,7 +125,8 @@ class Data extends AbstractHelper
         ConfigValueInterface $configData,
         StoreManagerInterface $storeManager,
         ProductTypes $productTypes,
-        FilterAttributeProvider $filterAttributeProvider
+        FilterAttributeProvider $filterAttributeProvider,
+        TimezoneInterface $dateTime
     ) {
         parent::__construct($context);
         $this->scopeConfig = $context->getScopeConfig();
@@ -125,6 +136,7 @@ class Data extends AbstractHelper
         $this->storeManager = $storeManager;
         $this->productTypes = $productTypes;
         $this->filterAttributeProvider = $filterAttributeProvider;
+        $this->dateTime = $dateTime;
     }
 
     /**
@@ -251,6 +263,45 @@ class Data extends AbstractHelper
     {
         return trim($this->scopeConfig->getValue(
             self::XML_PATH_INCREMENTAL_FEED_API_ENDPOINT,
+            ScopeInterface::SCOPE_STORE,
+            $store
+        ));
+    }
+
+    /**
+     * @param null $store
+     * @return string
+     */
+    public function getFullUploadedStatusApiEndpoint($store = null)
+    {
+        return trim($this->scopeConfig->getValue(
+            self::XML_PATH_FULL_UPLOADED_STATUS,
+            ScopeInterface::SCOPE_STORE,
+            $store
+        ));
+    }
+
+    /**
+     * @param null $store
+     * @return string
+     */
+    public function getIncrementalUploadedStatusApiEndpoint($store = null)
+    {
+        return trim($this->scopeConfig->getValue(
+            self::XML_PATH_INCREMENTAL_UPLOADED_STATUS,
+            ScopeInterface::SCOPE_STORE,
+            $store
+        ));
+    }
+
+    /**
+     * @param null $store
+     * @return string
+     */
+    public function getUploadedSizeApiEndpoint($store = null)
+    {
+        return trim($this->scopeConfig->getValue(
+            self::XML_PATH_UPLOADED_SIZE,
             ScopeInterface::SCOPE_STORE,
             $store
         ));
@@ -427,5 +478,18 @@ class Data extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $store
         );
+    }
+
+    /**
+     * @param bool $dateTime
+     * @return false|string
+     */
+    public function formatDateTime($dateTime = false)
+    {
+        if (!$dateTime) {
+            $dateTime = time();
+        }
+
+        return date_format(date_create($dateTime), 'Y-m-d\TH:i:s\Z');
     }
 }

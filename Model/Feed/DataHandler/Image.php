@@ -223,6 +223,7 @@ class Image
     {
         if (empty($this->miscParams)) {
             $this->miscParams = [
+                // if this parameter is included - incorrectly generating sub-dir hash, temporary commented
 //                'image_type' => $this->getType(),
                 'image_height' => $this->getImageAttribute('height'),
                 'image_width' => $this->getImageAttribute('width'),
@@ -333,8 +334,9 @@ class Image
     {
         // try to retrieve cache url
         $url = $this->getImageCacheSubUrl() . $imagePath;
-        $imagePath = $this->getRootPath() . substr($url, strpos($url, '/pub'));
-        if (!file_exists($imagePath)) {
+        $imageSubPath = substr($url, strpos($url, '/pub'));
+        $imageRealPath = $this->getRootPath() . $imageSubPath;
+        if (!file_exists($imageRealPath)) {
             // non cache url
             $url = $this->catalogProductMediaConfig->getMediaUrl($imagePath);
         }
