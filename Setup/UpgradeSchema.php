@@ -204,6 +204,12 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 null,
                 [],
                 'System Information'
+            )->addColumn(
+                'upload_id',
+                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                null,
+                [],
+                'Upload ID'
             )->addIndex(
                 $installer->getIdxName('unbxd_productfeed_feed_view', ['feed_id']),
                 ['feed_id']

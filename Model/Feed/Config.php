@@ -27,6 +27,14 @@ class Config
     const FEED_UPLOADED_SIZE_API_ENDPOINT_DEFAULT = 'http://feed.unbxd.io/api/%s/catalog/size';
 
     /**
+     * Feed messages who are responsible for specific operation
+     */
+    const FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING =
+        'Product feed has been successfully uploaded. Processing by Unbxd service.';
+    const FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE =
+        'Product feed has been successfully processed by Unbxd service.';
+
+    /**
      * Feed types:
      *
      *  full - full catalog product synchronization
@@ -113,6 +121,11 @@ class Config
      * Check whether Unbxd service support post method curl file create param
      */
     const CURL_FILE_CREATE_POST_PARAM_SUPPORT = true;
+
+    /**
+     * Flag to detect if need to send additional API call to check uploaded feed status
+     */
+    const VALIDATE_STATUS_FOR_UPLOADED_FEED = true;
 
     /**
      * Feed operation types (e.g. add new product, update product data, delete product)

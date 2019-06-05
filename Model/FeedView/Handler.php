@@ -243,7 +243,7 @@ class Handler extends \Magento\Framework\DataObject
 
         $filter = new DataObject();
         $filter->setData([
-            'field' => 'queue_id',
+            'field' => 'feed_id',
             'value' => $ids,
             'condition_type' => 'in'
         ]);

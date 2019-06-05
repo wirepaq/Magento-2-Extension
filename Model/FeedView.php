@@ -29,6 +29,7 @@ class FeedView extends AbstractModel implements FeedViewInterface
     const STATUS_RUNNING = 1;
     const STATUS_COMPLETE = 2;
     const STATUS_ERROR = 3;
+    const STATUS_INDEXING = 4;
     /**#@-*/
 
     /**#@+
@@ -55,7 +56,8 @@ class FeedView extends AbstractModel implements FeedViewInterface
         return [
             self::STATUS_RUNNING => __('Running'),
             self::STATUS_COMPLETE => __('Complete'),
-            self::STATUS_ERROR => __('Error')
+            self::STATUS_ERROR => __('Error'),
+            self::STATUS_INDEXING => __('Indexing')
         ];
     }
 
@@ -177,6 +179,16 @@ class FeedView extends AbstractModel implements FeedViewInterface
     public function getSystemInformation()
     {
         return $this->getData(self::SYSTEM_INFORMATION);
+    }
+
+    /**
+     * Retrieve upload ID
+     *
+     * @return mixed|string|null
+     */
+    public function getUploadId()
+    {
+        return $this->getData(self::UPLOAD_ID);
     }
 
     /**
@@ -309,5 +321,16 @@ class FeedView extends AbstractModel implements FeedViewInterface
     public function setSystemInformation($systemInformation)
     {
         return $this->setData(self::SYSTEM_INFORMATION, $systemInformation);
+    }
+
+    /**
+     * Set upload ID
+     *
+     * @param $uploadId
+     * @return mixed|FeedView
+     */
+    public function setUploadId($uploadId)
+    {
+        return $this->setData(self::UPLOAD_ID, $uploadId);
     }
 }

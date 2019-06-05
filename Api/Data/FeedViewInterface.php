@@ -32,6 +32,7 @@ interface FeedViewInterface
     const STATUS                    = 'status';
     const ADDITIONAL_INFORMATION    = 'additional_information';
     const SYSTEM_INFORMATION        = 'system_information';
+    const UPLOAD_ID                 = 'upload_id';
     /**#@-*/
 
     /**
@@ -117,6 +118,13 @@ interface FeedViewInterface
      * @return string|null
      */
     public function getSystemInformation();
+
+    /**
+     * Get upload ID
+     *
+     * @return string|null
+     */
+    public function getUploadId();
 
     /**
      * Set ID
@@ -213,4 +221,12 @@ interface FeedViewInterface
      * @return FeedViewInterface
      */
     public function setSystemInformation($systemInformation);
+
+    /**
+     * Set upload ID
+     *
+     * @param $uploadId
+     * @return mixed
+     */
+    public function setUploadId($uploadId);
 }

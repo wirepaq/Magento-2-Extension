@@ -39,8 +39,18 @@ class Feed
      *
      * @throws \Exception
      */
-    public function execute()
+    public function executeQueueJobs()
     {
         $this->cronManager->runJobs();
+    }
+
+    /**
+     * Check status for uploaded feed
+     *
+     * @throws \Exception
+     */
+    public function checkUploadFeedStatus()
+    {
+        $this->cronManager->checkUploadFeedStatus();
     }
 }

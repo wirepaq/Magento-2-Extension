@@ -54,7 +54,8 @@ class Full extends ActionIndex
         try {
             $this->indexingQueueRepository->save($queue);
             $this->messageManager->addSuccessMessage(
-                __('Sync operation was added to queue. Please make sure the related cron job is configured to perform this operation.')
+                __('Synchronization operation was added to queue.
+                Please make sure the related cron job is configured to perform this operation.')
             );
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());

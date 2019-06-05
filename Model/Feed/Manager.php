@@ -821,45 +821,15 @@ class Manager
             ? FeedConfig::FEED_TYPE_FULL_UPLOADED_STATUS
             : FeedConfig::FEED_TYPE_INCREMENTAL_UPLOADED_STATUS;
 
-        $isSuccess = false;
-        $totalDelayTime = 0;
-        $retries = 0;
-        do {
-            $retry = false;
-            try {
-                $connectorManager->resetHeaders()
-                    ->resetParams()
-                    ->execute($apiEndpointType, \Zend_Http_Client::GET);
-            } catch (\Exception $e) {
-                // catch and log exception
-                $this->logger->error('Can\'t check uploaded feed status.')->critical($e);
-                $this->postProcessActions();
-            }
-
-            $responseBodyData = $response->getResponseBodyAsArray();
-            if (!empty($responseBodyData)) {
-                $status = array_key_exists('status', $responseBodyData) ? $responseBodyData['status'] : null;
-                if ($status) {
-                    if ($status == FeedResponse::RESPONSE_FIELD_STATUS_VALUE_INDEXING) {
-                        sleep(FeedResponse::DELAY_TIME_FOR_CHECK_UPLOADED_STATUS);
-                        $totalDelayTime += FeedResponse::DELAY_TIME_FOR_CHECK_UPLOADED_STATUS;
-                        $retries ++;
-                        $retry = true;
-                    }
-                    if ($status == FeedResponse::RESPONSE_FIELD_STATUS_VALUE_INDEXED) {
-                        $isSuccess = true;
-                    }
-                }
-            }
-        } while ($retry);
-
-        $this->logger->info(
-            sprintf(
-                'Number of repeated API requests to retrieve final status for uploaded feed: %s',
-                $retries
-            )
-        );
-        $this->logger->info(sprintf('Total delay time (in sec.): %s', $totalDelayTime));
+        try {
+            $connectorManager->resetHeaders()
+                ->resetParams()
+                ->execute($apiEndpointType, \Zend_Http_Client::GET);
+        } catch (\Exception $e) {
+            // catch and log exception
+            $this->logger->error('Can\'t check uploaded feed status.')->critical($e);
+            $this->postProcessActions();
+        }
 
         $this->logger->info('Dispatch event: ' . $this->eventPrefix . '_uploaded_status_after.');
         $this->eventManager->dispatch($this->eventPrefix . '_uploaded_status_after',
@@ -867,10 +837,6 @@ class Manager
         );
 
         $this->isUploadedStatusChecked = true;
-
-        if ($isSuccess) {
-            $this->retrieveUploadedSize($connectorManager, $response);
-        }
 
         return $this;
     }
@@ -914,10 +880,11 @@ class Manager
         /** @var FeedResponse $response */
         $response = $connectorManager->getResponse();
         if ($response instanceof FeedResponse) {
-            if (!$response->getIsError()) {
+            if (!$response->getIsError() && FeedConfig::VALIDATE_STATUS_FOR_UPLOADED_FEED) {
                 $this->checkUploadedFeedStatus($connectorManager, $response);
             }
-            return $this;
+
+            $this->retrieveUploadedSize($connectorManager, $response);
         }
 
         return $this;
@@ -980,8 +947,14 @@ class Manager
     {
         $this->logger->info('Update config statistics.');
 
+        $status = FeedView::STATUS_ERROR;
+        if ($response->getIsProcessing()) {
+            $status = FeedView::STATUS_INDEXING;
+        } else if ($response->getIsSuccess()) {
+            $status = FeedView::STATUS_COMPLETE;
+        }
+
         $isSuccess = (bool) $response->getIsSuccess();
-        $status = $isSuccess ? FeedView::STATUS_COMPLETE : FeedView::STATUS_ERROR;
         $type = $this->type;
 
         $this->feedHelper->setFullSynchronizationLocked($this->isFeedLock)
@@ -999,17 +972,12 @@ class Manager
             $this->feedHelper->setIncrementalProductSynchronizedStatus($isSuccess);
         }
 
-        $responseBody = $response->getResponseBodyAsArray();
-        if (!empty($responseBody)) {
-            $uploadId = array_key_exists(FeedResponse::RESPONSE_FIELD_UPLOAD_ID, $responseBody)
-                ? $responseBody[FeedResponse::RESPONSE_FIELD_UPLOAD_ID]
-                : false;
-            if ($uploadId) {
-                $this->feedHelper->setLastUploadId($uploadId);
-            }
-            if ($this->uploadedFeedSize > 0) {
-                $this->feedHelper->setUploadedSize($this->uploadedFeedSize);
-            }
+        $uploadId = $response->getUploadId();
+        if ($uploadId) {
+            $this->feedHelper->setLastUploadId($uploadId);
+        }
+        if ($this->uploadedFeedSize > 0) {
+            $this->feedHelper->setUploadedSize($this->uploadedFeedSize);
         }
 
         return $this;
@@ -1025,21 +993,44 @@ class Manager
     {
         $this->logger->info('Update feed view.');
 
-        $status = $response->getIsSuccess() ? FeedView::STATUS_COMPLETE : FeedView::STATUS_ERROR;
+        $status = FeedView::STATUS_ERROR;
+        if ($response->getIsProcessing()) {
+            $status = FeedView::STATUS_INDEXING;
+        } else if ($response->getIsSuccess()) {
+            $status = FeedView::STATUS_COMPLETE;
+        }
+
         if ($this->feedViewId) {
             $updateData = [
                 FeedViewInterface::STATUS => $status,
                 FeedViewInterface::FINISHED_AT => date('Y-m-d H:i:s'),
-                FeedViewInterface::EXECUTION_TIME => $this->logger->getTime()
+                FeedViewInterface::EXECUTION_TIME => $this->logger->getTime(),
+                FeedViewInterface::UPLOAD_ID => $response->getUploadId()
             ];
             if ($response->getIsError()) {
                 $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] = $response->getErrorsAsString();
+            } else if ($response->getIsProcessing()) {
+                $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] =
+                    __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING);
+            } else if ($response->getIsSuccess()) {
+                $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] =
+                    __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE);
             }
             if ($this->uploadedFeedSize > 0) {
-                $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] = sprintf(
+                $message = sprintf(
                     'Total Uploaded Feed Size: %s (children products are not counted)',
                     $this->uploadedFeedSize
                 );
+                if (empty($updateData[FeedViewInterface::ADDITIONAL_INFORMATION])) {
+                    $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] = $message;
+                } else {
+                    $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] =
+                        sprintf(
+                            '%s' . '<br/>' . '%s',
+                            $updateData[FeedViewInterface::ADDITIONAL_INFORMATION],
+                            $message
+                        );
+                }
             }
 
             $this->getFeedViewManager()->update($this->feedViewId, $updateData);

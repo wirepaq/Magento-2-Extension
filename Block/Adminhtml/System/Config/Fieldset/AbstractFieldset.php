@@ -180,10 +180,19 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     /**
      * @return bool
      */
-    public function getIsSuccess()
+    public function getIsProcessing()
+    {
+        return (bool) (($this->getLastSynchronizationStatus() == FeedView::STATUS_INDEXING)
+            && $this->getLastUploadId());
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsComplete()
     {
         return (bool) (($this->getLastSynchronizationStatus() == FeedView::STATUS_COMPLETE)
-            && $this->isSynchronizationAttempt());
+            && $this->getLastUploadId());
     }
 
     /**
@@ -210,7 +219,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
         $statusHtml = '';
         if (array_key_exists($status, $availableStatuses)) {
             $title = $availableStatuses[$status];
-            if ($status == FeedView::STATUS_RUNNING) {
+            if (in_array($status, [FeedView::STATUS_RUNNING, FeedView::STATUS_INDEXING])) {
                 $decoratorClassPath = 'minor';
             } elseif ($status == FeedView::STATUS_COMPLETE) {
                 $decoratorClassPath = 'notice';

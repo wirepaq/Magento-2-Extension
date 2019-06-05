@@ -83,7 +83,7 @@ class Status extends Column
         $title = 'Undefined';
         if (array_key_exists($status, $availableStatuses)) {
             $title = $availableStatuses[$status];
-            if ($status == FeedView::STATUS_RUNNING) {
+            if (in_array($status, [FeedView::STATUS_RUNNING, FeedView::STATUS_INDEXING])) {
                 $decoratorClassPath = 'minor';
             } elseif ($status == FeedView::STATUS_COMPLETE) {
                 $decoratorClassPath = 'notice';

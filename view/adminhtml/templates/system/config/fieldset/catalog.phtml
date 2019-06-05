@@ -8,11 +8,14 @@
     <div class="block notification">
         <?php
         $isSynchronizationAttempt = $block->isSynchronizationAttempt();
-        $isSuccess = $block->getIsSuccess();
-        $stateClassName = $isSuccess ? 'success' : 'warning';
-        $message = $isSuccess
-            ? __('Product catalog is synchronized.')
-            : __('Product catalog is not synchronized.')
+        $isComplete = $block->getIsComplete();
+        $stateClassName = $isComplete ? 'success' : 'warning';
+        $message = __('Product catalog is not synchronized.');
+        if ($block->getIsProcessing()) {
+            $message = __(\Unbxd\ProductFeed\Model\Feed\Config::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING);
+        } else if ($isComplete) {
+            $message = __(\Unbxd\ProductFeed\Model\Feed\Config::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE);
+        }
         ?>
         <div class="messages-container">
             <div class="messages">

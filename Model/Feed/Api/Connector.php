@@ -16,6 +16,7 @@ use Unbxd\ProductFeed\Model\Feed\Api\Response\Factory as ResponseFactory;
 use Unbxd\ProductFeed\Model\Serializer;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
+use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
 
 /**
  * Class Connector
@@ -62,6 +63,13 @@ class Connector
      * @var array
      */
     private $params = [];
+
+    /**
+     * API request extra params
+     *
+     * @var array
+     */
+    private $extraParams = [];
 
     /**
      * API request method
@@ -111,7 +119,7 @@ class Connector
     /**
      * @param array $headers
      */
-    private function setHeaders(array $headers)
+    public function setHeaders(array $headers)
     {
         $this->headers = array_merge($this->headers, $headers);
     }
@@ -138,7 +146,7 @@ class Connector
     /**
      * @param array $params
      */
-    private function setParams(array $params)
+    public function setParams(array $params)
     {
         $this->params = array_merge($this->params, $params);
     }
@@ -163,11 +171,44 @@ class Connector
     }
 
     /**
-     * @param string $method
+     * @param array $extraParams
+     * @return $this
      */
-    private function setRequestMethod($method = \Zend_Http_Client::POST)
+    public function setExtraParams(array $extraParams)
+    {
+        $this->extraParams = array_merge($this->extraParams, $extraParams);
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    private function getExtraParams()
+    {
+        return $this->extraParams;
+    }
+
+    /**
+     * @return $this
+     */
+    public function resetExtraParams()
+    {
+        $this->extraParams = [];
+        $this->setExtraParams($this->extraParams);
+
+        return $this;
+    }
+
+    /**
+     * @param string $method
+     * @return $this
+     */
+    public function setRequestMethod($method = \Zend_Http_Client::POST)
     {
         $this->requestMethod = (string) $method;
+
+        return $this;
     }
 
     /**
@@ -180,10 +221,13 @@ class Connector
 
     /**
      * @param string $url
+     * @return $this
      */
-    private function setApiUrl($url)
+    public function setApiUrl($url)
     {
         $this->url = (string) $url;
+
+        return $this;
     }
 
     /**
@@ -196,10 +240,13 @@ class Connector
 
     /**
      * @param string $siteKey
+     * @return $this
      */
-    private function setSiteKey($siteKey)
+    public function setSiteKey($siteKey)
     {
         $this->siteKey = (string) $siteKey;
+
+        return $this;
     }
 
     /**
@@ -233,6 +280,22 @@ class Connector
     }
 
     /**
+     * @return mixed|string|null
+     */
+    private function retrieveUploadId()
+    {
+        $uploadId = $this->getResponseManager()->getUploadId();
+        if (!$uploadId && !empty($this->getExtraParams())) {
+            $extraParams = $this->getExtraParams();
+            $uploadId = array_key_exists(FeedViewInterface::UPLOAD_ID, $extraParams)
+                ? $extraParams[FeedViewInterface::UPLOAD_ID]
+                : null;
+        }
+
+        return $uploadId;
+    }
+
+    /**
      * Prepare API url for request
      *
      * @param string $type
@@ -252,14 +315,14 @@ class Connector
             $this->setApiUrl(sprintf($apiEndpoint, $siteKey));
         } else if ($type == FeedConfig::FEED_TYPE_FULL_UPLOADED_STATUS) {
             $apiEndpoint = $this->helperData->getFullUploadedStatusApiEndpoint();
-            $uploadId = $this->getResponseManager()->getUploadId();
+            $uploadId = $this->retrieveUploadId();
             if (!$uploadId) {
                 return false;
             }
             $this->setApiUrl(sprintf($apiEndpoint, $siteKey, $uploadId));
         } else if ($type == FeedConfig::FEED_TYPE_INCREMENTAL_UPLOADED_STATUS) {
             $apiEndpoint = $this->helperData->getIncrementalUploadedStatusApiEndpoint();
-            $uploadId = $this->getResponseManager()->getUploadId();
+            $uploadId = $this->retrieveUploadId();
             if (!$uploadId) {
                 return false;
             }
@@ -392,5 +455,15 @@ class Connector
     public function getResponse()
     {
         return $this->getResponseManager();
+    }
+
+    /**
+     * @return $this
+     */
+    public function resetResponse()
+    {
+        $this->responseManager = null;
+
+        return $this;
     }
 }

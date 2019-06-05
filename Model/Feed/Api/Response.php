@@ -24,6 +24,10 @@ class Response extends DataObject
     /**
      * HTTP RESPONSE CODES
      *
+     * on feed processing (indexing) by Unbxd service
+     */
+    const HTTP_RESPONSE_CODE_FEED_INDEXING = '100';
+    /**
      * default success code
      */
     const HTTP_RESPONSE_CODE_SUCCESS_DEFAULT = '200';
@@ -48,14 +52,13 @@ class Response extends DataObject
      * API Response fields
      */
     const RESPONSE_FIELD_UPLOAD_ID = 'uploadId';
+    const RESPONSE_FIELD_STATUS = 'status';
+    /**
+     * data processing statuses
+     */
     const RESPONSE_FIELD_STATUS_VALUE_INDEXING = 'INDEXING';
     const RESPONSE_FIELD_STATUS_VALUE_FAILED = 'FAILED';
     const RESPONSE_FIELD_STATUS_VALUE_INDEXED = 'INDEXED';
-
-    /**
-     * The delay time after which a repeated API request is started to check the uploaded status
-     */
-    const DELAY_TIME_FOR_CHECK_UPLOADED_STATUS = 60; // in seconds
 
     /**
      * @var HelperData
@@ -125,6 +128,11 @@ class Response extends DataObject
     private $isError = false;
 
     /**
+     * @var bool
+     */
+    private $isProcessing = false;
+
+    /**
      * Error recollected after each API call
      *
      * @var array
@@ -186,8 +194,9 @@ class Response extends DataObject
                 $this->setResponseMessage($message);
             }
 
-            $this->setIsSuccess();
             $this->setIsError();
+            $this->setIsProcessing();
+            $this->setIsSuccess();
 
             if ($this->getIsError()) {
                 // error message maybe come from body?
@@ -195,7 +204,7 @@ class Response extends DataObject
             }
 
             if ($this->getIsSuccess()) {
-                // use for check upload status (additional API call)
+                // use for check upload status and additional API call(s)
                 $this->setUploadId();
             }
         }
@@ -335,6 +344,7 @@ class Response extends DataObject
                 self::HTTP_RESPONSE_CODE_SUCCESS_DEFAULT,
                 self::HTTP_RESPONSE_CODE_SUCCESS_FEED_UPLOAD
             ]);
+            $flag = $flag && !$this->getIsProcessing();
         }
 
         $this->isSuccess = (bool) $flag;
@@ -375,6 +385,33 @@ class Response extends DataObject
     public function getIsError()
     {
         return $this->isError;
+    }
+
+    /**
+     * @param null $flag
+     * @return $this
+     */
+    public function setIsProcessing($flag = null)
+    {
+        if (null == $flag) {
+            $bodyData = $this->getResponseBodyAsArray();
+            $status = array_key_exists(self::RESPONSE_FIELD_STATUS, $bodyData)
+                ? trim($bodyData[self::RESPONSE_FIELD_STATUS])
+                : null;
+            $flag = ($status == self::RESPONSE_FIELD_STATUS_VALUE_INDEXING);
+        }
+
+        $this->isProcessing = (bool) $flag;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsProcessing()
+    {
+        return $this->isProcessing;
     }
 
     /**
@@ -513,6 +550,7 @@ class Response extends DataObject
             'upload_id' => $this->getUploadId(),
             'is_success' => $this->getIsSuccess(),
             'is_error' => $this->getIsError(),
+            'is_processing' => $this->getIsProcessing(),
             'errors' => $this->getErrors()
         ]);
 
