@@ -314,9 +314,14 @@ class Connector
             return false;
         }
 
-        if ($this->getApiUrl() && ($type == AnalyticsConfig::API_REQUEST_TYPE_ANALYTICS)) {
-            $this->resetHeaders();
-            return true;
+        if ($this->getApiUrl()) {
+            $analyticsType = class_exists(AnalyticsConfig::class)
+                ? AnalyticsConfig::API_REQUEST_TYPE_ANALYTICS
+                : 'analytics';
+            if ($type == $analyticsType) {
+                $this->resetHeaders();
+                return true;
+            }
         }
 
         if ($type == FeedConfig::FEED_TYPE_FULL) {
