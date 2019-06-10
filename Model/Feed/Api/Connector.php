@@ -17,6 +17,7 @@ use Unbxd\ProductFeed\Model\Serializer;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
+use Unbxd\Analytics\Model\Config as AnalyticsConfig;
 
 /**
  * Class Connector
@@ -118,10 +119,13 @@ class Connector
 
     /**
      * @param array $headers
+     * @return $this
      */
-    public function setHeaders(array $headers)
+    private function setHeaders(array $headers)
     {
         $this->headers = array_merge($this->headers, $headers);
+
+        return $this;
     }
 
     /**
@@ -145,10 +149,13 @@ class Connector
 
     /**
      * @param array $params
+     * @return $this
      */
-    public function setParams(array $params)
+    private function setParams(array $params)
     {
         $this->params = array_merge($this->params, $params);
+
+        return $this;
     }
 
     /**
@@ -204,7 +211,7 @@ class Connector
      * @param string $method
      * @return $this
      */
-    public function setRequestMethod($method = \Zend_Http_Client::POST)
+    private function setRequestMethod($method = \Zend_Http_Client::POST)
     {
         $this->requestMethod = (string) $method;
 
@@ -242,7 +249,7 @@ class Connector
      * @param string $siteKey
      * @return $this
      */
-    public function setSiteKey($siteKey)
+    private function setSiteKey($siteKey)
     {
         $this->siteKey = (string) $siteKey;
 
@@ -305,6 +312,11 @@ class Connector
     {
         if (!$siteKey = $this->getSiteKey()) {
             return false;
+        }
+
+        if ($this->getApiUrl() && ($type == AnalyticsConfig::API_REQUEST_TYPE_ANALYTICS)) {
+            $this->resetHeaders();
+            return true;
         }
 
         if ($type == FeedConfig::FEED_TYPE_FULL) {

@@ -34,6 +34,7 @@ use Unbxd\ProductFeed\Model\Feed\Api\ConnectorFactory;
 use Unbxd\ProductFeed\Model\Feed\Api\Response as FeedResponse;
 use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
+use Magento\Framework\DB\Helper as DBHelper;
 use Unbxd\ProductFeed\Logger\LoggerInterface;
 use Unbxd\ProductFeed\Logger\OptionsListConstants;
 use Magento\Store\Model\StoreManagerInterface;
@@ -44,11 +45,13 @@ use Magento\Store\Model\StoreManagerInterface;
  */
 class CronManager
 {
-    const FEED_JOB_CODE = 'unbxd_feed';
+    const FEED_JOB_CODE_PREFIX = 'unbxd_feed';
 
-    const FEED_JOB_CODE_CHECK_UPLOAD_STATUS = 'unbxd_feed_check_upload_status';
+    const FEED_JOB_CODE = self::FEED_JOB_CODE_PREFIX;
 
-    const DEFAULT_COLLECTION_SIZE = 10;
+    const FEED_JOB_CODE_CHECK_UPLOAD_STATUS = self::FEED_JOB_CODE_PREFIX . '_check_upload_status';
+
+    const DEFAULT_COLLECTION_SIZE = 20;
 
     const DEFAULT_JOBS_LIMIT_PER_RUN = 5;
 
@@ -128,6 +131,11 @@ class CronManager
     private $helperData;
 
     /**
+     * @var DBHelper
+     */
+    private $resourceHelper;
+
+    /**
      * @var StoreManagerInterface
      */
     private $storeManager;
@@ -187,6 +195,7 @@ class CronManager
      * @param LoggerInterface $logger
      * @param FeedHelper $feedHelper
      * @param HelperData $helperData
+     * @param DBHelper $resourceHelper
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(
@@ -205,6 +214,7 @@ class CronManager
         LoggerInterface $logger,
         FeedHelper $feedHelper,
         HelperData $helperData,
+        DBHelper $resourceHelper,
         StoreManagerInterface $storeManager
     ) {
         $this->crontabManager = $crontabManager;
@@ -222,34 +232,8 @@ class CronManager
         $this->logger = $logger->create(OptionsListConstants::LOGGER_TYPE_INDEXING);
         $this->feedHelper = $feedHelper;
         $this->helperData = $helperData;
+        $this->resourceHelper = $resourceHelper;
         $this->storeManager = $storeManager;
-    }
-
-    /**
-     * @param int $size
-     * @return null
-     */
-    public function getCronJobs($size)
-    {
-        if ($this->jobs == null) {
-            $result = [];
-            /** @var \Magento\Cron\Model\ResourceModel\Schedule\Collection $scheduleCollection */
-            $scheduleCollection = $this->cronFactory->create();
-            $this->filterCollectionByTimeOffset($scheduleCollection, 86400, $size); // 60*60*24
-            if (count($scheduleCollection) > 0) {
-                foreach ($scheduleCollection as $jobRow) {
-                    $result[] = [
-                        'schedule_id' => $jobRow['schedule_id'],
-                        'code' => $jobRow['job_code'],
-                        'status' => $jobRow['status'],
-                        'created_at' => $jobRow['created_at']
-                    ];
-                }
-                $this->jobs = $result;
-            }
-        }
-
-        return $this->jobs;
     }
 
     /**
@@ -263,7 +247,6 @@ class CronManager
         $timeOffset,
         $size = ''
     ) {
-        // try to retrieve data from last 24hrs
         $time = time();
         $to = date('Y-m-d H:i:s', $time);
         $lastTime = $time - $timeOffset;
@@ -274,6 +257,72 @@ class CronManager
         )->setOrder('schedule_id')->setPageSize($size ?: self::DEFAULT_COLLECTION_SIZE);
 
         return $this;
+    }
+
+    /**
+     * @param \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection
+     * @param $jobCode
+     * @return $this
+     */
+    private function filterCollectionByJobCode(
+        \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection,
+        $jobCode
+    ) {
+        $jobCodeLike = $this->resourceHelper->addLikeEscape(
+            $jobCode,
+            ['position' => 'any']
+        );
+        $collection->addFieldToFilter(
+            'job_code',
+            ['like' => $jobCodeLike]
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection
+     * @param $size
+     * @return $this
+     */
+    private function filterCollection(
+        \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection,
+        $size
+    ) {
+        // try to retrieve data from last 24hrs
+        $this->filterCollectionByTimeOffset($collection, 86400, $size); // 60*60*24
+        // retrieve only jobs affected by unxbd feed process
+        $this->filterCollectionByJobCode($collection, self::FEED_JOB_CODE_PREFIX);
+
+        return $this;
+    }
+
+    /**
+     * @param int $size
+     * @return null
+     */
+    public function getCronJobs($size)
+    {
+        if ($this->jobs == null) {
+            $result = [];
+            /** @var \Magento\Cron\Model\ResourceModel\Schedule\Collection $scheduleCollection */
+            $scheduleCollection = $this->cronFactory->create();
+            $this->filterCollection($scheduleCollection, $size);
+            if (count($scheduleCollection) > 0) {
+                foreach ($scheduleCollection as $jobRow) {
+                    $result[] = [
+                        'schedule_id' => isset($jobRow['schedule_id']) ? $jobRow['schedule_id'] : '',
+                        'code' => isset($jobRow['job_code']) ? $jobRow['job_code'] : '',
+                        'status' => isset($jobRow['status']) ? $jobRow['status'] : '',
+                        'created_at' => isset($jobRow['created_at']) ? $jobRow['created_at'] : '',
+                        'messages' => isset($jobRow['messages']) ? $jobRow['messages'] : ''
+                    ];
+                }
+                $this->jobs = $result;
+            }
+        }
+
+        return $this->jobs;
     }
 
     /**

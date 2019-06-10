@@ -23,6 +23,7 @@ $jobs = $block->getCronJobs();
                 <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Job Code') ?></span></th>
                 <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Status') ?></span></th>
                 <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Created At') ?></span></th>
+                <th class="data-grid-th"><span><?= /* @escapeNotVerified */ __('Messages') ?></span></th>
             </tr>
             </thead>
             <tbody>
@@ -32,6 +33,7 @@ $jobs = $block->getCronJobs();
                     <td><span><?= /* @escapeNotVerified */ $data['code'] ?></span></td>
                     <td><span><?= /* @escapeNotVerified */ $data['status'] ?></span></td>
                     <td><span><?= /* @escapeNotVerified */ $data['created_at'] ?></span></td>
+                    <td><span><?= /* @escapeNotVerified */ $data['messages'] ?></span></td>
                 </tr>
             <?php endforeach;?>
             </tbody>

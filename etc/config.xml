@@ -35,7 +35,7 @@
                 <filter_attributes>disabled</filter_attributes>
             </general>
             <indexing>
-                <enable_product_indexing>1</enable_product_indexing>
+                <enabled_queue>1</enabled_queue>
             </indexing>
             <cron>
                 <enabled>0</enabled>
