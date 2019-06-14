@@ -11,93 +11,25 @@
  */
 namespace Unbxd\ProductFeed\Console\Command\Feed;
 
-use Symfony\Component\Console\Command\Command;
+use Unbxd\ProductFeed\Console\Command\Feed\AbstractCommand;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Magento\Framework\App\State as AppState;
-use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
-use Unbxd\ProductFeed\Helper\ProductHelper;
 use Unbxd\ProductFeed\Model\CronManager;
-use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as ReindexAction;
-use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Magento\Store\Model\Store;
-use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * Class Incremental
  * @package Unbxd\ProductFeed\Console\Command\Feed
  */
-class Incremental extends Command
+class Incremental extends AbstractCommand
 {
+    /**
+     * Product ID argument key
+     */
     const PRODUCTS_ID_ARGUMENT_KEY = 'products_id';
-    const STORE_INPUT_OPTION_KEY = 'store';
-
-    /**
-     * @var AppState
-     */
-    protected $appState;
-
-    /**
-     * @var FeedHelper
-     */
-    private $feedHelper;
-
-    /**
-     * @var ProductHelper
-     */
-    private $productHelper;
-
-    /**
-     * @var CronManager
-     */
-    private $cronManager;
-
-    /**
-     * @var ReindexAction
-     */
-    private $reindexAction;
-
-    /**
-     * @var FeedManager
-     */
-    private $feedManager;
-
-    /**
-     * @var StoreManagerInterface
-     */
-    protected $storeManager;
-
-    /**
-     * Incremental constructor.
-     * @param AppState $state
-     * @param FeedHelper $feedHelper
-     * @param ProductHelper $productHelper
-     * @param CronManager $cronManager
-     * @param ReindexAction $reindexAction
-     * @param FeedManager $feedManager
-     * @param StoreManagerInterface $storeManager
-     */
-    public function __construct(
-        AppState $state,
-        FeedHelper $feedHelper,
-        ProductHelper $productHelper,
-        CronManager $cronManager,
-        ReindexAction $reindexAction,
-        FeedManager $feedManager,
-        StoreManagerInterface $storeManager
-    ) {
-        parent::__construct();
-        $this->appState = $state;
-        $this->feedHelper = $feedHelper;
-        $this->productHelper = $productHelper;
-        $this->cronManager = $cronManager;
-        $this->reindexAction = $reindexAction;
-        $this->feedManager = $feedManager;
-        $this->storeManager = $storeManager;
-    }
 
     /**
      * {@inheritdoc}
@@ -195,20 +127,7 @@ class Incremental extends Command
             }
         }
 
-        $errorMessage = 'Synchronization failed for store(s) with ID(s): %s. See feed view logs for additional information';
-        $isSuccess = $this->feedHelper->isLastSynchronizationSuccess();
-
-        if (!empty($errors)) {
-            $affectedIds = implode(',', array_keys($errors));
-            $errorMessage = sprintf($errorMessage, $affectedIds);
-            $output->writeln("<error>{$errorMessage}</error>");
-        } else if (!$isSuccess) {
-            $affectedIds = implode(',', array_values($stores));
-            $errorMessage = sprintf($errorMessage, $affectedIds);
-            $output->writeln("<error>{$errorMessage}</error>");
-        } else {
-            $output->writeln("<info>Synchronization success</info>");
-        }
+        $this->buildResponse($output, $stores);
 
         $end = microtime(true);
         $workingTime = round($end - $start, 2);
@@ -218,6 +137,31 @@ class Incremental extends Command
         $this->postProcessActions($output);
 
         return true;
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @param $stores
+     * @return $this
+     */
+    private function buildResponse($output, $stores)
+    {
+        $errorMessage = FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR;
+        if (!empty($errors)) {
+            $affectedIds = implode(',', array_keys($errors));
+            $errorMessage = sprintf($errorMessage, $affectedIds);
+            $output->writeln("<error>{$errorMessage}</error>");
+        } else if ($this->feedHelper->isLastSynchronizationSuccess()) {
+            $output->writeln("<info>" . FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE . "</info>");
+        } else if ($this->feedHelper->isLastSynchronizationProcessing()) {
+            $output->writeln("<info>" . FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING . "</info>");
+        } else {
+            $affectedIds = implode(',', array_values($stores));
+            $errorMessage = sprintf($errorMessage, $affectedIds);
+            $output->writeln("<error>{$errorMessage}</error>");
+        }
+
+        return $this;
     }
 
     /**
@@ -239,7 +183,7 @@ class Incremental extends Command
      * @param OutputInterface $output
      * @return $this
      */
-    private function preProcessActions($output)
+    protected function preProcessActions($output)
     {
         return $this;
     }
@@ -248,43 +192,8 @@ class Incremental extends Command
      * @param OutputInterface $output
      * @return $this
      */
-    private function postProcessActions($output)
+    protected function postProcessActions($output)
     {
         return $this;
-    }
-
-    /**
-     * @param $storeCode
-     * @param \Magento\Store\Api\Data\StoreInterface[] $stores
-     * @return int
-     */
-    private function getStoreIdByCode($storeCode, $stores)
-    {
-        foreach ($stores as $store) {
-            if ($store->getCode() == $storeCode) {
-                return $store->getId();
-            }
-        }
-
-        return Store::DEFAULT_STORE_ID;
-    }
-
-    /**
-     * @return int
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     */
-    private function getDefaultStoreId()
-    {
-        return $this->storeManager->getStore()->getId();
-    }
-
-    /**
-     * @param string $storeId
-     * @return string
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     */
-    private function getStoreNameById($storeId = '')
-    {
-        return $this->storeManager->getStore($storeId)->getName();
     }
 }

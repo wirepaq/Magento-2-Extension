@@ -73,7 +73,7 @@ class Feed extends HelperData
     private $defaultConfigDataFields = [
         self::FEED_PATH_FULL_STATE_FLAG => 0,
         self::FEED_PATH_INCREMENTAL_STATE_FLAG => 0,
-        self::FEED_PATH_FULL_STATE_FLAG => 0,
+        self::FEED_PATH_FULL_LOCK_FLAG => 0,
         self::FEED_PATH_FULL_LOCK_TIME => 0,
         self::FEED_PATH_LAST_OPERATION_TYPE => null,
         self::FEED_PATH_LAST_DATETIME => null,
@@ -258,13 +258,15 @@ class Feed extends HelperData
      */
     public function isLastSynchronizationSuccess()
     {
-        $lastSyncStatus = $this->getLastSynchronizationStatus();
-        $isSuccess = false;
-        if ($lastSyncStatus && ($lastSyncStatus == FeedView::STATUS_COMPLETE)) {
-            $isSuccess = true;
-        }
+        return (bool) ($this->getLastSynchronizationStatus() == FeedView::STATUS_COMPLETE);
+    }
 
-        return $isSuccess;
+    /**
+     * @return bool
+     */
+    public function isLastSynchronizationProcessing()
+    {
+        return (bool) ($this->getLastSynchronizationStatus() == FeedView::STATUS_INDEXING);
     }
 
     /**

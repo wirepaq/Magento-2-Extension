@@ -75,7 +75,7 @@
                     <?php endif; ?>
                     </tbody>
                 </table>
-                <a href="<?php echo $this->getUrl('unbxd_productfeed/feed/view')?>">
+                <a class="link" href="<?= /* @escapeNotVerified */ $this->getUrl('unbxd_productfeed/feed/view')?>">
                     <?= /* @escapeNotVerified */ __('View details') ?>
                 </a>
             </div>
@@ -96,10 +96,13 @@
                 <li><a href="#unbxd_catalog_actions-head">
                         <?= /* @escapeNotVerified */ __('by actions below (see Manual Synchronization section)') ?></a>
                 </li>
-                <li><?= /* @escapeNotVerified */ __('by cli commands: %1',
+                <li><?= /* @escapeNotVerified */ __('by available CLI commands: %1',
                         '<br/><code>php bin/magento unbxd:product-feed:full</code><br/>
                     <code>php bin/magento unbxd:product-feed:incremental</code>') ?></li>
             </ul>
+            <a class="link external" target="_blank" href="<?= /* @escapeNotVerified */ $block->getCommandLineReferenceUrl() ?>">
+                <span><?= /* @escapeNotVerified */ __('Get started with command-line') ?></span>
+            </a>
         </div>
     </div>
 </div>

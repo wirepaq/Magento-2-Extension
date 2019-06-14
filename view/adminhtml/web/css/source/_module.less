@@ -58,9 +58,32 @@
         }
 
         &.content {
-            .helper-links {
-                p:last-child {
-                    margin-bottom: 0;
+            .link {
+                display: block;
+                margin-top: 10px;
+
+                &:hover,
+                &:focus {
+                    text-decoration: none;
+                }
+
+                &.external {
+                    span {
+                        position: relative;
+
+                        &:after {
+                            content: '\e644';
+                            font-size: 1rem;
+                            text-align: center;
+                            vertical-align: middle;
+                            font-family: 'Admin Icons';
+                            font-style: normal;
+                            font-weight: normal;
+                            line-height: 1;
+                            speak: none;
+                            padding: 0 0 5px 5px;
+                        }
+                    }
                 }
             }
         }
@@ -108,11 +131,6 @@
                         }
                     }
                 }
-            }
-
-            a {
-                display: block;
-                margin-top: 10px;
             }
         }
     }
@@ -164,7 +182,8 @@
     }
 }
 
-.adminhtml-system-config-edit {
+.adminhtml-system-config-edit,
+.adminhtml-system_config-edit {
     .modal-popup {
         &.confirm {
             .modal-inner-wrap {

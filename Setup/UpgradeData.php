@@ -71,7 +71,7 @@ class UpgradeData implements UpgradeDataInterface
             '%unbxd_catalog/feed/%'
         );
 
-        $alreadyInserted = $setup->getConnection()->fetchAll($select);
+        $alreadyInserted = $setup->getConnection()->fetchPairs($select);
 
         foreach ($this->feedHelper->getDefaultConfigFields() as $path => $value) {
             if (isset($alreadyInserted[$path])) {

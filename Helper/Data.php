@@ -83,11 +83,6 @@ class Data extends AbstractHelper
     private $configData;
 
     /**
-     * @var ScopeConfigInterface
-     */
-    protected $scopeConfig;
-
-    /**
      * @var StoreManagerInterface
      */
     protected $storeManager;
@@ -129,7 +124,6 @@ class Data extends AbstractHelper
         TimezoneInterface $dateTime
     ) {
         parent::__construct($context);
-        $this->scopeConfig = $context->getScopeConfig();
         $this->configInterface = $configInterface;
         $this->configWriter = $configWriter;
         $this->configData = $configData;

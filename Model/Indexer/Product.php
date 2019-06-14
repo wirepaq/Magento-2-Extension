@@ -12,7 +12,6 @@
 namespace Unbxd\ProductFeed\Model\Indexer;
 
 use Magento\Framework\Indexer\IndexerRegistry;
-use Magento\Framework\Search\Request\DimensionFactory;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as FullAction;
 use Unbxd\ProductFeed\Model\IndexingQueue;
 use Unbxd\ProductFeed\Model\IndexingQueue\Handler as QueueHandler;
@@ -41,11 +40,6 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      * @var IndexerRegistry
      */
     private $indexerRegistry;
-
-    /**
-     * @var DimensionFactory
-     */
-    private $dimensionFactory;
 
     /**
      * @var FullAction
@@ -95,9 +89,9 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
     /**
      * Product constructor.
      * @param IndexerRegistry $indexerRegistry
-     * @param DimensionFactory $dimensionFactory
      * @param FullAction $fullAction
      * @param QueueHandler $queueHandler
+     * @param FeedManager $feedManager
      * @param HelperData $helperData
      * @param ProductHelper $productHelper
      * @param LoggerInterface $logger
@@ -107,7 +101,6 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
      */
     public function __construct(
         IndexerRegistry $indexerRegistry,
-        DimensionFactory $dimensionFactory,
         FullAction $fullAction,
         QueueHandler $queueHandler,
         FeedManager $feedManager,
@@ -119,7 +112,6 @@ class Product implements \Magento\Framework\Indexer\ActionInterface, \Magento\Fr
         ConsoleOutput $consoleOutput
     ) {
         $this->indexerRegistry = $indexerRegistry;
-        $this->dimensionFactory = $dimensionFactory;
         $this->fullAction = $fullAction;
         $this->queueHandler = $queueHandler;
         $this->feedManager = $feedManager;

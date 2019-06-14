@@ -11,6 +11,7 @@
  */
 namespace Unbxd\ProductFeed\Block\Adminhtml\System\Config\Fieldset;
 
+use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Backend\Block\Template;
 use Magento\Framework\Data\Form\Element\Renderer\RendererInterface;
 use Magento\Backend\Block\Template\Context;
@@ -34,6 +35,11 @@ abstract class AbstractFieldset extends Template implements RendererInterface
         'base' => 'https://unbxd.com',
         'feed_doc' => 'https://unbxd.com/documentation/site-search/v2-search-product-feed/'
     ];
+
+    /**
+     * @var ProductMetadataInterface
+     */
+    private $productMetadata;
 
     /**
      * @var \Magento\Framework\View\Asset\Repository
@@ -68,6 +74,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     /**
      * AbstractFieldset constructor.
      * @param Context $context
+     * @param ProductMetadataInterface $productMetadata
      * @param \Magento\Framework\View\Asset\Repository $assetRepo
      * @param \Magento\Config\Model\Config\Structure $configStructure
      * @param ModuleHelper $moduleHelper
@@ -78,6 +85,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      */
     public function __construct(
         Context $context,
+        ProductMetadataInterface $productMetadata,
         \Magento\Framework\View\Asset\Repository $assetRepo,
         \Magento\Config\Model\Config\Structure $configStructure,
         ModuleHelper $moduleHelper,
@@ -87,12 +95,21 @@ abstract class AbstractFieldset extends Template implements RendererInterface
         array $data = []
     ) {
         parent::__construct($context, $data);
+        $this->productMetadata = $productMetadata;
         $this->assetRepo = $assetRepo;
         $this->configStructure = $configStructure;
         $this->moduleHelper = $moduleHelper;
         $this->feedHelper = $feedHelper;
         $this->feedView = $feedView;
         $this->dateTime = $dateTime;
+    }
+
+    /**
+     * @return string
+     */
+    private function getAppVersion()
+    {
+        return $this->productMetadata->getVersion();
     }
 
     /**
@@ -132,7 +149,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      */
     public function isSynchronizationAttempt()
     {
-        return (bool) ($this->getLastUploadId());
+        return (bool) $this->getLastUploadId();
     }
 
     /**
@@ -237,13 +254,9 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      * @param string $type
      * @return mixed|string
      */
-    public static function getUnbxdReferenceUrl($type = '')
+    public static function getUnbxdReferenceUrl($type = null)
     {
-        if (!$type) {
-            return isset(self::$unbxdReferenceUrls['base']) ? self::$unbxdReferenceUrls['base'] : '';
-        }
-
-        return isset(self::$unbxdReferenceUrls[$type]) ? self::$unbxdReferenceUrls[$type] : '';
+        return isset(self::$unbxdReferenceUrls[$type]) ? self::$unbxdReferenceUrls['base'] : '';
     }
 
     /**
@@ -267,5 +280,19 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     public function getCatalogFeedConfigurationUrl()
     {
         return $this->getActionUrl('adminhtml/system_config/edit/section/unbxd_catalog');
+    }
+
+    /**
+     * @return string
+     */
+    public function getCommandLineReferenceUrl()
+    {
+        $appVersion = $this->getAppVersion();
+        $appShortVersion = substr($appVersion,0, strrpos($appVersion,'.'));
+
+        return sprintf(
+            'https://devdocs.magento.com/guides/v%s/config-guide/cli/config-cli-subcommands.html',
+            $appShortVersion
+        );
     }
 }

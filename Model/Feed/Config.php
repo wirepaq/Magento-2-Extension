@@ -33,6 +33,8 @@ class Config
         'Product feed has been successfully uploaded. Processing by Unbxd service.';
     const FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE =
         'Product feed has been successfully processed by Unbxd service.';
+    const FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR =
+        'Synchronization failed for store(s) with ID(s): %s. See feed view logs for additional information';
 
     /**
      * Feed types:
@@ -48,6 +50,7 @@ class Config
     const FEED_TYPE_FULL_UPLOADED_STATUS = 'full_uploaded_status';
     const FEED_TYPE_INCREMENTAL_UPLOADED_STATUS = 'incremental_uploaded_status';
     const FEED_TYPE_UPLOADED_SIZE = 'uploaded_size';
+    const FEED_TYPE_ANALYTICS = 'analytics';
 
     /**
      * Flag to check whether or not include catalog fields to feed data

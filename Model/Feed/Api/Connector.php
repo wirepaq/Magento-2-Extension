@@ -317,7 +317,7 @@ class Connector
         if ($this->getApiUrl()) {
             $analyticsType = class_exists(AnalyticsConfig::class)
                 ? AnalyticsConfig::API_REQUEST_TYPE_ANALYTICS
-                : 'analytics';
+                : FeedConfig::FEED_TYPE_ANALYTICS;
             if ($type == $analyticsType) {
                 $this->resetHeaders();
                 return true;

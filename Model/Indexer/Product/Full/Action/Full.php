@@ -98,9 +98,9 @@ class Full
     private function initProductStoreIndex($storeId, $productIds = [])
     {
         $productId = 0;
-        // magento is only sending children ids here.
-        // ensure to reindex also the parents product ids, if any.
         if (!empty($productIds)) {
+            // magento is only sending children ids here.
+            // ensure to reindex also the parents product ids, if any.
             $relationsByChild = $this->resourceModel->getRelationsByChild($productIds);
             if (!empty($relationsByChild)) {
                 // @TODO - need to check if this needed

@@ -41,6 +41,17 @@
                 <enabled>0</enabled>
                 <cron_type>manually</cron_type>
             </cron>
+            <feed>
+                <full_state_flag>0</full_state_flag>
+                <incremental_state_flag>0</incremental_state_flag>
+                <full_lock_flag>0</full_lock_flag>
+                <full_lock_time>0</full_lock_time>
+                <last_operation_type>null</last_operation_type>
+                <last_datetime>null</last_datetime>
+                <last_status>null</last_status>
+                <last_upload_id>null</last_upload_id>
+                <uploaded_size>null</uploaded_size>
+            </feed>
         </unbxd_catalog>
         <unbxd_search>
 

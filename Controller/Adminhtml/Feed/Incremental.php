@@ -73,10 +73,13 @@ class Incremental extends FeedActionIndex
             }
         }
 
-        if ($this->feedHelper->isLastSynchronizationSuccess()) {
-            $this->messageManager->addErrorMessage(__('Related product(s) were synchronized successfully.'));
+        if ($this->feedHelper->isLastSynchronizationProcessing()) {
+            $this->messageManager->addSuccessMessage(__(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING));
+        } else if ($this->feedHelper->isLastSynchronizationSuccess()) {
+            $this->messageManager->addSuccessMessage(__(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE));
         } else {
-            $this->messageManager->addErrorMessage(__('Synchronization failed. See feed view log for additional information.'));
+            $message = sprintf(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR, $this->getStore()->getId());
+            $this->messageManager->addErrorMessage(__($message));
         }
 
         $resultJson->setData($responseContent);
