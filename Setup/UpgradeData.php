@@ -15,6 +15,7 @@ use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\UpgradeDataInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 
@@ -72,13 +73,12 @@ class UpgradeData implements UpgradeDataInterface
         );
 
         $alreadyInserted = $setup->getConnection()->fetchPairs($select);
-
         foreach ($this->feedHelper->getDefaultConfigFields() as $path => $value) {
             if (isset($alreadyInserted[$path])) {
                 continue;
             }
 
-            $this->config->saveConfig($path, $value);
+            $this->feedHelper->saveConfig($path, $value);
         }
 
         $setup->endSetup();

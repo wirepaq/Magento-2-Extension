@@ -157,7 +157,7 @@
                     <frontend_model>Unbxd\ProductFeed\Block\Adminhtml\System\Config\Field\Buttons\IncrementalSync</frontend_model>
                     <tooltip><![CDATA[Available only after full synchronization of the product catalog.]]></tooltip>
                     <comment><![CDATA[<p class="message unbxd-fieldset-field-note">Please make sure the related
-                    <a href="#unbxd_catalog_cron-head">cron job</a> is configured to perform this operation.</p>]]></comment>
+                    <a href="#unbxd_catalog_cron-head">cron job</a> is configured to perform this operations.</p>]]></comment>
                     <depends>
                         <field id="enabled">1</field>
                     </depends>

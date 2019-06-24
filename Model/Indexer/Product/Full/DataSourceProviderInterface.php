@@ -18,6 +18,13 @@ namespace Unbxd\ProductFeed\Model\Indexer\Product\Full;
 interface DataSourceProviderInterface
 {
     /**
+     * Return related data source code
+     *
+     * @return string
+     */
+    public function getDataSourceCode();
+
+    /**
      * Append data to a list for indexation
      *
      * @param $storeId

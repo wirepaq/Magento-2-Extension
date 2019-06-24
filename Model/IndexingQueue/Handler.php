@@ -262,7 +262,7 @@ class Handler extends \Magento\Framework\DataObject
         if (!empty($items)) {
             foreach ($items as $item) {
                 /** \Unbxd\ProductFeed\Api\Data\IndexingQueueInterface $item */
-                // @TODO
+                // @TODO - implement
             }
         }
 

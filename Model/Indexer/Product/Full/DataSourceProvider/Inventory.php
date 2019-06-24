@@ -24,6 +24,11 @@ use Unbxd\ProductFeed\Helper\AttributeHelper;
 class Inventory implements DataSourceProviderInterface
 {
     /**
+     * Related data source code
+     */
+	const DATA_SOURCE_CODE = 'inventory';
+	
+    /**
      * @var ResourceModel
      */
     private $resourceModel;
@@ -45,10 +50,16 @@ class Inventory implements DataSourceProviderInterface
         $this->resourceModel = $resourceModel;
         $this->attributeHelper = $attributeHelper;
     }
+	
+	/**
+     * {@inheritdoc}
+     */
+	public function getDataSourceCode()
+	{
+		return self::DATA_SOURCE_CODE;
+	}
 
     /**
-     * Append inventory data to the product index data
-     *
      * {@inheritdoc}
      */
     public function appendData($storeId, array $indexData)

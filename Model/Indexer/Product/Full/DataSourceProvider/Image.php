@@ -25,6 +25,11 @@ use Magento\Catalog\Model\Product\Media\Config as MediaConfig;
 class Image implements DataSourceProviderInterface
 {
     /**
+     * Related data source code
+     */
+    const DATA_SOURCE_CODE = 'image';
+
+    /**
      * @var ResourceModel
      */
     private $resourceModel;
@@ -45,6 +50,14 @@ class Image implements DataSourceProviderInterface
     ) {
         $this->resourceModel = $resourceModel;
         $this->catalogProductMediaConfig = $catalogProductMediaConfig;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getDataSourceCode()
+    {
+        return self::DATA_SOURCE_CODE;
     }
 
     /**

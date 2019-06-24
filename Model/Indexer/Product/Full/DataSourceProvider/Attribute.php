@@ -23,9 +23,22 @@ use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface;
 class Attribute extends AbstractAttribute implements DataSourceProviderInterface
 {
     /**
+     * Related data source code
+     */
+	const DATA_SOURCE_CODE = 'attribute';
+	
+    /**
      * @var array
      */
     private $forbiddenChildrenAttributeCode = ['visibility', 'status', 'price', 'tax_class_id'];
+
+    /**
+     * {@inheritdoc}
+     */
+	public function getDataSourceCode()
+	{
+		return self::DATA_SOURCE_CODE;
+	}
 
     /**
      * {@inheritdoc}

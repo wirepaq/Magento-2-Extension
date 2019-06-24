@@ -15,6 +15,7 @@ use Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\Action\Full as Re
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider;
 use Unbxd\ProductFeed\Logger\LoggerInterface;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
+use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 
 /**
  * Unbxd product feed full indexer.
@@ -77,13 +78,14 @@ class Full
      * @param $storeId
      * @param array $productIds
      * @param int $fromId
+     * @param bool $useFilters
      * @param null $limit
-     * @return array
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @return mixed
+     * @throws \Exception
      */
-    private function getProducts($storeId, $productIds = [], $fromId = 0, $limit = null)
+    private function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = false, $limit = null)
     {
-        return $this->resourceModel->getProducts($storeId, $productIds, $fromId, $limit);
+        return $this->resourceModel->getProducts($storeId, $productIds, $fromId, $useFilters, $limit);
     }
 
     /**
@@ -99,32 +101,29 @@ class Full
     {
         $productId = 0;
         if (!empty($productIds)) {
-            // magento is only sending children ids here.
-            // ensure to reindex also the parents product ids, if any.
-            $relationsByChild = $this->resourceModel->getRelationsByChild($productIds);
-            if (!empty($relationsByChild)) {
-                // @TODO - need to check if this needed
-//                $productIds = array_unique(array_merge($productIds, $relationsByChild));
+            // ensure to reindex also the child product ids, if parent was passed.
+            $relationsByParent = $this->resourceModel->getRelationsByParent($productIds);
+            if (!empty($relationsByParent)) {
+                $productIds = array_unique(array_merge($productIds, $relationsByParent));
             }
         }
-
-        $products = $this->getProducts($storeId, $productIds, $productId);
-        $result = [];
-        foreach ($products as $productData) {
-            $productId = (int) $productData['entity_id'];
-            // check if product related to parent product, if so - mark it (use for filtering index data in feed process)
-            $parentId = $this->resourceModel->getRelatedParentProduct($productId);
-            if ($parentId && ($parentId != $productId)) {
-                $productData['parent_id'] = (int) $parentId;
-            };
-            $productData['has_options'] = (bool) $productData['has_options'];
-            $productData['required_options'] = (bool) $productData['required_options'];
-            $productData['created_at'] = (string) $this->helperData->formatDateTime($productData['created_at']);
-            $productData['updated_at'] = (string) $this->helperData->formatDateTime($productData['updated_at']);
-            $result[$productId] = $productData;
-        }
-
-        return $result;
+		
+        do {
+            $products = $this->getProducts($storeId, $productIds, $productId);
+            foreach ($products as $productData) {
+                $productId = (int) $productData['entity_id'];
+                // check if product related to parent product, if so - mark it (use for filtering index data in feed process)
+                $parentId = $this->resourceModel->getRelatedParentProduct($productId);
+                if ($parentId && ($parentId != $productId)) {
+                    $productData['parent_id'] = (int) $parentId;
+                };
+                $productData['has_options'] = (bool) $productData['has_options'];
+                $productData['required_options'] = (bool) $productData['required_options'];
+                $productData['created_at'] = (string) $this->helperData->formatDateTime($productData['created_at']);
+                $productData['updated_at'] = (string) $this->helperData->formatDateTime($productData['updated_at']);
+                yield $productId => $productData;
+            }
+        } while (!empty($products));
     }
 
     /**
@@ -161,7 +160,7 @@ class Full
     {
         $index = [];
         $batchSize = $this->batchRowsCount;
-        foreach ($this->getBatchItems($initIndexData, $batchSize) as $index) {
+        foreach ($this->getBatchItems($initIndexData, $batchSize) as $key => $index) {
             /** Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface $dataSource */
             foreach ($this->dataSourceProvider->getList() as $dataSource) {
                 if (!empty($index)) {
@@ -169,7 +168,7 @@ class Full
                 }
             }
         }
-
+		
         return $index;
     }
 
@@ -191,13 +190,9 @@ class Full
 
         // try to detect deleted product(s)
         if (!empty($productIds)) {
-            $deletedCandidateIds = array_diff($productIds, array_keys($initIndexData));
-            if (!empty($deletedCandidateIds)) {
-                // mark deleted product in index data
-                foreach ($deletedCandidateIds as $id) {
-                    if (!$this->resourceModel->getProductSkuById($id)) {
-                        $fullIndex[$id]['action'] = 'delete';
-                    }
+            foreach ($productIds as $id) {
+                if (!$this->resourceModel->getProductSkuById($id)) {
+                    $fullIndex[$id]['action'] = FeedConfig::OPERATION_TYPE_DELETE;
                 }
             }
         }

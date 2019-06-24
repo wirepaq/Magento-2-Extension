@@ -231,11 +231,11 @@ class Manager
     private $uploadedFeedSize = 0;
 
     /**
-     * Flag to detect if uploaded feed status was checked or not
+     * Flag to detect if original file content must be archived or not
      *
      * @var bool
      */
-    private $isUploadedStatusChecked = false;
+    private $isNeedToArchive = false;
 
     /**
      * Manager constructor.
@@ -644,8 +644,7 @@ class Manager
             try {
                  $this->fullFeed = $this->serializer->serialize($this->fullFeed);
             } catch (\Exception $e) {
-                // catch and log exception
-                $this->logger->error('Can\'t serialized feed content.')->critical($e);
+                $this->logger->critical($e);
                 $this->postProcessActions();
             }
         }
@@ -674,14 +673,15 @@ class Manager
             try {
                 $fileManager->write($this->fullFeed);
             } catch (\Exception $e) {
-                // catch and log exception
-                $this->logger->error('Can\'t write feed content.')->critical($e);
+                $this->logger->critical($e);
                 $this->postProcessActions();
+                return $this;
             }
         }
 
-        // @TODO - implement archive feed file
-//        $this->archiveFeedFile();
+        if ($this->getIsNeedToArchive()) {
+            $this->archiveFeedFile();
+        }
 
         return $this;
     }
@@ -713,26 +713,27 @@ class Manager
 
         /** @var \Unbxd\ProductFeed\Model\Feed\FileManager $fileManager */
         $fileManager = $this->getFileManager();
+        // do only if original source file exist
         if ($fileManager->isExist()) {
-            $file = $fileManager->getFileLocation();
-            $destination = preg_replace(
-                sprintf('/\.%s$/i', $fileManager->getContentFormat()),
-                sprintf('.%s', $fileManager->getArchiveFormat()),
-                $file
-            );
+            $sourceFile = $fileManager->getFileLocation();
+            $sourceFileName = $fileManager->getFileName();
+
+            // set flag which indicate that original source file must be archived
+            $fileManager->setIsConvertedToArchive(true);
+            $archiveDestination = $fileManager->getFileLocation();
             try {
                 $archivedFile = $this->packArchive(
-                    $file,
-                    $destination,
-                    $fileManager->getFileName()
+                    $sourceFile,
+                    $archiveDestination,
+                    $sourceFileName
                 );
                 if (!$archivedFile) {
                     $this->logger->error('Sorry, but the data is invalid or the feed file is not archived.');
                     $this->postProcessActions();
+                    return $this;
                 }
             } catch (\Exception $e) {
-                // catch and log exception
-                $this->logger->error('Can\'t archive feed content.')->critical($e);
+                $this->logger->critical($e);
                 $this->postProcessActions();
             }
         }
@@ -778,16 +779,16 @@ class Manager
      */
     private function retrieveUploadedSize(ApiConnector $connectorManager, FeedResponse $response)
     {
-        $this->logger->info('Try to retrieve uploaded feed size.');
+        $this->logger->info('Retrieve uploaded feed size.');
 
         try {
             $connectorManager->resetHeaders()
                 ->resetParams()
                 ->execute(FeedConfig::FEED_TYPE_UPLOADED_SIZE, \Zend_Http_Client::GET);
         } catch (\Exception $e) {
-            // catch and log exception
-            $this->logger->error('Can\'t retrieve uploaded feed size.')->critical($e);
+            $this->logger->critical($e);
             $this->postProcessActions();
+            return $this;
         }
 
         $recordsQty = $response->getUploadedSize();
@@ -806,10 +807,6 @@ class Manager
      */
     private function checkUploadedFeedStatus(ApiConnector $connectorManager, FeedResponse $response)
     {
-        if ($this->isUploadedStatusChecked) {
-            return $this;
-        }
-
         $this->logger->info('Check uploaded feed status.');
 
         $this->logger->info('Dispatch event: ' . $this->eventPrefix . '_uploaded_status_before.');
@@ -826,17 +823,15 @@ class Manager
                 ->resetParams()
                 ->execute($apiEndpointType, \Zend_Http_Client::GET);
         } catch (\Exception $e) {
-            // catch and log exception
-            $this->logger->error('Can\'t check uploaded feed status.')->critical($e);
+            $this->logger->critical($e);
             $this->postProcessActions();
+            return $this;
         }
 
         $this->logger->info('Dispatch event: ' . $this->eventPrefix . '_uploaded_status_after.');
         $this->eventManager->dispatch($this->eventPrefix . '_uploaded_status_after',
             ['response' => $response, 'feed_manager' => $this]
         );
-
-        $this->isUploadedStatusChecked = true;
 
         return $this;
     }
@@ -867,9 +862,9 @@ class Manager
         try {
             $connectorManager->execute($this->type,\Zend_Http_Client::POST, [], $params);
         } catch (\Exception $e) {
-            // catch and log exception
-            $this->logger->error('Can\'t send feed.')->critical($e);
+            $this->logger->critical($e);
             $this->postProcessActions();
+            return $this;
         }
 
         $this->logger->info('Dispatch event: ' . $this->eventPrefix . '_send_after.');
@@ -880,11 +875,15 @@ class Manager
         /** @var FeedResponse $response */
         $response = $connectorManager->getResponse();
         if ($response instanceof FeedResponse) {
-            if (!$response->getIsError() && FeedConfig::VALIDATE_STATUS_FOR_UPLOADED_FEED) {
-                $this->checkUploadedFeedStatus($connectorManager, $response);
+            if (!$response->getIsError()) {
+                // additional API calls
+                if (FeedConfig::VALIDATE_STATUS_FOR_UPLOADED_FEED) {
+                    $this->checkUploadedFeedStatus($connectorManager, $response);
+                }
+                if (FeedConfig::RETRIEVE_SIZE_FOR_UPLOADED_FEED) {
+                    $this->retrieveUploadedSize($connectorManager, $response);
+                }
             }
-
-            $this->retrieveUploadedSize($connectorManager, $response);
         }
 
         return $this;
@@ -903,7 +902,7 @@ class Manager
         $this->logger->info('Pre-process execution actions.');
 
         $isFeedLock = $this->feedHelper->isFullSynchronizationLocked();
-        $isFeedLock = $isFeedLock || $this->getFileManager()->isExist();
+        $isFeedLock = (bool) ($isFeedLock || $this->getFileManager()->isExist());
         if ($isFeedLock) {
             if (!$this->lockedTime) {
                 $this->lockedTime = microtime(true);
@@ -1040,6 +1039,46 @@ class Manager
     }
 
     /**
+     * Clean configuration cache.
+     * In some cases related config info doesn't refreshing on backend frontend
+     *
+     * @return $this
+     */
+    private function flushSystemConfigCache()
+    {
+        $this->logger->info('Flush system configuration cache.');
+
+        try {
+            $this->cacheManager->flushCacheByType(CacheManager::SYSTEM_CONFIGURATION_CACHE_TYPE);
+        } catch (\Exception $e) {
+            $this->logger->error($e->getMessage());
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove feed files (original and archive if exist) after synchronization
+     *
+     * @return $this
+     */
+    private function cleanupFeedFiles()
+    {
+        $this->logger->info('Cleanup source files.');
+
+        /** @var \Unbxd\ProductFeed\Model\Feed\FileManager $fileManager */
+        $fileManager = $this->getFileManager();
+
+        try {
+            $fileManager->deleteSourcePath();
+        } catch (\Exception $e) {
+            $this->logger->error($e->getMessage());
+        }
+
+        return $this;
+    }
+
+    /**
      * Perform actions after
      *
      * @return $this
@@ -1063,17 +1102,15 @@ class Manager
             // performing operations with response
             $this->updateConfigStats($response);
             $this->updateFeedView($response);
+
+            // in some cases related config info doesn't refreshing on backend frontend
+            $this->flushSystemConfigCache();
         }
 
         // reset local cache to initial state
         $this->reset();
 
-        /** @var \Unbxd\ProductFeed\Model\Feed\FileManager $fileManager */
-        $fileManager = $this->getFileManager();
-        if ($fileManager->isExist()) {
-            // clean file if exist
-            $fileManager->deleteFile();
-        }
+        $this->cleanupFeedFiles();
 
         return $this;
     }
@@ -1393,6 +1430,22 @@ class Manager
     private function getWebsite($storeId = '')
     {
         return $this->getStore($storeId)->getWebsite();
+    }
+
+    /**
+     * @param $flag
+     */
+    private function setIsNeedToArchive($flag)
+    {
+        $this->isNeedToArchive = (bool) $flag;
+    }
+
+    /**
+     * @return bool
+     */
+    private function getIsNeedToArchive()
+    {
+        return (bool) $this->isNeedToArchive;
     }
 
     /**

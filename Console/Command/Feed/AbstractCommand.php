@@ -17,6 +17,7 @@ use Magento\Framework\App\State as AppState;
 use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 use Unbxd\ProductFeed\Helper\ProductHelper;
 use Unbxd\ProductFeed\Model\CronManager;
+use Unbxd\ProductFeed\Model\CacheManager;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as ReindexAction;
 use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
 use Unbxd\ProductFeed\Model\Feed\Api\ConnectorFactory;
@@ -56,6 +57,11 @@ abstract class AbstractCommand extends Command
     protected $cronManager;
 
     /**
+     * @var CacheManager
+     */
+    private $cacheManager;
+
+    /**
      * @var ReindexAction
      */
     protected $reindexAction;
@@ -83,11 +89,12 @@ abstract class AbstractCommand extends Command
     private $connectorManager = null;
 
     /**
-     * AbstractFeed constructor.
+     * AbstractCommand constructor.
      * @param AppState $state
      * @param FeedHelper $feedHelper
      * @param ProductHelper $productHelper
      * @param CronManager $cronManager
+     * @param CacheManager $cacheManager
      * @param ReindexAction $reindexAction
      * @param FeedManager $feedManager
      * @param StoreManagerInterface $storeManager
@@ -98,6 +105,7 @@ abstract class AbstractCommand extends Command
         FeedHelper $feedHelper,
         ProductHelper $productHelper,
         CronManager $cronManager,
+        CacheManager $cacheManager,
         ReindexAction $reindexAction,
         FeedManager $feedManager,
         StoreManagerInterface $storeManager,
@@ -108,6 +116,7 @@ abstract class AbstractCommand extends Command
         $this->feedHelper = $feedHelper;
         $this->productHelper = $productHelper;
         $this->cronManager = $cronManager;
+        $this->cacheManager = $cacheManager;
         $this->reindexAction = $reindexAction;
         $this->feedManager = $feedManager;
         $this->storeManager = $storeManager;
@@ -139,6 +148,23 @@ abstract class AbstractCommand extends Command
         }
 
         return $this->connectorManager;
+    }
+
+    /**
+     * Clean configuration cache.
+     * In some cases related config info doesn't refreshing on backend frontend
+     *
+     * @return $this
+     */
+    protected function flushSystemConfigCache()
+    {
+        try {
+            $this->cacheManager->flushCacheByType(CacheManager::SYSTEM_CONFIGURATION_CACHE_TYPE);
+        } catch (\Exception $e) {
+            // catch and log exception
+        }
+
+        return $this;
     }
 
     /**

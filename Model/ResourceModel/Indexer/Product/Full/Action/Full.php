@@ -90,15 +90,27 @@ class Full extends Indexer
     }
 
     /**
+     * @return string
+     * @throws \Exception
+     */
+    private function getEntityTable()
+    {
+        $metadata = $this->getEntityMetaData(\Magento\Catalog\Api\Data\ProductInterface::class);
+
+        return $this->getTable($metadata->getEntityTable());
+    }
+
+    /**
      * Retrieve product SKU by related ID
      *
      * @param $entityId
-     * @return string
+     * @return mixed
+     * @throws \Exception
      */
     public function getProductSkuById($entityId)
     {
         $select = $this->getConnection()->select()
-            ->from(['e' => $this->getTable('catalog_product_entity')])
+            ->from(['e' => $this->getEntityTable()])
             ->where('e.entity_id = ?', $entityId)
             ->reset(\Magento\Framework\DB\Select::COLUMNS)
             ->columns('sku');
@@ -112,25 +124,25 @@ class Full extends Indexer
      * @param $storeId
      * @param array $productIds
      * @param int $fromId
-     * @param null $limit
-     * @return array
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @param bool $useFilters
+     * @param int $limit
+     * @return mixed
+     * @throws \Exception
      */
-    public function getProducts($storeId, $productIds = [], $fromId = 0, $limit = null)
+    public function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = false, $limit = 1000)
     {
         $select = $this->getConnection()->select()
-            ->from(['e' => $this->getTable('catalog_product_entity')]);
+            ->from(['e' => $this->getEntityTable()]);
 
-//        $this->addCollectionFilters($select, $storeId);
+        if ($useFilters) {
+            $this->addCollectionFilters($select, $storeId);
+        }
 
         if (!empty($productIds)) {
             $select->where('e.entity_id IN (?)', $productIds);
         }
 
-        if ($limit) {
-            $select->limit($limit);
-        }
-
+		$select->limit($limit);
         $select->where('e.entity_id > ?', $fromId);
         $select->where('e.type_id IN (?)', $this->getSupportedProductTypes($storeId));
         $select->order('e.entity_id');
@@ -148,7 +160,7 @@ class Full extends Indexer
     public function getRelationsByChild($childrenIds)
     {
         $metadata = $this->getEntityMetaData(\Magento\Catalog\Api\Data\ProductInterface::class);
-        $entityTable = $this->getTable($metadata->getEntityTable());
+        $entityTable = $this->getEntityTable();
         $relationTable = $this->getTable('catalog_product_relation');
         $joinCondition = sprintf('relation.parent_id = entity.%s', $metadata->getLinkField());
 
@@ -156,6 +168,28 @@ class Full extends Indexer
             ->from(['relation' => $relationTable], [])
             ->join(['entity' => $entityTable], $joinCondition, [$metadata->getIdentifierField()])
             ->where('child_id IN (?)', array_map('intval', $childrenIds));
+
+        return $this->getConnection()->fetchCol($select);
+    }
+
+    /**
+     * Retrieve products relations by parent
+     *
+     * @param $parentIds
+     * @return array
+     * @throws \Exception
+     */
+    public function getRelationsByParent($parentIds)
+    {
+        $metadata = $this->getEntityMetaData(\Magento\Catalog\Api\Data\ProductInterface::class);
+        $entityTable = $this->getEntityTable();
+        $relationTable = $this->getTable('catalog_product_relation');
+        $joinCondition = sprintf('relation.child_id = entity.%s', $metadata->getLinkField());
+
+        $select = $this->getConnection()->select()
+            ->from(['relation' => $relationTable], [])
+            ->join(['entity' => $entityTable], $joinCondition, [$metadata->getIdentifierField()])
+            ->where('parent_id IN (?)', array_map('intval', $parentIds));
 
         return $this->getConnection()->fetchCol($select);
     }

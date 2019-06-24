@@ -29,6 +29,7 @@ use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
 use Unbxd\ProductFeed\Model\FeedView;
 use Unbxd\ProductFeed\Model\FeedView\Handler as FeedViewHandler;
 use Unbxd\ProductFeed\Model\ResourceModel\FeedView\CollectionFactory as FeedViewCollectionFactory;
+use Unbxd\ProductFeed\Model\CacheManager;
 use Unbxd\ProductFeed\Model\Feed\Api\Connector as ApiConnector;
 use Unbxd\ProductFeed\Model\Feed\Api\ConnectorFactory;
 use Unbxd\ProductFeed\Model\Feed\Api\Response as FeedResponse;
@@ -111,6 +112,11 @@ class CronManager
     private $feedViewCollectionFactory;
 
     /**
+     * @var CacheManager
+     */
+    private $cacheManager;
+
+    /**
      * @var ConnectorFactory
      */
     private $connectorFactory;
@@ -141,28 +147,16 @@ class CronManager
     private $storeManager;
 
     /**
-     * @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection
-     */
-    private $collection = null;
-
-    /**
      * @var \Magento\Cron\Model\ResourceModel\Schedule\Collection
      */
     private $runningSchedules;
 
     /**
-     * Flat to prevent duplicate full catalog product reindex
+     * Flat to prevent duplicate cron jobs
      *
      * @var bool
      */
-    private $lockFullReindex = false;
-
-    /**
-     * Flat to prevent duplicate cron run
-     *
-     * @var bool
-     */
-    private $lockFullProcess = false;
+    private $lockProcess = false;
 
     /**
      * Cron jobs cache
@@ -191,6 +185,7 @@ class CronManager
      * @param QueueHandler $queueHandler
      * @param FeedViewHandler $feedViewHandler
      * @param FeedViewCollectionFactory $feedViewCollectionFactory
+     * @param \Unbxd\ProductFeed\Model\CacheManager $cacheManager
      * @param ConnectorFactory $connectorFactory
      * @param LoggerInterface $logger
      * @param FeedHelper $feedHelper
@@ -210,6 +205,7 @@ class CronManager
         QueueHandler $queueHandler,
         FeedViewHandler $feedViewHandler,
         FeedViewCollectionFactory $feedViewCollectionFactory,
+        CacheManager $cacheManager,
         ConnectorFactory $connectorFactory,
         LoggerInterface $logger,
         FeedHelper $feedHelper,
@@ -227,6 +223,7 @@ class CronManager
         $this->indexingQueueCollectionFactory = $indexingQueueCollectionFactory;
         $this->queueHandler = $queueHandler;
         $this->feedViewHandler = $feedViewHandler;
+        $this->cacheManager = $cacheManager;
         $this->feedViewCollectionFactory = $feedViewCollectionFactory;
         $this->connectorFactory = $connectorFactory;
         $this->logger = $logger->create(OptionsListConstants::LOGGER_TYPE_INDEXING);
@@ -356,6 +353,12 @@ class CronManager
      */
     public function runJobs()
     {
+        // prevent duplicate jobs
+        if ($this->lockProcess) {
+            $this->logger->info('Lock reindex by another process.');
+            return false;
+        }
+
         // check if cron is configured
         if (!$this->helperData->isCronConfigured()) {
             $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
@@ -368,16 +371,12 @@ class CronManager
             return false;
         }
 
-        // prevent duplicate full reindex
-        if ($this->lockFullProcess || $this->lockFullReindex) {
-            $this->logger->info('Lock full reindex by another process.');
-            return false;
-        }
+        $this->lockProcess = true;
 
         $this->logger->info('Run cron job by schedule. Collect tasks.');
 
         /** @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection $jobs */
-        $jobs = $this->getJobCollection();
+        $jobs = $this->indexingQueueCollectionFactory->create();
         $jobs->addFieldToFilter(
             IndexingQueueInterface::STATUS,
                 ['eq' => IndexingQueue::STATUS_PENDING]
@@ -392,19 +391,16 @@ class CronManager
             return false;
         }
 
-        $this->lockFullProcess = true;
-
         $indexData = [];
+        $isFullReindex = false;
         foreach ($jobs as $job) {
             /** @var \Unbxd\ProductFeed\Model\IndexingQueue $job */
             $jobId = $job->getId();
-            $isFullReindex = false;
             if ($job->getActionType() == IndexingQueue::TYPE_REINDEX_FULL) {
                 $isFullReindex = true;
-                $this->lockFullReindex = true;
             }
 
-            $this->logger->info(sprintf('Prepare job with #%1 for reindex.', $jobId));
+            $this->logger->info(sprintf('Prepare job with #%d for reindex.', $jobId));
             // marked job as running
             $this->queueHandler->update($jobId,
                 [
@@ -416,7 +412,7 @@ class CronManager
             // retrieve entities id, empty array on full reindex
             $jobData = !$isFullReindex ? $this->queueHandler->convertStringToIds($job->getAffectedEntities()) : [];
 
-            $this->logger->info(sprintf('Start reindex for job with #%s', $jobId))->startTimer();
+            $this->logger->info(sprintf('Start reindex for job with #%d', $jobId))->startTimer();
 
             $isReindexSuccess = false;
             $jobIndexData = [];
@@ -433,7 +429,7 @@ class CronManager
             } catch (\Exception $e) {
                 $error = $e->getMessage();
                 $this->logger->error(
-                    sprintf('Reindex failed for job with #%s. Error: %s', $jobId, $error)
+                    sprintf('Reindex failed for job with #%d. Error: %s', $jobId, $error)
                 );
             }
 
@@ -448,7 +444,7 @@ class CronManager
                 $updateData[IndexingQueueInterface::ADDITIONAL_INFORMATION] = $error;
             }
 
-            $this->logger->info(sprintf('Update job record #%s', $jobId));
+            $this->logger->info(sprintf('Update job record #%d', $jobId));
 
             $this->queueHandler->update($jobId, $updateData);
 
@@ -462,10 +458,10 @@ class CronManager
             return false;
         }
 
-        $type = $this->lockFullReindex ? FeedConfig::FEED_TYPE_FULL : FeedConfig::FEED_TYPE_INCREMENTAL;
+        $type = $isFullReindex ? FeedConfig::FEED_TYPE_FULL : FeedConfig::FEED_TYPE_INCREMENTAL;
         $this->feedManager->execute($indexData, $type);
 
-        $this->reset();
+        $this->lockProcess = false;
 
         return true;
     }
@@ -536,11 +532,11 @@ class CronManager
                         $updateData = [
                             FeedViewInterface::STATUS => $status
                         ];
-                        if ($response->getIsSuccess()) {
+                        if ($response->getIsError()) {
+                            $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] = $response->getErrorsAsString();
+                        } else if ($response->getIsSuccess()) {
                             $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] =
                                 __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE);
-                        } else if ($response->getIsError()) {
-                            $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] = $response->getErrorsAsString();
                         }
 
                         $this->updateFeedInformation($jobId, $jobType, $updateData, $status);
@@ -551,6 +547,9 @@ class CronManager
             $connectorManager->resetExtraParams()
                 ->resetResponse();
         }
+
+        // in some cases related config info doesn't refreshing on backend frontend
+        $this->flushSystemConfigCache();
 
         return $this;
     }
@@ -577,18 +576,20 @@ class CronManager
     }
 
     /**
-     * Retrieve indexing queue collection. Init if needed
+     * Clean configuration cache.
+     * In some cases related config info doesn't refreshing on backend frontend
      *
-     * @return ResourceModel\IndexingQueue\Collection
+     * @return $this
      */
-    private function getJobCollection()
+    private function flushSystemConfigCache()
     {
-        if ($this->collection == null) {
-            /** @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection collection */
-            $this->collection = $this->indexingQueueCollectionFactory->create();
+        try {
+            $this->cacheManager->flushCacheByType(CacheManager::SYSTEM_CONFIGURATION_CACHE_TYPE);
+        } catch (\Exception $e) {
+            $this->logger->error($e->getMessage());
         }
 
-        return $this->collection;
+        return $this;
     }
 
     /**
@@ -604,14 +605,5 @@ class CronManager
         }
 
         return $this->connectorManager;
-    }
-
-    /**
-     * Reset cache values to initial state
-     */
-    private function reset()
-    {
-        $this->lockFullProcess = false;
-        $this->lockFullReindex = false;
     }
 }

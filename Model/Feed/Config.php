@@ -131,6 +131,11 @@ class Config
     const VALIDATE_STATUS_FOR_UPLOADED_FEED = true;
 
     /**
+     * Flag to detect if need to send additional API call to retrieve uploaded feed size
+     */
+    const RETRIEVE_SIZE_FOR_UPLOADED_FEED = true;
+
+    /**
      * Feed operation types (e.g. add new product, update product data, delete product)
      */
     const OPERATION_TYPE_ADD       = 'add';

@@ -40,9 +40,9 @@ class DataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
 
     /**
      * DataProvider constructor.
-     * @param $name
-     * @param $primaryFieldName
-     * @param $requestFieldName
+     * @param string $name
+     * @param string $primaryFieldName
+     * @param string $requestFieldName
      * @param CollectionFactory $feedViewCollectionFactory
      * @param DataPersistorInterface $dataPersistor
      * @param array $meta
@@ -60,18 +60,6 @@ class DataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
         $this->collection = $feedViewCollectionFactory->create();
         $this->dataPersistor = $dataPersistor;
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
-        $this->meta = $this->prepareMeta($this->meta);
-    }
-
-    /**
-     * Prepares Meta
-     *
-     * @param array $meta
-     * @return array
-     */
-    public function prepareMeta(array $meta)
-    {
-        return $meta;
     }
 
     /**

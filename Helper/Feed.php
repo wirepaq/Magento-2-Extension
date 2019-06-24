@@ -60,26 +60,20 @@ class Feed extends HelperData
     const FEED_PATH_UPLOADED_SIZE = 'unbxd_catalog/feed/uploaded_size';
 
     /**
-     * Synchronization status
-     */
-    const STATUS_SUCCESS = 'success';
-    const STATUS_ERROR = 'error';
-
-    /**
      * Default configuration core config data fields
      *
      * @var array
      */
     private $defaultConfigDataFields = [
-        self::FEED_PATH_FULL_STATE_FLAG => 0,
-        self::FEED_PATH_INCREMENTAL_STATE_FLAG => 0,
-        self::FEED_PATH_FULL_LOCK_FLAG => 0,
-        self::FEED_PATH_FULL_LOCK_TIME => 0,
-        self::FEED_PATH_LAST_OPERATION_TYPE => null,
-        self::FEED_PATH_LAST_DATETIME => null,
-        self::FEED_PATH_LAST_STATUS => null,
-        self::FEED_PATH_LAST_UPLOAD_ID => null,
-        self::FEED_PATH_UPLOADED_SIZE => 0
+        self::FEED_PATH_FULL_STATE_FLAG => '',
+        self::FEED_PATH_INCREMENTAL_STATE_FLAG => '',
+        self::FEED_PATH_FULL_LOCK_FLAG => '',
+        self::FEED_PATH_FULL_LOCK_TIME => '',
+        self::FEED_PATH_LAST_OPERATION_TYPE => '',
+        self::FEED_PATH_LAST_DATETIME => '',
+        self::FEED_PATH_LAST_STATUS => '',
+        self::FEED_PATH_LAST_UPLOAD_ID => '',
+        self::FEED_PATH_UPLOADED_SIZE => ''
     ];
 
     /**

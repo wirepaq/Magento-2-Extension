@@ -47,12 +47,17 @@ class Response extends DataObject
      * on internal server errors
      */
     const HTTP_RESPONSE_CODE_INTERNAL_SERVER_ERROR = '500';
+    /**
+     * on failed indexing (internal Unbxd error)
+     */
+    const HTTP_RESPONSE_CODE_FAILED_INDEXING = '504';
 
     /**
      * API Response fields
      */
     const RESPONSE_FIELD_UPLOAD_ID = 'uploadId';
     const RESPONSE_FIELD_STATUS = 'status';
+    const RESPONSE_FIELD_CODE = 'code';
     /**
      * data processing statuses
      */
@@ -339,7 +344,7 @@ class Response extends DataObject
      */
     public function setIsSuccess($flag = null)
     {
-        if (null == $flag) {
+        if (null === $flag) {
             $flag = in_array($this->getResponseCode(), [
                 self::HTTP_RESPONSE_CODE_SUCCESS_DEFAULT,
                 self::HTTP_RESPONSE_CODE_SUCCESS_FEED_UPLOAD
@@ -366,12 +371,27 @@ class Response extends DataObject
      */
     public function setIsError($flag = null)
     {
-        if (null == $flag) {
+        if (null === $flag) {
             $flag = in_array($this->getResponseCode(), [
                 self::HTTP_RESPONSE_CODE_BAD_REQUEST,
                 self::HTTP_RESPONSE_CODE_AUTHENTICATION_FAILURE,
                 self::HTTP_RESPONSE_CODE_INTERNAL_SERVER_ERROR,
+                self::HTTP_RESPONSE_CODE_FAILED_INDEXING,
             ]);
+
+            // error also may occur during indexing in Unbxd service
+            // so we must also check response body to retrieve real response code,
+            // because even if error occur during indexing, HTTP response code always will be 200
+            if ($this->getResponseCode() == self::HTTP_RESPONSE_CODE_SUCCESS_DEFAULT) {
+                $bodyData = $this->getResponseBodyAsArray();
+                if (is_array($bodyData)) {
+                    $status = array_key_exists(self::RESPONSE_FIELD_STATUS, $bodyData)
+                        ? trim($bodyData[self::RESPONSE_FIELD_STATUS])
+                        : null;
+
+                    $flag = ($status == self::RESPONSE_FIELD_STATUS_VALUE_FAILED);
+                }
+            }
         }
 
         $this->isError = (bool) $flag;
@@ -393,11 +413,12 @@ class Response extends DataObject
      */
     public function setIsProcessing($flag = null)
     {
-        if (null == $flag) {
+        if (null === $flag) {
             $bodyData = $this->getResponseBodyAsArray();
             $status = array_key_exists(self::RESPONSE_FIELD_STATUS, $bodyData)
                 ? trim($bodyData[self::RESPONSE_FIELD_STATUS])
                 : null;
+
             $flag = ($status == self::RESPONSE_FIELD_STATUS_VALUE_INDEXING);
         }
 
@@ -423,7 +444,6 @@ class Response extends DataObject
         $message = $this->getErrorMessageByCode($code);
         if ($message) {
             $this->setErrorMessage($code, $message);
-
             return $this;
         }
 
@@ -452,6 +472,15 @@ class Response extends DataObject
                 $message = __(
                     sprintf(
                         'API Response Error. Internal Server Error.<br/> Code - %s.<br/> Message - %s.',
+                        $code,
+                        $errorMessage
+                    )
+                );
+                break;
+            case self::HTTP_RESPONSE_CODE_FAILED_INDEXING:
+                $message = __(
+                    sprintf(
+                        'API Response Error. Unbxd service internal error.<br/> Code - %s.<br/> Message - %s.',
                         $code,
                         $errorMessage
                     )

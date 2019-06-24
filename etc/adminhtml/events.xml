@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2019 Unbxd Inc.
+ */
+-->
+
+<!--
+/**
+ * Init development:
+ * @author andy
+ * @email andyworkbase@gmail.com
+ * @team MageCloud
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="controller_action_predispatch_adminhtml_system_config_edit">
+        <observer name="unbxd_productfeed_system_config_notice" instance="Unbxd\ProductFeed\Observer\SystemConfigNotice" />
+    </event>
+    <event name="controller_action_predispatch_unbxd_productfeed_indexing_queue">
+        <observer name="unbxd_productfeed_indexing_queue_cron_notice" instance="Unbxd\ProductFeed\Observer\IndexingQueueListingNotice" />
+    </event>
+    <event name="controller_action_predispatch_unbxd_productfeed_feed_view">
+        <observer name="unbxd_productfeed_indexing_queue_cron_notice" instance="Unbxd\ProductFeed\Observer\FeedViewListingNotice" />
+    </event>
+</config>

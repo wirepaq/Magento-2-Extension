@@ -24,6 +24,11 @@ use Unbxd\ProductFeed\Helper\AttributeHelper;
 class Category implements DataSourceProviderInterface
 {
     /**
+     * Related data source code
+     */
+	const DATA_SOURCE_CODE = 'category';
+	
+    /**
      * @var ResourceModel
      */
     private $resourceModel;
@@ -47,8 +52,14 @@ class Category implements DataSourceProviderInterface
     }
 
     /**
-     * Append categories data to the product index data.
-     *
+     * {@inheritdoc}
+     */
+    public function getDataSourceCode()
+    {
+        return self::DATA_SOURCE_CODE;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function appendData($storeId, array $indexData)

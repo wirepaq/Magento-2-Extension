@@ -174,7 +174,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     public function getLastCatalogSyncDatetime()
     {
         $date = $this->feedHelper->getLastSynchronizationDatetime();
-        if (!$this->isSynchronizationAttempt() || !$date) {
+        if (!$date || !$this->isSynchronizationAttempt()) {
             return null;
         }
 
@@ -187,7 +187,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     public function getLastSynchronizationOperationType()
     {
         $type = $this->feedHelper->getLastSynchronizationOperationType();
-        if (!$this->isSynchronizationAttempt() || !$type) {
+        if (!$type || !$this->isSynchronizationAttempt()) {
             return null;
         }
 

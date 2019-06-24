@@ -115,11 +115,12 @@ class UploadStatus extends AbstractCommand
 
     /**
      * @param OutputInterface $output
-     * @param ApiConnector $connectorManager
+     * @param $connectorManager
      * @param $uploadId
+     * @param null $storeId
      * @return $this
      */
-    private function buildResponse(OutputInterface $output, $connectorManager, $uploadId)
+    private function buildResponse(OutputInterface $output, $connectorManager, $uploadId, $storeId = null)
     {
         /** @var FeedResponse $response */
         $response = $connectorManager->getResponse();
@@ -136,7 +137,8 @@ class UploadStatus extends AbstractCommand
                 } else if ($status == FeedResponse::RESPONSE_FIELD_STATUS_VALUE_INDEXED) {
                     $message = FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE;
                 } else if ($status == FeedResponse::RESPONSE_FIELD_STATUS_VALUE_FAILED) {
-                    $message = FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR;
+                    $affectedStoreId = $storeId ?: $this->getDefaultStoreId();
+                    $message = sprintf(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR, $affectedStoreId);
                 }
 
                 try {
@@ -175,6 +177,8 @@ class UploadStatus extends AbstractCommand
      */
     protected function postProcessActions($output)
     {
+        $this->flushSystemConfigCache();
+
         return $this;
     }
 }

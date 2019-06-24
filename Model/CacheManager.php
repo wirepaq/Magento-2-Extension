@@ -12,7 +12,10 @@
 namespace Unbxd\ProductFeed\Model;
 
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\App\Cache\TypeListInterface;
+use Magento\Framework\App\Cache\StateInterface;
 use Unbxd\ProductFeed\Model\Serializer;
+use Magento\Framework\App\ObjectManager;
 
 /**
  * Class CacheManager
@@ -20,6 +23,11 @@ use Unbxd\ProductFeed\Model\Serializer;
  */
 class CacheManager
 {
+    /**
+     * System configuration cache type name
+     */
+    const SYSTEM_CONFIGURATION_CACHE_TYPE = 'config';
+
     /**
      * @var integer
      */
@@ -29,6 +37,16 @@ class CacheManager
      * @var CacheInterface
      */
     private $cache;
+
+    /**
+     * @var TypeListInterface
+     */
+    private $cacheTypeList;
+
+    /**
+     * @var StateInterface
+     */
+    private $cacheState;
 
     /**
      * @var Serializer
@@ -43,15 +61,21 @@ class CacheManager
     /**
      * CacheManager constructor.
      * @param CacheInterface $cache
+     * @param TypeListInterface $cacheTypeList
+     * @param StateInterface $cacheState
      * @param \Unbxd\ProductFeed\Model\Serializer $serializer
      */
     public function __construct(
         CacheInterface $cache,
+        TypeListInterface $cacheTypeList,
+        StateInterface $cacheState,
         Serializer $serializer
     ) {
         $this->cache = $cache;
-        $this->serializer = $serializer ?: \Magento\Framework\App\ObjectManager::getInstance()
-            ->get(\Unbxd\ProductFeed\Model\Serializer::class);
+        $this->cacheTypeList = $cacheTypeList;
+        $this->cacheState = $cacheState;
+        $this->serializer = $serializer ?: ObjectManager::getInstance()
+            ->get(Serializer::class);
     }
 
     /**
@@ -116,5 +140,17 @@ class CacheManager
     private function getCacheTags($identifier, $storeId)
     {
         return [$identifier . '_' . $storeId];
+    }
+
+    /**
+     * Flush cache by type
+     *
+     * @param $cacheType
+     */
+    public function flushCacheByType($cacheType)
+    {
+        if ($this->cacheState->isEnabled($cacheType)) {
+            $this->cacheTypeList->cleanType($cacheType);
+        }
     }
 }

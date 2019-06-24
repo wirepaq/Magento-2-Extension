@@ -105,19 +105,4 @@ abstract class FeedActionIndex extends Action
     {
         return $this->storeManager->getStore($store);
     }
-
-    /**
-     * @param array $ids
-     */
-    public function collectAllProductIds(array &$ids)
-    {
-        foreach ($ids as $id) {
-            $childIds = array_unique(array_filter($this->productHelper->getChildProductIds($id)));
-            if (!empty($childIds)) {
-                foreach ($childIds as $groupKey => $child) {
-                    $ids = array_unique(array_merge_recursive($ids, array_values($child)));
-                }
-            }
-        }
-    }
 }

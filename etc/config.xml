@@ -31,8 +31,8 @@
         </unbxd_setup>
         <unbxd_catalog>
             <general>
-                <available_product_types>simple,configurable,grouped</available_product_types>
-                <filter_attributes>disabled</filter_attributes>
+                <available_product_types>all</available_product_types>
+                <filter_attributes>status</filter_attributes>
             </general>
             <indexing>
                 <enabled_queue>1</enabled_queue>
@@ -42,15 +42,15 @@
                 <cron_type>manually</cron_type>
             </cron>
             <feed>
-                <full_state_flag>0</full_state_flag>
-                <incremental_state_flag>0</incremental_state_flag>
-                <full_lock_flag>0</full_lock_flag>
-                <full_lock_time>0</full_lock_time>
-                <last_operation_type>null</last_operation_type>
-                <last_datetime>null</last_datetime>
-                <last_status>null</last_status>
-                <last_upload_id>null</last_upload_id>
-                <uploaded_size>null</uploaded_size>
+                <full_state_flag></full_state_flag>
+                <incremental_state_flag></incremental_state_flag>
+                <full_lock_flag></full_lock_flag>
+                <full_lock_time></full_lock_time>
+                <last_operation_type></last_operation_type>
+                <last_datetime></last_datetime>
+                <last_status></last_status>
+                <last_upload_id></last_upload_id>
+                <uploaded_size></uploaded_size>
             </feed>
         </unbxd_catalog>
         <unbxd_search>

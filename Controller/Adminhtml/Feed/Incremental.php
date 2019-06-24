@@ -46,8 +46,6 @@ class Incremental extends FeedActionIndex
         if ($productIds) {
             $productIds = explode(',', $productIds);
             if (!empty($productIds)) {
-                // try to collect child product ids if any
-                $this->collectAllProductIds($productIds);
                 $storeId = $this->getStore()->getId();
                 try {
                     $index = $this->reindexAction->rebuildProductStoreIndex($storeId, $productIds);

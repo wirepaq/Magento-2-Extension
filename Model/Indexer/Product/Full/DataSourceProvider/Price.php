@@ -25,6 +25,11 @@ use Unbxd\ProductFeed\Helper\AttributeHelper;
 class Price implements DataSourceProviderInterface
 {
     /**
+     * Related data source code
+     */
+	const DATA_SOURCE_CODE = 'price';
+	
+    /**
      * @var ResourceModel
      */
     private $resourceModel;
@@ -54,10 +59,16 @@ class Price implements DataSourceProviderInterface
         $this->attributeHelper = $attributeHelper;
         $this->priceReaderPool = $priceReaderPool;
     }
+	
+    /**
+     * {@inheritdoc}
+     */
+	public function getDataSourceCode()
+	{
+		return self::DATA_SOURCE_CODE;
+	}
 
     /**
-     * Append price data to the product index data.
-     *
      * {@inheritdoc}
      */
     public function appendData($storeId, array $indexData)

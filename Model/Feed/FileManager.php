@@ -71,6 +71,11 @@ class FileManager
     private $allowedMimeTypes = [];
 
     /**
+     * @var bool
+     */
+    private $isConvertedToArchive = false;
+
+    /**
      * FileManager constructor.
      * @param Filesystem $filesystem
      * @param null $fileName
@@ -117,6 +122,16 @@ class FileManager
     }
 
     /**
+     * Return source files location
+     *
+     * @return mixed
+     */
+    public function getSourcePath()
+    {
+        return $this->dir->getAbsolutePath($this->subDir);
+    }
+
+    /**
      * @return Filesystem\File\WriteInterface
      */
     public function getFileStream()
@@ -154,7 +169,8 @@ class FileManager
      */
     public function getFileName()
     {
-        return sprintf('%s.%s', $this->fileName, $this->contentFormat);
+        $format = !$this->getIsConvertedToArchive() ? $this->contentFormat : $this->archiveFormat;
+        return sprintf('%s.%s', $this->fileName, $format);
     }
 
     /**
@@ -180,21 +196,31 @@ class FileManager
     /**
      * Retrieve file sub path location
      *
-     * @param bool $isArchive
      * @return string
      */
-    private function getFilePath($isArchive = false)
+    private function getFilePath()
     {
         $path = $this->filePath;
-        if ($isArchive) {
-            $path = preg_replace(
-                sprintf('/\.%s$/i', $this->getContentFormat()),
-                sprintf('.%s', $this->getArchiveFormat()),
-                $path
-            );
+        if ($this->getIsConvertedToArchive()) {
+            $path = $this->getArchiveFilePath($path);
         }
 
         return $path;
+    }
+
+    /**
+     * Retrieve archive file sub path location
+     *
+     * @param null $path
+     * @return string|string[]|null
+     */
+    private function getArchiveFilePath($path = null)
+    {
+        return preg_replace(
+            sprintf('/\.%s$/i', $this->getContentFormat()),
+            sprintf('.%s', $this->getArchiveFormat()),
+            $path ?: $this->filePath
+        );
     }
 
     /**
@@ -246,7 +272,7 @@ class FileManager
     }
 
     /**
-     * Delete file content
+     * Delete file
      *
      * @return void
      * @throws \Magento\Framework\Exception\FileSystemException
@@ -254,6 +280,17 @@ class FileManager
     public function deleteFile()
     {
         $this->dir->getDriver()->deleteFile($this->getFileLocation());
+    }
+
+    /**
+     * Delete source path
+     *
+     * @return void
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
+    public function deleteSourcePath()
+    {
+        $this->dir->delete($this->getSourcePath());
     }
 
     /**
@@ -298,5 +335,25 @@ class FileManager
         }
 
         return true;
+    }
+
+    /**
+     * Set flag which means that the content has been archived
+     *
+     * @param $flag
+     */
+    public function setIsConvertedToArchive($flag)
+    {
+        $this->isConvertedToArchive = (bool) $flag;
+    }
+
+    /**
+     * Check if content was packed into archive or not
+     *
+     * @return bool
+     */
+    public function getIsConvertedToArchive()
+    {
+        return (bool) $this->isConvertedToArchive;
     }
 }

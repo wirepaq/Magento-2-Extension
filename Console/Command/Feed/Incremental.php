@@ -71,8 +71,7 @@ class Incremental extends AbstractCommand
         // check if related cron process doesn't occur to this process to prevent duplicate execution
         $jobs = $this->cronManager->getRunningSchedules(CronManager::FEED_JOB_CODE);
         if ($jobs->getSize()) {
-            $message = 'At the moment, the cron job is already executing this process. 
-                To prevent duplicate process, which will increase the load on the server, please try it later.';
+            $message = 'At the moment, the cron job is already executing this process. '. "\n" . 'To prevent duplicate process, which will increase the load on the server, please try it later.';
             $output->writeln("<error>{$message}</error>");
             return false;
         }
@@ -93,9 +92,6 @@ class Incremental extends AbstractCommand
             }
             $stores = [$storeId];
         }
-
-        // try to collect child product ids if any
-        $this->collectAllProductIds($productIds);
 
         // pre process actions
         $this->preProcessActions($output);
@@ -127,14 +123,14 @@ class Incremental extends AbstractCommand
             }
         }
 
-        $this->buildResponse($output, $stores);
+        // post process actions
+        $this->postProcessActions($output);
+
+        $this->buildResponse($output, $stores, $errors);
 
         $end = microtime(true);
         $workingTime = round($end - $start, 2);
         $output->writeln("<info>Working time: {$workingTime}</info>");
-
-        // post process actions
-        $this->postProcessActions($output);
 
         return true;
     }
@@ -142,14 +138,16 @@ class Incremental extends AbstractCommand
     /**
      * @param OutputInterface $output
      * @param $stores
+     * @param $errors
      * @return $this
      */
-    private function buildResponse($output, $stores)
+    private function buildResponse($output, $stores, $errors)
     {
         $errorMessage = FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR;
         if (!empty($errors)) {
             $affectedIds = implode(',', array_keys($errors));
-            $errorMessage = sprintf($errorMessage, $affectedIds);
+            $errorMessages = implode(',', array_values($errors));
+            $errorMessage = sprintf($errorMessage, $affectedIds . '. ' . $errorMessages);
             $output->writeln("<error>{$errorMessage}</error>");
         } else if ($this->feedHelper->isLastSynchronizationSuccess()) {
             $output->writeln("<info>" . FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE . "</info>");
@@ -162,21 +160,6 @@ class Incremental extends AbstractCommand
         }
 
         return $this;
-    }
-
-    /**
-     * @param array $ids
-     */
-    private function collectAllProductIds(array &$ids)
-    {
-        foreach ($ids as $id) {
-            $childIds = array_unique(array_filter($this->productHelper->getChildProductIds($id)));
-            if (!empty($childIds)) {
-                foreach ($childIds as $groupKey => $child) {
-                    $ids = array_unique(array_merge_recursive($ids, array_values($child)));
-                }
-            }
-        }
     }
 
     /**
@@ -194,6 +177,8 @@ class Incremental extends AbstractCommand
      */
     protected function postProcessActions($output)
     {
+        $this->flushSystemConfigCache();
+
         return $this;
     }
 }

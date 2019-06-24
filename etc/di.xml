@@ -135,7 +135,7 @@
     <!-- START: indexer -->
     <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full">
         <arguments>
-            <argument name="batchRowsCount" xsi:type="string">5000</argument>
+            <argument name="batchRowsCount" xsi:type="string">1000</argument>
         </arguments>
     </type>
     <type name="Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider\AbstractAttribute">
@@ -164,7 +164,8 @@
                 <item name="attribute" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Attribute</item>
                 <item name="price" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Price</item>
                 <item name="inventory" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Inventory</item>
-                <item name="category" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Category</item>
+                <!-- @TODO - need optimization for category data source -->
+                <!--<item name="category" xsi:type="object">Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProvider\Category</item>-->
             </argument>
         </arguments>
     </type>

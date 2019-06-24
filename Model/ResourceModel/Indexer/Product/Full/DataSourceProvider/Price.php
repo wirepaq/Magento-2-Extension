@@ -51,6 +51,8 @@ class Price extends Indexer
             ->where('p.entity_id IN (?)', $productIds);
 
         $result = $this->getConnection()->fetchAll($select);
+		
+		return $result;
 
         if ($this->limiter > 3) {
             return $result;

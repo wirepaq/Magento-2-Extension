@@ -99,7 +99,7 @@ class UploadSize extends AbstractCommand
 
                 try {
                     $rows = [];
-                    $rows[] = [$size, $additionalMessage];
+                    $rows[] = [$storeName, $size, $additionalMessage];
                     $table = $this->getHelperSet()->get('table');
                     $table->setHeaders(['Store', 'Size', 'Additional Message'])
                         ->addRows($rows)
@@ -133,6 +133,8 @@ class UploadSize extends AbstractCommand
      */
     protected function postProcessActions($output)
     {
+        $this->flushSystemConfigCache();
+
         return $this;
     }
 }

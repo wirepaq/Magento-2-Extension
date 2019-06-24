@@ -216,16 +216,17 @@ class Handler extends \Magento\Framework\DataObject
         try {
             /** @var \Unbxd\ProductFeed\Api\Data\FeedViewInterface $model */
             $model = $this->init($id);
-            if ($model->getId() && !empty($arguments)) {
+            if ($id = $model->getId() && !empty($arguments)) {
                 foreach ($arguments as $key => $value) {
                     $model->setData($key, $value);
                 }
                 $this->save($model);
+                $this->logger->info('Updated feed view record with #' . $id);
             }
         } catch (LocalizedException $e) {
-            $this->logger->error('Can\'t update feed view record. LocalizedException error: ' . $e->getMessage());
+            $this->logger->critical($e);
         } catch (\Exception $e) {
-            $this->logger->error('Can\'t update feed view record. Exception error: ' . $e->getMessage());
+            $this->logger->critical($e);
         }
 
         return $this;
@@ -251,7 +252,7 @@ class Handler extends \Magento\Framework\DataObject
         if (!empty($items)) {
             foreach ($items as $item) {
                 /** \Unbxd\ProductFeed\Api\Data\FeedViewInterface $item */
-                // @TODO
+                // @TODO - implement
             }
         }
 
