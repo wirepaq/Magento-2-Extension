@@ -135,7 +135,7 @@
     <!-- START: indexer -->
     <type name="Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full">
         <arguments>
-            <argument name="batchRowsCount" xsi:type="string">1000</argument>
+            <argument name="batchRowsCount" xsi:type="string">5000</argument>
         </arguments>
     </type>
     <type name="Unbxd\ProductFeed\Model\ResourceModel\Eav\Indexer\Full\DataSourceProvider\AbstractAttribute">

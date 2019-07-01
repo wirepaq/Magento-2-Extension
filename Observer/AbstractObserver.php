@@ -11,7 +11,7 @@
  */
 namespace Unbxd\ProductFeed\Observer;
 
-use Unbxd\Analytics\Helper\Data as HelperData;
+use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Magento\Framework\Message\ManagerInterface;
 
 /**

@@ -17,7 +17,6 @@ use Unbxd\ProductFeed\Model\Serializer;
 use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
-use Unbxd\Analytics\Model\Config as AnalyticsConfig;
 
 /**
  * Class Connector
@@ -315,8 +314,8 @@ class Connector
         }
 
         if ($this->getApiUrl()) {
-            $analyticsType = class_exists(AnalyticsConfig::class)
-                ? AnalyticsConfig::API_REQUEST_TYPE_ANALYTICS
+            $analyticsType = class_exists(\Unbxd\Analytics\Model\Config::class)
+                ? \Unbxd\Analytics\Model\Config::API_REQUEST_TYPE_ANALYTICS
                 : FeedConfig::FEED_TYPE_ANALYTICS;
             if ($type == $analyticsType) {
                 $this->resetHeaders();

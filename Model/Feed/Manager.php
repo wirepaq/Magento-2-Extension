@@ -235,7 +235,7 @@ class Manager
      *
      * @var bool
      */
-    private $isNeedToArchive = false;
+    private $isNeedToArchive = true;
 
     /**
      * Manager constructor.
@@ -350,7 +350,6 @@ class Manager
         $this->type = $type;
 
         $this->startProfiler();
-
         $this->prepareData($index);
         $this->buildFeed();
         $this->serializeFeed();
@@ -626,6 +625,9 @@ class Manager
                 ]
             ];
         }
+		
+		// reset local cache for main feed parts
+		$this->schema = $this->catalog = [];
 
         return $this;
     }
@@ -642,7 +644,7 @@ class Manager
 
         if ($this->fullFeed) {
             try {
-                 $this->fullFeed = $this->serializer->serialize($this->fullFeed);
+                $this->fullFeed = $this->serializer->serializeToJson($this->catalog);
             } catch (\Exception $e) {
                 $this->logger->critical($e);
                 $this->postProcessActions();
@@ -669,14 +671,14 @@ class Manager
             if ($fileManager->isExist()) {
                 $fileManager->deleteFile();
             }
-
-            try {
-                $fileManager->write($this->fullFeed);
-            } catch (\Exception $e) {
-                $this->logger->critical($e);
-                $this->postProcessActions();
-                return $this;
-            }
+			
+			try {
+				$fileManager->write($this->fullFeed);
+			} catch (\Exception $e) {
+				$this->logger->critical($e);
+				$this->postProcessActions();
+				return $this;
+			}
         }
 
         if ($this->getIsNeedToArchive()) {
@@ -730,7 +732,6 @@ class Manager
                 if (!$archivedFile) {
                     $this->logger->error('Sorry, but the data is invalid or the feed file is not archived.');
                     $this->postProcessActions();
-                    return $this;
                 }
             } catch (\Exception $e) {
                 $this->logger->critical($e);
@@ -1505,7 +1506,6 @@ class Manager
         $this->isFeedLock = false;
         $this->lockedTime = null;
         $this->feedViewId = null;
-        $this->isUploadedStatusChecked = false;
         $this->uploadedFeedSize = 0;
     }
 }

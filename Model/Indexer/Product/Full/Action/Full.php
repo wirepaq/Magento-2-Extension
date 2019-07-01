@@ -99,7 +99,6 @@ class Full
      */
     private function initProductStoreIndex($storeId, $productIds = [])
     {
-        $productId = 0;
         if (!empty($productIds)) {
             // ensure to reindex also the child product ids, if parent was passed.
             $relationsByParent = $this->resourceModel->getRelationsByParent($productIds);
@@ -108,6 +107,7 @@ class Full
             }
         }
 		
+		$productId = 0;
         do {
             $products = $this->getProducts($storeId, $productIds, $productId);
             foreach ($products as $productData) {
@@ -135,7 +135,6 @@ class Full
     {
         $i = 0;
         $batch = [];
-
         foreach ($data as $key => $value) {
             $batch[$key] = $value;
             if (++$i == $size) {
@@ -144,6 +143,7 @@ class Full
                 $batch = [];
             }
         }
+		
         if (count($batch) > 0) {
             yield $batch;
         }
@@ -160,13 +160,17 @@ class Full
     {
         $index = [];
         $batchSize = $this->batchRowsCount;
-        foreach ($this->getBatchItems($initIndexData, $batchSize) as $key => $index) {
-            /** Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface $dataSource */
-            foreach ($this->dataSourceProvider->getList() as $dataSource) {
-                if (!empty($index)) {
-                    $index = $dataSource->appendData($storeId, $index);
-                }
-            }
+        foreach ($this->getBatchItems($initIndexData, $batchSize) as $batchIndex) {
+			if (!empty($batchIndex)) {
+				foreach ($this->dataSourceProvider->getList() as $dataSource) {
+					/** Unbxd\ProductFeed\Model\Indexer\Product\Full\DataSourceProviderInterface $dataSource */
+					$batchIndex = $dataSource->appendData($storeId, $batchIndex);
+				}
+			}
+			
+			if (!empty($batchIndex)) {
+				$index += $batchIndex;
+			}
         }
 		
         return $index;
@@ -185,7 +189,7 @@ class Full
         $initIndexData = $this->initProductStoreIndex($storeId, $productIds);
         $fullIndex = [];
         if (!empty($initIndexData)) {
-            $fullIndex = $this->appendIndexData($storeId, $initIndexData);
+			$fullIndex = $this->appendIndexData($storeId, $initIndexData);
         }
 
         // try to detect deleted product(s)

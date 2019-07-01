@@ -114,7 +114,13 @@ class FileManager
     {
         $stream = $this->dir->openFile($this->getFilePath(), 'a');
         $stream->lock();
-        $stream->write($string);
+        // to prevent issues with big data during this action split string into small pieces
+		$splitString = str_split($string, 1024 * 4);
+		if (!empty($splitString)) {
+			foreach ($splitString as $partString) {
+				$stream->write($partString);
+			}
+		}
         $stream->unlock();
         $stream->close();
 

@@ -129,7 +129,7 @@ class Full extends Indexer
      * @return mixed
      * @throws \Exception
      */
-    public function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = false, $limit = 1000)
+    public function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = false, $limit = 10000)
     {
         $select = $this->getConnection()->select()
             ->from(['e' => $this->getEntityTable()]);
