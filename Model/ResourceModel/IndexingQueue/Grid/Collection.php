@@ -40,8 +40,8 @@ class Collection extends SearchResult
      * @param Logger $logger
      * @param FetchStrategy $fetchStrategy
      * @param EventManager $eventManager
-     * @param $mainTable
-     * @param $resourceModel
+     * @param string $mainTable
+     * @param null|string $resourceModel
      * @param \Magento\Framework\Stdlib\DateTime\DateTime $date
      * @throws \Magento\Framework\Exception\LocalizedException
      */
