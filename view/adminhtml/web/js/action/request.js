@@ -76,7 +76,9 @@ define([
                         // action(s) will be performed by callbacks
                         return true;
                     } else {
-                        location.reload();
+                        // scroll to top of the page to make sure the displayed messages (if any) will be detected by user
+                        $("html, body").animate({ scrollTop: 0 }, "slow");
+                        window.location.reload();
                     }
                 }
             }).fail(function () {

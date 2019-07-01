@@ -28,8 +28,6 @@ class Full extends ActionIndex
      */
     public function execute()
     {
-        /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
-        $resultRedirect = $this->resultRedirectFactory->create();
         /** @var \Magento\Framework\Controller\Result\Json $resultJson */
         $resultJson = $this->resultFactory->create(ResultFactory::TYPE_JSON);
         $responseContent = [];
@@ -53,9 +51,14 @@ class Full extends ActionIndex
 
         try {
             $this->indexingQueueRepository->save($queue);
-            $this->messageManager->addSuccessMessage(
+            $viewDetailsLink = sprintf(
+                '<a href="%s">' . __('View details') . '</a>',
+                $this->getUrl('unbxd_productfeed/indexing/queue')
+            );
+            // \Magento\Framework\Message\ManagerInterface::addSuccessMessage strip HTML tags
+            $this->messageManager->addSuccess(
                 __('Synchronization operation was added to queue.
-                Please make sure the related cron job is configured to perform this operation.')
+                Please make sure the related cron job is configured to perform this operation. ' . $viewDetailsLink)
             );
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());

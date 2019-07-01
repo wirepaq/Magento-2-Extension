@@ -65,11 +65,9 @@ define([
                         ? response.updatedContent
                         : '';
                     $('#log_content').html(content);
-                    self._logContentScroll();
+                    self.scrollLogContent();
                 }
             });
-
-            self._logContentScroll();
 
             return this;
         },
@@ -126,10 +124,10 @@ define([
         },
 
         /**
-         * @private
+         * @param event
          */
-        _logContentScroll: function() {
-            var logContainer = document.getElementById('log_content');
+        scrollLogContent: function(event) {
+            var logContainer = event ? event : document.getElementById('log_content');
 
             if (logContainer) {
                 var dh = logContainer.scrollHeight,
