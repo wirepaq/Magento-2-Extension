@@ -8,14 +8,8 @@
     <div class="block notification">
         <?php
         $isSynchronizationAttempt = $block->isSynchronizationAttempt();
-        $isComplete = $block->getIsComplete();
-        $stateClassName = $isComplete ? 'success' : 'warning';
-        $message = __('Product catalog is not synchronized.');
-        if ($block->getIsProcessing()) {
-            $message = __(\Unbxd\ProductFeed\Model\Feed\Config::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING);
-        } else if ($isComplete) {
-            $message = __(\Unbxd\ProductFeed\Model\Feed\Config::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE);
-        }
+        $stateClassName = $block->getIsComplete() ? 'success' : 'warning';
+        $message = $block->getMessageByStatus();
         ?>
         <div class="messages-container">
             <div class="messages">
@@ -62,21 +56,22 @@
                             <td><?= /* @escapeNotVerified */ __($status) ?></td>
                         </tr>
                     <?php endif; ?>
-                    <?php if ($uploadId = $block->getLastUploadId()): ?>
-                        <tr>
-                            <th><?= /* @escapeNotVerified */ __('Upload ID') ?></th>
-                            <td><?= /* @escapeNotVerified */ __($uploadId) ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <?php if ($uploadedSize = $block->getUploadedSize()): ?>
-                        <tr>
-                            <th><?= /* @escapeNotVerified */ __('Total Uploaded Size') ?></th>
-                            <td><?= /* @escapeNotVerified */ __(
-                                    sprintf('%s (children products are not counted)',
-                                        $uploadedSize)
-                                ) ?>
-                            </td>
-                        </tr>
+                    <?php if ($block->isUploadedFeedDetailsEnabled()): ?>
+                        <?php if ($uploadId = $block->getLastUploadId()): ?>
+                            <tr>
+                                <th><?= /* @escapeNotVerified */ __('Upload ID') ?></th>
+                                <td><?= /* @escapeNotVerified */ __($uploadId) ?></td>
+                            </tr>
+                        <?php endif; ?>
+                        <?php if ($uploadedSize = $block->getUploadedSize()): ?>
+                            <tr>
+                                <th><?= /* @escapeNotVerified */ __('Total Uploaded Size') ?></th>
+                                <td><?= /* @escapeNotVerified */ __(
+                                        sprintf('%s (children products are not counted)', $uploadedSize)
+                                    ) ?>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     <?php endif; ?>
                     </tbody>
                 </table>

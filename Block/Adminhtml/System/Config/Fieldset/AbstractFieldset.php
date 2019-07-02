@@ -19,6 +19,7 @@ use Unbxd\ProductFeed\Helper\Module as ModuleHelper;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 use Unbxd\ProductFeed\Model\FeedView;
+use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 
 /**
  * Class AbstractFieldset
@@ -195,6 +196,39 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     }
 
     /**
+     * @return \Magento\Framework\Phrase
+     */
+    public function getMessageByStatus()
+    {
+        $message = __('Product catalog is not synchronized.');
+        if ($this->getIsRunning()) {
+            $message = __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_RUNNING);
+        } else if ($this->getIsProcessing()) {
+            $message = __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING);
+        } else if ($this->getIsComplete()) {
+            $message = __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE);
+        }
+
+        return $message;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUploadedFeedDetailsEnabled()
+    {
+        return (bool) ($this->getIsProcessing() || $this->getIsComplete());
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsRunning()
+    {
+        return (bool) ($this->getLastSynchronizationStatus() == FeedView::STATUS_RUNNING);
+    }
+
+    /**
      * @return bool
      */
     public function getIsProcessing()
@@ -210,6 +244,14 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     {
         return (bool) (($this->getLastSynchronizationStatus() == FeedView::STATUS_COMPLETE)
             && $this->getLastUploadId());
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsError()
+    {
+        return (bool) ($this->getLastSynchronizationStatus() == FeedView::STATUS_ERROR);
     }
 
     /**

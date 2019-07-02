@@ -29,6 +29,8 @@ class Config
     /**
      * Feed messages who are responsible for specific operation
      */
+    const FEED_MESSAGE_BY_RESPONSE_TYPE_RUNNING =
+        'Product feed is currently synchronizing with the Unbxd service.';
     const FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING =
         'Product feed has been successfully uploaded. Processing by Unbxd service.';
     const FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE =
