@@ -644,7 +644,7 @@ class Manager
 
         if ($this->fullFeed) {
             try {
-                $this->fullFeed = $this->serializer->serializeToJson($this->catalog);
+                $this->fullFeed = $this->serializer->serializeToJson($this->fullFeed);
             } catch (\Exception $e) {
                 $this->logger->critical($e);
                 $this->postProcessActions();
