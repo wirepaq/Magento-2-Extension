@@ -71,16 +71,38 @@ class Incremental extends FeedActionIndex
             }
         }
 
-        if ($this->feedHelper->isLastSynchronizationProcessing()) {
-            $this->messageManager->addSuccessMessage(__(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING));
-        } else if ($this->feedHelper->isLastSynchronizationSuccess()) {
-            $this->messageManager->addSuccessMessage(__(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE));
-        } else {
-            $message = sprintf(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR, $this->getStore()->getId());
-            $this->messageManager->addErrorMessage(__($message));
-        }
+        $this->buildResponseMessage();
 
         $resultJson->setData($responseContent);
         return $resultJson;
+    }
+
+    /**
+     * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function buildResponseMessage()
+    {
+        $viewDetailsLink = sprintf(
+            '<a href="%s">' . __('View details') . '</a>',
+            $this->getUrl('unbxd_productfeed/feed/view')
+        );
+        // \Magento\Framework\Message\ManagerInterface::addSuccessMessage strip HTML tags
+        if ($this->feedHelper->isLastSynchronizationProcessing()) {
+            $message = sprintf(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING . ' %s', $viewDetailsLink);
+            $this->messageManager->addSuccess(__($message));
+        } else if ($this->feedHelper->isLastSynchronizationSuccess()) {
+            $message = sprintf(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE . ' %s', $viewDetailsLink);
+            $this->messageManager->addSuccess(__($message));
+        } else {
+            $message = sprintf(
+                FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR . ' %s',
+                $this->getStore()->getId(),
+                $viewDetailsLink
+            );
+            $this->messageManager->addError(__($message));
+        }
+
+        return $this;
     }
 }
