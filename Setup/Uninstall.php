@@ -66,14 +66,14 @@ class Uninstall implements UninstallInterface
             $setup->getTable('unbxd_productfeed_feed_view')
         ];
 
-        // disable checks foreign key before delete action
+        // just in case disable checks foreign key before drop tables action
         $installer->getConnection()->query('SET FOREIGN_KEY_CHECKS = 0');
         foreach ($tables as $table) {
             if ($setup->tableExists($table)) {
                 $setup->getConnection()->dropTable($table);
             }
         }
-        // enable checks foreign key before delete action
+        // enable checks foreign key after drop tables action
         $installer->getConnection()->query('SET FOREIGN_KEY_CHECKS = 1');
     }
 }
