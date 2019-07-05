@@ -440,7 +440,7 @@ class Manager
     private function buildSchemaFields(array $fields)
     {
         if (empty($fields)) {
-            $this->logger->error('Can\'t prepare schema fields. Index data is empty.');
+            $this->logger->info('Can\'t prepare schema fields. Index data is empty.');
             return $this;
         }
 
@@ -458,13 +458,11 @@ class Manager
                 unset($fields[$fieldCode]);
             }
 
-            //convert to needed format
+            // convert to needed format
             $fieldData['fieldName'] = SimpleDataObjectConverter::snakeCaseToCamelCase($fieldData['fieldName']);
         }
 
         $this->appendChildFieldsToSchema($fields);
-
-        //@TODO - filter schema fields by operation types
 
         $this->schema = [
             Config::SCHEMA_FIELD_KEY => array_values($fields)
@@ -585,6 +583,12 @@ class Manager
                     ? trim($data['action'])
                     : Config::OPERATION_TYPE_ADD;
 
+                // if operation type is 'delete' uniqueId is only one required field
+                if ($operationKey == Config::OPERATION_TYPE_DELETE) {
+                    $key = SimpleDataObjectConverter::snakeCaseToCamelCase(Config::SPECIFIC_FIELD_KEY_UNIQUE_ID);
+                    $data = [$key => $productId];
+                }
+
                 $catalog[$operationKey][Config::CATALOG_ITEMS_FIELD_KEY][] = $data;
             }
         }
@@ -605,7 +609,9 @@ class Manager
     {
         $this->logger->info('Build feed content.');
 
-        if (empty($this->schema) || empty($this->catalog)) {
+        // check only catalog data, we don't need to check schema fields
+        // in case if 'delete' operation will be performing, scheme fields are not required
+        if (empty($this->catalog)) {
             $this->logger->info('Can\'t build feed content. Prepared data is empty.');
             return false;
         }
@@ -680,6 +686,9 @@ class Manager
 				return $this;
 			}
         }
+
+        // reset local cache for feed content
+        $this->fullFeed = [];
 
         if ($this->getIsNeedToArchive()) {
             $this->archiveFeedFile();
@@ -918,7 +927,7 @@ class Manager
         // update config status value
         $this->feedHelper->setLastSynchronizationStatus(FeedView::STATUS_RUNNING);
 
-        // filter schema fields
+        // filter schema fields (if any)
         $ids = array_filter(
             $ids,
             function ($value) {
@@ -927,8 +936,8 @@ class Manager
         );
 
         // @TODO - need to figure out with stores
-        // create feed view for current execution
         $storeId = 1;
+        // create feed view for current API operation
         $feedViewId = $this->getFeedViewManager()->add($ids, $type, $storeId);
         if ($feedViewId) {
             $this->feedViewId = $feedViewId;
