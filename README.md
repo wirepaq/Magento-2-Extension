@@ -7,12 +7,22 @@ Support Magento 2.2.\* || 2.3.\*
 # Installation Guide
 
 ### Install by composer
-Currently is not available.
+
+```
+composer require unbxd/magento2-product-feed
+php bin/magento module:enable Unbxd_ProductFeed
+php bin/magento setup:upgrade
+php bin/magento setup:di:compile
+php bin/magento cache:flush
+```
 
 ### Manual installation
 
-1. Download this module [Link](https://github.com/unbxd/Magento-2-Extension/archive/master.zip)
-3. Unzip module in the folder app\code\Unbxd\ProductFeed
+1. Download this module [Link](https://github.com/unbxd/Magento-2-Extension/archive/1.0.13.zip)
+3. Unzip module in the folder:
+
+    app\code\Unbxd\ProductFeed  
+    
 4. Access the root of you Magento 2 instance from command line and run the following commands:
 
 ```
