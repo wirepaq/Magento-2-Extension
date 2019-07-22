@@ -1059,7 +1059,7 @@ class Manager
         $this->logger->info('Flush system configuration cache.');
 
         try {
-            $this->cacheManager->flushCacheByType(CacheManager::SYSTEM_CONFIGURATION_CACHE_TYPE);
+            $this->cacheManager->flushSystemConfigCache();
         } catch (\Exception $e) {
             $this->logger->error($e->getMessage());
         }
@@ -1078,7 +1078,6 @@ class Manager
 
         /** @var \Unbxd\ProductFeed\Model\Feed\FileManager $fileManager */
         $fileManager = $this->getFileManager();
-
         try {
             $fileManager->deleteSourcePath();
         } catch (\Exception $e) {
@@ -1112,15 +1111,15 @@ class Manager
             // performing operations with response
             $this->updateConfigStats($response);
             $this->updateFeedView($response);
-
-            // in some cases related config info doesn't refreshing on backend frontend
-            $this->flushSystemConfigCache();
         }
 
         // reset local cache to initial state
         $this->reset();
 
         $this->cleanupFeedFiles();
+
+        // in some cases related config info doesn't refreshing on backend frontend
+        $this->flushSystemConfigCache();
 
         return $this;
     }

@@ -159,7 +159,7 @@ abstract class AbstractCommand extends Command
     protected function flushSystemConfigCache()
     {
         try {
-            $this->cacheManager->flushCacheByType(CacheManager::SYSTEM_CONFIGURATION_CACHE_TYPE);
+            $this->cacheManager->flushSystemConfigCache();
         } catch (\Exception $e) {
             // catch and log exception
         }

@@ -523,6 +523,7 @@ class CronManager
                     $status = array_key_exists(FeedResponse::RESPONSE_FIELD_STATUS, $responseBodyData)
                         ? $responseBodyData[FeedResponse::RESPONSE_FIELD_STATUS]
                         : null;
+
                     if ($status && ($status != FeedResponse::RESPONSE_FIELD_STATUS_VALUE_INDEXING)) {
                         $status = ($status == FeedResponse::RESPONSE_FIELD_STATUS_VALUE_INDEXED)
                             ? FeedView::STATUS_COMPLETE
@@ -586,7 +587,7 @@ class CronManager
     private function flushSystemConfigCache()
     {
         try {
-            $this->cacheManager->flushCacheByType(CacheManager::SYSTEM_CONFIGURATION_CACHE_TYPE);
+            $this->cacheManager->flushSystemConfigCache();
         } catch (\Exception $e) {
             $this->logger->error($e->getMessage());
         }

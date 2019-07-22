@@ -16,6 +16,7 @@ use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Cache\StateInterface;
 use Unbxd\ProductFeed\Model\Serializer;
 use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Cache\FrontendInterface as FrontendInterface;
 
 /**
  * Class CacheManager
@@ -23,11 +24,6 @@ use Magento\Framework\App\ObjectManager;
  */
 class CacheManager
 {
-    /**
-     * System configuration cache type name
-     */
-    const SYSTEM_CONFIGURATION_CACHE_TYPE = 'config';
-
     /**
      * @var integer
      */
@@ -37,6 +33,11 @@ class CacheManager
      * @var CacheInterface
      */
     private $cache;
+
+    /**
+     * @var FrontendInterface
+     */
+    protected $configCache;
 
     /**
      * @var TypeListInterface
@@ -171,5 +172,13 @@ class CacheManager
         }
 
         return true;
+    }
+
+    /**
+     * Clean config cache records
+     */
+    public function flushSystemConfigCache()
+    {
+        $this->configCache->getBackend()->clean();
     }
 }
