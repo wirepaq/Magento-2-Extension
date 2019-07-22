@@ -1,0 +1,219 @@
+"Are you sure do you want to clear feed view?","Are you sure do you want to clear feed view?"
+"Clear Feed View","Clear Feed View"
+"Are you sure do you want to clear indexing queue?","Are you sure do you want to clear indexing queue?"
+"Clear Queue","Clear Queue"
+Check,Check
+Synchronize,Synchronize
+"Product catalog is not synchronized.","Product catalog is not synchronized."
+Back,Back
+Delete,Delete
+"Delete item?","Delete item?"
+Hold,Hold
+"Put On Hold?","Put On Hold?"
+Unhold,Unhold
+Unhold?,Unhold?
+Undefined,Undefined
+ID,ID
+Thumbnail,Thumbnail
+Name,Name
+Sku,Sku
+Type,Type
+Price,Price
+Qty,Qty
+"In Salable","In Salable"
+No,No
+Yes,Yes
+"Invalid request.","Invalid request."
+"View details","View details"
+"'Synchronization operation was added to queue.
+                Please make sure the related cron job is configured to perform this operation. ' .","'Synchronization operation was added to queue.
+                Please make sure the related cron job is configured to perform this operation. ' ."
+"Something went wrong while saving this operation.","Something went wrong while saving this operation."
+"Indexing error: %s","Indexing error: %s"
+"Product Feed","Product Feed"
+"Log View","Log View"
+"Unbxd | Feed View","Unbxd | Feed View"
+"This feed view no longer exists.","This feed view no longer exists."
+"Feed view in 'Running' status can't be deleted.","Feed view in 'Running' status can't be deleted."
+"Feed view was deleted.","Feed view was deleted."
+"Something went wrong while deleting feed view.","Something went wrong while deleting feed view."
+"%1 in 'Running' status can't be deleted.","%1 in 'Running' status can't be deleted."
+"A total of %1 record(s) have been deleted.","A total of %1 record(s) have been deleted."
+"Nothing to clear. Feed view list are empty.","Nothing to clear. Feed view list are empty."
+"Feed View Details","Feed View Details"
+"Unbxd | Feed View Details","Unbxd | Feed View Details"
+"Indexing Queue","Indexing Queue"
+View,View
+"Unbxd | Indexing Queue View","Unbxd | Indexing Queue View"
+"This queue item no longer exists.","This queue item no longer exists."
+"Queue item in 'Running' status can't be deleted.","Queue item in 'Running' status can't be deleted."
+"Queue item was deleted.","Queue item was deleted."
+"Something went wrong while deleting queue item.","Something went wrong while deleting queue item."
+"Nothing to clear. Queue list are empty.","Nothing to clear. Queue list are empty."
+"Queue item already on 'Hold' status.","Queue item already on 'Hold' status."
+"Only queue item in 'Pending' status can be put on hold.","Only queue item in 'Pending' status can be put on hold."
+"You have put queue item #%1 on 'Hold' status.","You have put queue item #%1 on 'Hold' status."
+"Something went wrong while saving queue item.","Something went wrong while saving queue item."
+"%1 already on 'Hold' status.","%1 already on 'Hold' status."
+"%1 are not in 'Pending' status.","%1 are not in 'Pending' status."
+"A total of %1 record(s) have been put on 'Hold' status.","A total of %1 record(s) have been put on 'Hold' status."
+"Something went wrong while saving this item.","Something went wrong while saving this item."
+"%1 are not on 'Hold' status.","%1 are not on 'Hold' status."
+"A total of %1 record(s) were released from on 'Hold' status.","A total of %1 record(s) were released from on 'Hold' status."
+"Only queue item on 'Hold' status can be released.","Only queue item on 'Hold' status can be released."
+"Queue item #%1 was released from on 'Hold' status.","Queue item #%1 was released from on 'Hold' status."
+"Queue Item Details","Queue Item Details"
+"Unbxd | Queue Item Details","Unbxd | Queue Item Details"
+"Can't create instance of logger object. Error: %1","Can't create instance of logger object. Error: %1"
+"Empty request data: log type is required.","Empty request data: log type is required."
+"Can't save the cron expression: %1","Can't save the cron expression: %1"
+Manually,Manually
+"By Template","By Template"
+"DON'T EXCLUDE","DON'T EXCLUDE"
+label,label
+"All AVAILABLE TYPES","All AVAILABLE TYPES"
+"Please provide API credentials to perform this operation.","Please provide API credentials to perform this operation."
+"API url must be set up before using API calls.","API url must be set up before using API calls."
+Full,Full
+Add,Add
+Update,Update
+Running,Running
+Complete,Complete
+Error,Error
+Indexing,Indexing
+"Feed view with id ""%1"" does not exist.","Feed view with id ""%1"" does not exist."
+"Without Images","Without Images"
+"Out Of Stock","Out Of Stock"
+"Not Visible Individually","Not Visible Individually"
+Pending,Pending
+"Row Reindex","Row Reindex"
+"List Reindex","List Reindex"
+"Full Reindex","Full Reindex"
+"Queue with id ""%1"" does not exist.","Queue with id ""%1"" does not exist."
+"Authorization credentials are not setup. Please provide them to perform operations 
+            with Unbxd service.","Authorization credentials are not setup. Please provide them to perform operations 
+            with Unbxd service."
+"Indexing queue is disabled. Enabling this option is recommended in production mode 
+            or with a large product catalog.","Indexing queue is disabled. Enabling this option is recommended in production mode 
+            or with a large product catalog."
+"Cron is not configured. Please configure it to perform asynchronous operations with Unbxd service.","Cron is not configured. Please configure it to perform asynchronous operations with Unbxd service."
+"Product with ID %1 was updated.","Product with ID %1 was updated."
+"Product with ID %1 was added.","Product with ID %1 was added."
+"Product with ID %1 was deleted.","Product with ID %1 was deleted."
+"Not Performed Yet","Not Performed Yet"
+"See View Details","See View Details"
+"View Details","View Details"
+"Delete %1","Delete %1"
+"Are you sure you want to delete a record #%1?","Are you sure you want to delete a record #%1?"
+"Hold #%1","Hold #%1"
+"Are you sure you want to put on hold record #%1?","Are you sure you want to put on hold record #%1?"
+"Unhold #%1","Unhold #%1"
+"Are you sure you want to unhold record #%1?","Are you sure you want to unhold record #%1?"
+"Delete #%1","Delete #%1"
+"Are you sure you want to delete record #%1?","Are you sure you want to delete record #%1?"
+"All Store Views","All Store Views"
+"There are no jobs in the last 24 hours.","There are no jobs in the last 24 hours."
+"Cron is running. Last %1 jobs:","Cron is running. Last %1 jobs:"
+"Schedule Id","Schedule Id"
+"Job Code","Job Code"
+Status,Status
+"Created At","Created At"
+Messages,Messages
+"Last synchronization information:","Last synchronization information:"
+"Synchronization Type","Synchronization Type"
+Datetime,Datetime
+"Upload ID","Upload ID"
+"Total Uploaded Size","Total Uploaded Size"
+"Manual product catalog synchronization:","Manual product catalog synchronization:"
+"by actions below (see Manual Synchronization section)","by actions below (see Manual Synchronization section)"
+"by available CLI commands: %1","by available CLI commands: %1"
+"Get started with command-line","Get started with command-line"
+"Product Feed v. %1","Product Feed v. %1"
+by,by
+Unbxd,Unbxd
+"Have a question? Please refer to the <a href=""%1"">documentation</a>.","Have a question? Please refer to the <a href=""%1"">documentation</a>."
+"Finished At","Finished At"
+"Execution Time (in seconds)","Execution Time (in seconds)"
+"Total Number Of Entities","Total Number Of Entities"
+"Operation Type","Operation Type"
+"Additional Information","Additional Information"
+"System Information","System Information"
+"Started At","Started At"
+"Action Type","Action Type"
+"Product IDs","Product IDs"
+Response,Response
+"Request failed. Please try again later.","Request failed. Please try again later."
+"Please provide authorization keys to perform this operation.","Please provide authorization keys to perform this operation."
+Confirmation,Confirmation
+"Incremental Manager Is Unavailable.","Incremental Manager Is Unavailable."
+"Please provide at least one product ID to perform this operation.","Please provide at least one product ID to perform this operation."
+"Download Log","Download Log"
+"Refresh Log Content","Refresh Log Content"
+"Flush Log Content","Flush Log Content"
+"Log Viewer Is Unavailable.","Log Viewer Is Unavailable."
+"Unbxd ProductFeed Indexing Queue","Unbxd ProductFeed Indexing Queue"
+"Unbxd ProductFeed","Unbxd ProductFeed"
+Setup,Setup
+"General Settings","General Settings"
+"Site Key","Site Key"
+"The unique identifier of a Site. Each Site added on your Unbxd dashboard
+                    will have a unique Site key. <a href=""https://dashboard.unbxd.com/act/#/?target=search"" target=""_blank"">Reference</a>.","The unique identifier of a Site. Each Site added on your Unbxd dashboard
+                    will have a unique Site key. <a href=""https://dashboard.unbxd.com/act/#/?target=search"" target=""_blank"">Reference</a>."
+"Secret Key","Secret Key"
+"The unique identifier of the API calls made from an Unbxd account.
+                    Unbxd provides only one API Key per account. <a href=""https://dashboard.unbxd.com/act/#/?target=search"" target=""_blank"">Reference</a>.","The unique identifier of the API calls made from an Unbxd account.
+                    Unbxd provides only one API Key per account. <a href=""https://dashboard.unbxd.com/act/#/?target=search"" target=""_blank"">Reference</a>."
+"API Key","API Key"
+"An additional securely generated key used in important request calls such as,
+                    Product Feed upload. Unbxd provides one Secret Key per account. <a href=""https://dashboard.unbxd.com/act/#/?target=search"" target=""_blank"">Reference</a>.
+                    <p class=""message unbxd-fieldset-field-note"">Authenticating the extension requires your Site Key and Secret Key.</p>","An additional securely generated key used in important request calls such as,
+                    Product Feed upload. Unbxd provides one Secret Key per account. <a href=""https://dashboard.unbxd.com/act/#/?target=search"" target=""_blank"">Reference</a>.
+                    <p class=""message unbxd-fieldset-field-note"">Authenticating the extension requires your Site Key and Secret Key.</p>"
+Catalog,Catalog
+"Available Product Types","Available Product Types"
+"Exclude Product(s) From Synchronization","Exclude Product(s) From Synchronization"
+"Exclude products from synchronization in specific state:
+                    out of stock, disabled, not visible individually, with no image, etc.<br/>
+                    Don't choose any one if you want all products to be synchronized.","Exclude products from synchronization in specific state:
+                    out of stock, disabled, not visible individually, with no image, etc.<br/>
+                    Don't choose any one if you want all products to be synchronized."
+"Indexing Settings","Indexing Settings"
+"Enabled Indexing Queue","Enabled Indexing Queue"
+"If enabled, all indexing operations will be done asynchronously.","If enabled, all indexing operations will be done asynchronously."
+"Cron Settings","Cron Settings"
+"Enabled Cron","Enabled Cron"
+"Cron Type","Cron Type"
+"Cron Schedule","Cron Schedule"
+"Cron expression used to trigger synchronization process. Not sure how
+                    to configure it? <a href=""https://crontab.guru/"" target=""_blank"">Helper reference</a>.","Cron expression used to trigger synchronization process. Not sure how
+                    to configure it? <a href=""https://crontab.guru/"" target=""_blank"">Helper reference</a>."
+"Start Time","Start Time"
+Frequency,Frequency
+"Check If Cron Is Running","Check If Cron Is Running"
+"Manual Synchronization","Manual Synchronization"
+"Enable Manual Synchronization","Enable Manual Synchronization"
+"Full Product Catalog Synchronization","Full Product Catalog Synchronization"
+"Incremental Product Catalog Synchronization","Incremental Product Catalog Synchronization"
+"<p class=""message unbxd-fieldset-field-note"">Please make sure the related
+                    <a href=""#unbxd_catalog_cron-head"">cron job</a> is configured to perform this operations.</p>","<p class=""message unbxd-fieldset-field-note"">Please make sure the related
+                    <a href=""#unbxd_catalog_cron-head"">cron job</a> is configured to perform this operations.</p>"
+"Search Results Page","Search Results Page"
+"Catalog Synchronization Settings","Catalog Synchronization Settings"
+Enabled,Enabled
+"Unbxd Products","Unbxd Products"
+"Rebuild products index","Rebuild products index"
+"View Log","View Log"
+"Store View","Store View"
+"Delete items","Delete items"
+"Are you sure you wan't to delete selected items?","Are you sure you wan't to delete selected items?"
+Created,Created
+Finished,Finished
+"Execution Time (s)","Execution Time (s)"
+"Affected Entities","Affected Entities"
+"Number Of Entities","Number Of Entities"
+"General Information","General Information"
+"Put items on hold","Put items on hold"
+"Are you sure you wan't to put selected items on hold?","Are you sure you wan't to put selected items on hold?"
+"Release selected items from holding status","Release selected items from holding status"
+"Are you sure you wan't to release selected items from holding status?","Are you sure you wan't to release selected items from holding status?"
+Started,Started
