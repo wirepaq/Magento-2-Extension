@@ -232,6 +232,7 @@ class Handler extends \Magento\Framework\DataObject
                     $model->setData($key, $value);
                 }
                 $this->save($model);
+                $this->logger->info('Updated queue record with #' . $model->getId());
             }
         } catch (LocalizedException $e) {
             $this->logger->error('Can\'t update queue record. LocalizedException error: ' . $e->getMessage());

@@ -348,7 +348,7 @@ class CronManager
     }
 
     /**
-     * @return bool
+     * @return void
      * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
@@ -357,19 +357,19 @@ class CronManager
         // prevent duplicate jobs
         if ($this->lockProcess) {
             $this->logger->info('Lock reindex by another process.');
-            return false;
+            return;
         }
 
         // check if cron is configured
         if (!$this->helperData->isCronConfigured()) {
             $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
-            return false;
+            return;
         }
 
         // check authorization keys
         if (!$this->helperData->isAuthorizationCredentialsSetup()) {
             $this->logger->error('Please check authorization credentials to perform this operation.');
-            return false;
+            return;
         }
 
         $this->lockProcess = true;
@@ -389,7 +389,7 @@ class CronManager
 
         if (!$jobs->getSize()) {
             $this->logger->info('There are no jobs for processing.');
-            return false;
+            return;
         }
 
         $indexData = [];
@@ -456,21 +456,19 @@ class CronManager
 
         if (empty($indexData)) {
             $this->logger->error('Can\'t execute feed. Empty index data.');
-            return false;
+            return;
         }
 
         $type = $isFullReindex ? FeedConfig::FEED_TYPE_FULL : FeedConfig::FEED_TYPE_INCREMENTAL;
         $this->feedManager->execute($indexData, $type);
 
         $this->lockProcess = false;
-
-        return true;
     }
 
     /**
      * Runs jobs to check uploaded feed status
      *
-     * @return $this
+     * @return void
      */
     public function checkUploadedFeedStatus()
     {
@@ -489,9 +487,10 @@ class CronManager
         );
 
         if (!$jobs->getSize()) {
-            return $this;
+            return;
         }
 
+        $isCacheAffected = false;
         foreach ($jobs as $job) {
             /** @var \Unbxd\ProductFeed\Model\FeedView $job */
             $jobId = $job->getId();
@@ -507,15 +506,13 @@ class CronManager
 
             /** @var \Unbxd\ProductFeed\Model\Feed\Api\Connector $connectorManager */
             $connectorManager = $this->getConnectorManager();
-
             try {
                 $connectorManager->resetHeaders()
                     ->resetParams()
                     ->setExtraParams([FeedViewInterface::UPLOAD_ID => $uploadId])
                     ->execute($apiEndpointType, \Zend_Http_Client::GET);
             } catch (\Exception $e) {
-                // catch and log exception
-                return $this;
+                return;
             }
 
             /** @var FeedResponse $response */
@@ -541,6 +538,7 @@ class CronManager
                         }
 
                         $this->updateFeedInformation($jobId, $jobType, $updateData, $status);
+                        $isCacheAffected = true;
                     }
                 }
             }
@@ -549,10 +547,10 @@ class CronManager
                 ->resetResponse();
         }
 
-        // in some cases related config info doesn't refreshing on backend frontend
-        $this->flushSystemConfigCache();
-
-        return $this;
+        if ($isCacheAffected) {
+            // in some cases related config info doesn't refreshing on backend frontend
+            $this->flushSystemConfigCache();
+        }
     }
 
     /**
@@ -562,6 +560,7 @@ class CronManager
      * @param $jobType
      * @param $updateData
      * @param $status
+     * @return $this
      */
     private function updateFeedInformation($jobId, $jobType, $updateData, $status)
     {
@@ -574,6 +573,8 @@ class CronManager
         } else if ($jobType == FeedConfig::FEED_TYPE_INCREMENTAL) {
             $this->feedHelper->setIncrementalProductSynchronizedStatus($isSuccess);
         }
+
+        return $this;
     }
 
     /**

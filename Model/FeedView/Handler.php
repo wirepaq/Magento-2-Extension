@@ -216,12 +216,12 @@ class Handler extends \Magento\Framework\DataObject
         try {
             /** @var \Unbxd\ProductFeed\Api\Data\FeedViewInterface $model */
             $model = $this->init($id);
-            if ($id = $model->getId() && !empty($arguments)) {
+            if ($model->getId() && !empty($arguments)) {
                 foreach ($arguments as $key => $value) {
                     $model->setData($key, $value);
                 }
                 $this->save($model);
-                $this->logger->info('Updated feed view record with #' . $id);
+                $this->logger->info('Updated feed view record with #' . $model->getId());
             }
         } catch (LocalizedException $e) {
             $this->logger->critical($e);
