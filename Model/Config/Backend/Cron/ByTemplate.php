@@ -29,12 +29,10 @@ class ByTemplate extends Cron
      */
     public function afterSave()
     {
-        $enabled = $this->getData(self::XML_PATH_CRON_ENABLED);
-        $time = $this->getData(self::XML_PATH_CRON_TYPE_TEMPLATE_TIME);
-        $frequency = $this->getData(self::XML_PATH_CRON_TYPE_TEMPLATE_FREQUENCY);
-        $cronType = $this->getCronType();
+        if ($this->getIsCronIsEnabled() && ($this->getCronType() == CronType::TEMPLATE)) {
+            $time = $this->getData(self::XML_PATH_CRON_TYPE_TEMPLATE_TIME);
+            $frequency = $this->getData(self::XML_PATH_CRON_TYPE_TEMPLATE_FREQUENCY);
 
-        if ($enabled && ($cronType == CronType::TEMPLATE)) {
             $cronExprArray = [
                 intval($time[1]),                                       # minute
                 intval($time[0]),                                       # hour

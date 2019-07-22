@@ -28,9 +28,7 @@ class Manually extends Cron
      */
     public function afterSave()
     {
-        $enabled = $this->getData(self::XML_PATH_CRON_ENABLED);
-        $cronType = $this->getCronType();
-        if ($enabled && $cronType == CronType::MANUALLY) {
+        if ($this->getIsCronIsEnabled() && ($this->getCronType() == CronType::MANUALLY)) {
             $this->updateConfigValues($this->getValue());
         }
 

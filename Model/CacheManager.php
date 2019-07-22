@@ -149,8 +149,27 @@ class CacheManager
      */
     public function flushCacheByType($cacheType)
     {
-        if ($this->cacheState->isEnabled($cacheType)) {
-            $this->cacheTypeList->cleanType($cacheType);
+        if ($this->validateTypes([$cacheType])) {
+            if ($this->cacheState->isEnabled($cacheType)) {
+                $this->cacheTypeList->cleanType($cacheType);
+            }
         }
+    }
+
+    /**
+     * Check whether specified cache types exist
+     *
+     * @param array $types
+     * @return bool
+     */
+    private function validateTypes(array $types)
+    {
+        $allTypes = array_keys($this->cacheTypeList->getTypes());
+        $invalidTypes = array_diff($types, $allTypes);
+        if (count($invalidTypes) > 0) {
+            return false;
+        }
+
+        return true;
     }
 }

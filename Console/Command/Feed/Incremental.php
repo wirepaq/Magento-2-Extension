@@ -69,7 +69,7 @@ class Incremental extends AbstractCommand
         }
 
         // check if related cron process doesn't occur to this process to prevent duplicate execution
-        $jobs = $this->cronManager->getRunningSchedules(CronManager::FEED_JOB_CODE);
+        $jobs = $this->cronManager->getRunningSchedules(CronManager::FEED_JOB_CODE_UPLOAD);
         if ($jobs->getSize()) {
             $message = 'At the moment, the cron job is already executing this process. '. "\n" . 'To prevent duplicate process, which will increase the load on the server, please try it later.';
             $output->writeln("<error>{$message}</error>");

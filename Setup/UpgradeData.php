@@ -73,6 +73,7 @@ class UpgradeData implements UpgradeDataInterface
         );
 
         $alreadyInserted = $setup->getConnection()->fetchPairs($select);
+
         foreach ($this->feedHelper->getDefaultConfigFields() as $path => $value) {
             if (isset($alreadyInserted[$path])) {
                 continue;

@@ -46,11 +46,11 @@ use Magento\Store\Model\StoreManagerInterface;
  */
 class CronManager
 {
-    const FEED_JOB_CODE_PREFIX = 'unbxd_feed';
+    const FEED_JOB_CODE_PREFIX = 'unbxd_product_feed';
 
-    const FEED_JOB_CODE = self::FEED_JOB_CODE_PREFIX;
+    const FEED_JOB_CODE_UPLOAD = self::FEED_JOB_CODE_PREFIX . '_upload';
 
-    const FEED_JOB_CODE_CHECK_UPLOAD_STATUS = self::FEED_JOB_CODE_PREFIX . '_check_upload_status';
+    const FEED_JOB_CODE_CHECK_UPLOADED_STATUS = self::FEED_JOB_CODE_PREFIX . '_check_uploaded_status';
 
     const DEFAULT_COLLECTION_SIZE = 20;
 
@@ -349,9 +349,10 @@ class CronManager
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function runJobs()
+    public function uploadFeed()
     {
         // prevent duplicate jobs
         if ($this->lockProcess) {
@@ -471,7 +472,7 @@ class CronManager
      *
      * @return $this
      */
-    public function checkUploadFeedStatus()
+    public function checkUploadedFeedStatus()
     {
         /** @var \Unbxd\ProductFeed\Model\ResourceModel\FeedView\Collection $jobs */
         $jobs = $this->feedViewCollectionFactory->create();

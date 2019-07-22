@@ -14,9 +14,9 @@
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
-    <group id="default">
-        <job name="unbxd_feed" instance="Unbxd\ProductFeed\Cron\Feed" method="executeQueueJobs" />
-        <job name="unbxd_feed_check_upload_status" instance="Unbxd\ProductFeed\Cron\Feed" method="checkUploadFeedStatus">
+    <group id="unbxd">
+        <job name="unbxd_product_feed_upload" instance="Unbxd\ProductFeed\Cron\UploadFeed" method="execute" />
+        <job name="unbxd_product_feed_check_uploaded_status" instance="Unbxd\ProductFeed\Cron\CheckUploadedFeedStatus" method="execute">
             <schedule>*/5 * * * *</schedule>
         </job>
     </group>
