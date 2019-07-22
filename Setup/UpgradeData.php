@@ -66,7 +66,7 @@ class UpgradeData implements UpgradeDataInterface
 
         $select = $setup->getConnection()->select()->from(
             $setup->getTable('core_config_data'),
-            ['path']
+            ['path', 'value']
         )->where(
             'path LIKE ?',
             '%unbxd_catalog/feed/%'
