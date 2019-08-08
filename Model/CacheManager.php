@@ -179,6 +179,8 @@ class CacheManager
      */
     public function flushSystemConfigCache()
     {
-        $this->configCache->getBackend()->clean();
+        if ($this->configCache != null) {
+            $this->configCache->getBackend()->clean();
+        }
     }
 }

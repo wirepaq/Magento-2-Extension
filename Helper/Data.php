@@ -477,6 +477,7 @@ class Data extends AbstractHelper
     /**
      * @param bool $dateTime
      * @return false|string
+     * @throws \Exception
      */
     public function formatDateTime($dateTime = false)
     {
@@ -484,6 +485,11 @@ class Data extends AbstractHelper
             $dateTime = time();
         }
 
-        return date_format(date_create($dateTime), 'Y-m-d\TH:i:s\Z');
+        $dateTimeObject = date_create($dateTime);
+        if (!$dateTimeObject instanceof \DateTime) {
+            $dateTimeObject = new \DateTime();
+        }
+
+        return date_format($dateTimeObject, 'Y-m-d\TH:i:s\Z');
     }
 }

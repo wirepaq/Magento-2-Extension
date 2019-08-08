@@ -53,13 +53,5 @@
              parent="Unbxd_ProductFeed::productfeed"
              action="unbxd_productfeed/feed/view"
              resource="Unbxd_ProductFeed::productfeed_feed_view"/>
-        <add id="Unbxd_ProductFeed::productfeed_search"
-             title="Search Results Page"
-             module="Unbxd_ProductFeed"
-             sortOrder="50"
-             dependsOnModule="Unbxd_ProductFeed"
-             parent="Unbxd_ProductFeed::productfeed"
-             action="adminhtml/system_config/edit/section/unbxd_search"
-             resource="Unbxd_ProductFeed::productfeed"/>
     </menu>
 </config>

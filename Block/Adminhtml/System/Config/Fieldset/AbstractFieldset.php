@@ -122,6 +122,7 @@ abstract class AbstractFieldset extends Template implements RendererInterface
     }
 
     /**
+     * @param null $moduleName
      * @return mixed
      */
     public function getModuleVersion()
