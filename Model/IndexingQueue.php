@@ -24,13 +24,23 @@ use Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue as IndexingQueueResource
 class IndexingQueue extends AbstractModel implements IndexingQueueInterface
 {
     /**#@+
-     * Queue's Statuses
+     * Queue's status codes
      */
     const STATUS_PENDING = 1;
     const STATUS_RUNNING = 2;
     const STATUS_COMPLETE = 3;
     const STATUS_ERROR = 4;
     const STATUS_HOLD = 5;
+    /**#@-*/
+
+    /**#@+
+     * Queue's status labels
+     */
+    const STATUS_PENDING_LABEL = 'Pending';
+    const STATUS_RUNNING_LABEL = 'Running';
+    const STATUS_COMPLETE_LABEL = 'Complete';
+    const STATUS_ERROR_LABEL = 'Error';
+    const STATUS_HOLD_LABEL = 'Hold';
     /**#@-*/
 
     /**#@+
@@ -63,11 +73,11 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     public function getAvailableStatuses()
     {
         return [
-            self::STATUS_PENDING => __('Pending'),
-            self::STATUS_RUNNING => __('Running'),
-            self::STATUS_COMPLETE => __('Complete'),
-            self::STATUS_ERROR => __('Error'),
-            self::STATUS_HOLD => __('Hold')
+            self::STATUS_PENDING => __(self::STATUS_PENDING_LABEL),
+            self::STATUS_RUNNING => __(self::STATUS_RUNNING_LABEL),
+            self::STATUS_COMPLETE => __(self::STATUS_COMPLETE_LABEL),
+            self::STATUS_ERROR => __(self::STATUS_ERROR_LABEL),
+            self::STATUS_HOLD => __(self::STATUS_HOLD_LABEL)
         ];
     }
 
@@ -216,6 +226,16 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     }
 
     /**
+     * Retrieve the number of attempts
+     *
+     * @return int
+     */
+    public function getNumberOfAttempts()
+    {
+        return $this->getData(self::NUMBER_OF_ATTEMPTS);
+    }
+
+    /**
      * Set ID
      *
      * @param int $id
@@ -356,5 +376,16 @@ class IndexingQueue extends AbstractModel implements IndexingQueueInterface
     public function setSystemInformation($systemInformation)
     {
         return $this->setData(self::SYSTEM_INFORMATION, $systemInformation);
+    }
+
+    /**
+     * Set the number of attempts
+     *
+     * @param $value
+     * @return IndexingQueueInterface
+     */
+    public function setNumberOfAttempts($value)
+    {
+        return $this->setData(self::NUMBER_OF_ATTEMPTS, $value);
     }
 }

@@ -15,10 +15,10 @@ use Unbxd\ProductFeed\Model\CronManager;
 use Unbxd\ProductFeed\Model\CronManagerFactory;
 
 /**
- * Class UploadFeed
+ * Class ReProcessOperation
  * @package Unbxd\ProductFeed\Cron
  */
-class UploadFeed
+class ReProcessOperation
 {
     /**
      * @var CronManagerFactory
@@ -26,7 +26,7 @@ class UploadFeed
     protected $cronManagerFactory;
 
     /**
-     * UploadFeed constructor.
+     * ReProcessOperation constructor.
      * @param CronManagerFactory $cronManagerFactory
      */
     public function __construct(
@@ -36,7 +36,7 @@ class UploadFeed
     }
 
     /**
-     * Run indexing/feed operation(s) by schedule
+     * Re-process for operation(s) in 'ERROR' state
      *
      * @throws \Exception
      */
@@ -44,6 +44,6 @@ class UploadFeed
     {
         /** @var CronManager $cronManager */
         $cronManager = $this->cronManagerFactory->create();
-        $cronManager->uploadFeed();
+        $cronManager->reProcessOperation();
     }
 }

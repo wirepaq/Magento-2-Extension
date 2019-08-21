@@ -33,6 +33,7 @@ interface FeedViewInterface
     const ADDITIONAL_INFORMATION    = 'additional_information';
     const SYSTEM_INFORMATION        = 'system_information';
     const UPLOAD_ID                 = 'upload_id';
+    const NUMBER_OF_ATTEMPTS        = 'number_of_attempts';
     /**#@-*/
 
     /**
@@ -125,6 +126,13 @@ interface FeedViewInterface
      * @return string|null
      */
     public function getUploadId();
+
+    /**
+     * Get the number of attempts
+     *
+     * @return int
+     */
+    public function getNumberOfAttempts();
 
     /**
      * Set ID
@@ -229,4 +237,12 @@ interface FeedViewInterface
      * @return mixed
      */
     public function setUploadId($uploadId);
+
+    /**
+     * Set the number of attempts
+     *
+     * @param $value
+     * @return int
+     */
+    public function setNumberOfAttempts($value);
 }

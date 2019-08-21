@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Model;
 
 use Magento\Store\Model\Store;
 use Unbxd\ProductFeed\Api\Data\IndexingQueueInterface;
+use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
 use Magento\Framework\Crontab\CrontabManagerInterface;
 use Magento\Framework\Crontab\TasksProviderInterface;
 use Magento\Cron\Model\ConfigInterface;
@@ -25,7 +26,6 @@ use Unbxd\ProductFeed\Model\IndexingQueue;
 use Unbxd\ProductFeed\Model\IndexingQueue\Handler as QueueHandler;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
-use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
 use Unbxd\ProductFeed\Model\FeedView;
 use Unbxd\ProductFeed\Model\FeedView\Handler as FeedViewHandler;
 use Unbxd\ProductFeed\Model\ResourceModel\FeedView\CollectionFactory as FeedViewCollectionFactory;
@@ -348,33 +348,43 @@ class CronManager
     }
 
     /**
+     * Check if related process is available for execution
+     *
+     * @return bool
+     */
+    private function isProcessAvailable()
+    {
+        // prevent duplicate jobs
+        if ($this->lockProcess) {
+            $this->logger->info('Lock reindex by another process.');
+            return false;
+        }
+
+        // check if cron is configured
+        if (!$this->helperData->isCronConfigured()) {
+            $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
+            return false;
+        }
+
+        // check authorization keys
+        if (!$this->helperData->isAuthorizationCredentialsSetup()) {
+            $this->logger->error('Please check authorization credentials to perform this operation.');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @return void
      * @throws \Magento\Framework\Exception\FileSystemException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function uploadFeed()
     {
-        // prevent duplicate jobs
-        if ($this->lockProcess) {
-            $this->logger->info('Lock reindex by another process.');
+        if (!$this->isProcessAvailable()) {
             return;
         }
-
-        // check if cron is configured
-        if (!$this->helperData->isCronConfigured()) {
-            $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
-            return;
-        }
-
-        // check authorization keys
-        if (!$this->helperData->isAuthorizationCredentialsSetup()) {
-            $this->logger->error('Please check authorization credentials to perform this operation.');
-            return;
-        }
-
-        $this->lockProcess = true;
-
-        $this->logger->info('Run cron job by schedule. Collect tasks.');
 
         /** @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection $jobs */
         $jobs = $this->indexingQueueCollectionFactory->create();
@@ -388,9 +398,12 @@ class CronManager
         );
 
         if (!$jobs->getSize()) {
-            $this->logger->info('There are no jobs for processing.');
             return;
         }
+
+        $this->logger->info('Run cron job by schedule. Collect tasks.');
+
+        $this->lockProcess = true;
 
         $indexData = [];
         $isFullReindex = false;
@@ -439,7 +452,9 @@ class CronManager
                     ? IndexingQueue::STATUS_COMPLETE
                     : IndexingQueue::STATUS_ERROR,
                 IndexingQueueInterface::FINISHED_AT => date('Y-m-d H:i:s'),
-                IndexingQueueInterface::EXECUTION_TIME => $this->logger->getTime()
+                IndexingQueueInterface::EXECUTION_TIME => $this->logger->getTime(),
+                IndexingQueueInterface::ADDITIONAL_INFORMATION => '',
+                IndexingQueueInterface::NUMBER_OF_ATTEMPTS => (int) $job->getNumberOfAttempts() + 1
             ];
             if ($error) {
                 $updateData[IndexingQueueInterface::ADDITIONAL_INFORMATION] = $error;
@@ -576,6 +591,157 @@ class CronManager
         }
 
         return $this;
+    }
+
+    /**
+     * Retrieve all available indexing operation(s) in 'ERROR' state
+     * and try to prepare them to the processing (switched to 'PENDING' state)
+     *
+     * @return $this
+     */
+    private function reProcessIndexingOperations()
+    {
+        /** @var \Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Collection $jobs */
+        $jobs = $this->indexingQueueCollectionFactory->create();
+        $jobs->addFieldToFilter(
+            IndexingQueueInterface::STATUS,
+            ['eq' => IndexingQueue::STATUS_ERROR]
+        )->addFieldToFilter(
+            IndexingQueueInterface::NUMBER_OF_ATTEMPTS,
+            ['lteq' => $this->getMaxNumberOfAttempts()]
+        )->setPageSize(
+            self::DEFAULT_JOBS_LIMIT_PER_RUN
+        )->setOrder(
+            IndexingQueueInterface::QUEUE_ID
+        );
+
+        if (!$jobs->getSize()) {
+            return $this;
+        }
+
+        foreach ($jobs as $job) {
+            /** @var \Unbxd\ProductFeed\Model\IndexingQueue $job */
+            if (!$jobId = $job->getId()) {
+                continue;
+            }
+
+            $currentNumberOfAttempts = (int) $job->getNumberOfAttempts();
+            $updatedData = [
+                IndexingQueueInterface::STARTED_AT => '',
+                IndexingQueueInterface::FINISHED_AT => '',
+                IndexingQueueInterface::EXECUTION_TIME => 0,
+                IndexingQueueInterface::STATUS => IndexingQueue::STATUS_PENDING,
+                IndexingQueueInterface::ADDITIONAL_INFORMATION => ''
+            ];
+
+            if ($currentNumberOfAttempts >= $this->getMaxNumberOfAttempts()) {
+                $additionalMessage = sprintf(
+                    '%s<br/>Unable to reindex related data. Maximum number of attempts - %s.',
+                    $job->getAdditionalInformation(),
+                    $currentNumberOfAttempts
+                );
+                $updatedData = [
+                    IndexingQueueInterface::ADDITIONAL_INFORMATION => __($additionalMessage)
+                ];
+            }
+
+            $this->queueHandler->update($jobId, $updatedData);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Retrieve all available sync operation(s) in 'ERROR' state
+     * and try to re-process them
+     *
+     * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function reProcessSyncOperations()
+    {
+        /** @var \Unbxd\ProductFeed\Model\ResourceModel\FeedView\Collection $jobs */
+        $jobs = $this->feedViewCollectionFactory->create();
+        $jobs->addFieldToFilter(
+            FeedViewInterface::STATUS,
+            ['eq' => FeedView::STATUS_ERROR]
+        )->addFieldToFilter(
+            FeedViewInterface::NUMBER_OF_ATTEMPTS,
+            ['lteq' => $this->getMaxNumberOfAttempts()]
+        )->setPageSize(
+            self::DEFAULT_JOBS_LIMIT_PER_RUN
+        )->setOrder(
+            FeedViewInterface::FEED_ID
+        );
+
+        if (!$jobs->getSize()) {
+            return $this;
+        }
+
+        foreach ($jobs as $job) {
+            /** @var \Unbxd\ProductFeed\Model\FeedView $job */
+            if (!$jobId = $job->getId()) {
+                continue;
+            }
+
+            $currentNumberOfAttempts = (int) $job->getNumberOfAttempts();
+            if ($currentNumberOfAttempts >= $this->getMaxNumberOfAttempts()) {
+                $additionalMessage = sprintf(
+                    '%s<br/>Unable to synchronization related data. Maximum number of attempts - %s.',
+                    $job->getAdditionalInformation(),
+                    $currentNumberOfAttempts
+                );
+                $this->feedViewHandler->update($jobId,
+                    [
+                        FeedViewInterface::ADDITIONAL_INFORMATION => _($additionalMessage)
+                    ]
+                );
+            } else {
+                $isFullCatalogAffected = (bool) ($job->getOperationTypes() == FeedConfig::FEED_TYPE_FULL);
+                $entityIds = $isFullCatalogAffected
+                    ? []
+                    : $this->queueHandler->convertStringToIds($job->getAffectedEntities());
+                $actionType = empty($entityIds) ? IndexingQueue::TYPE_REINDEX_FULL : '';
+
+                // added new job with related data to indexing queue
+                $this->queueHandler->add($entityIds, $actionType, $job->getStoreId(),
+                    [
+                        IndexingQueueInterface::NUMBER_OF_ATTEMPTS => $job->getNumberOfAttempts()
+                    ]
+                );
+
+                // remove feed view record in 'error' state
+                // the new one will be created after the index operation execution, added to queue above
+                $this->feedViewHandler->delete($jobId);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Re-process for operations in 'ERROR' state
+     *
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function reProcessOperation()
+    {
+        if (!$this->isProcessAvailable()) {
+            return;
+        }
+
+        // check indexing operation(s) in 'error' state
+        $this->reProcessIndexingOperations();
+        // check sync operation(s) in 'error' state
+        $this->reProcessSyncOperations();
+    }
+
+    /**
+     * @return mixed
+     */
+    private function getMaxNumberOfAttempts()
+    {
+        return $this->helperData->getMaxNumberOfAttempts();
     }
 
     /**

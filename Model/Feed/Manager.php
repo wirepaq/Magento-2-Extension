@@ -238,6 +238,13 @@ class Manager
     private $isNeedToArchive = true;
 
     /**
+     * Local cache for category list data in specific format
+     *
+     * @var array
+     */
+    private $categoryCacheList = [];
+
+    /**
      * Manager constructor.
      * @param AttributeHelper $attributeHelper
      * @param HelperData $helperData
@@ -339,7 +346,7 @@ class Manager
         $ids = ($type == FeedConfig::FEED_TYPE_FULL) ? [] : array_keys($index);
         $this->preProcessActions($ids, $type);
         if ($this->isFeedLock) {
-            $this->lockedTime = round($this->lockedTime - microtime(true), 2);
+            $this->lockedTime = round(microtime(true) - $this->lockedTime, 2);
             $this->logger->error(
                 'Unable to execute feed. Feed lock by another process. Locked time: ' . $this->lockedTime
             );
@@ -533,6 +540,7 @@ class Manager
                         unset($data[$imageKey]);
                     }
                 }
+
                 // prepare category_path_id field
                 if (isset($data[$categoryKey]) && !empty($data[$categoryKey])) {
                     $categoryData = $this->buildCategoryList($data[$categoryKey]);
@@ -918,6 +926,7 @@ class Manager
                 $this->lockedTime = microtime(true);
             }
             $this->isFeedLock = true;
+
             return $this;
         } else {
             $this->isFeedLock = false;
@@ -1091,7 +1100,6 @@ class Manager
      * Perform actions after
      *
      * @return $this
-     * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function postProcessActions()
     {
@@ -1294,7 +1302,7 @@ class Manager
     }
 
     /**
-     * Build category list related to product, in specific format supported by Unbxd service:
+     * Build category list related to product in specific format supported by Unbxd service
      * (ex.: /fashion|Fashion>/fashion/shoes|Shoes>/fashion/shoes/casual|Casual)
      *
      * @param $categoryData
@@ -1304,9 +1312,16 @@ class Manager
     {
         $result = [];
         foreach ($categoryData as $key => $data) {
-            $related = isset($data['related']) ? (string) $data['related'] : false;
+            $categoryId = isset($data['category_id']) ? (string) $data['category_id'] : null;
+            // try to retrieve category list data from cache
+            if (isset($this->categoryCacheList[$categoryId])) {
+                $result[] = $this->categoryCacheList[$categoryId];
+                continue;
+            }
+
+            $name = isset($data['name']) ? (string) $data['name'] : null;
             $urlPath = isset($data['url_path']) ? (string) $data['url_path'] : null;
-            if (!$related || !$urlPath) {
+            if (!$name || !$urlPath) {
                 continue;
             }
 
@@ -1324,7 +1339,10 @@ class Manager
                     $urlPart .= '/' . $urlKey;
                     $path .= sprintf('%s|%s>', $urlPart, $name);
                 }
-                $result[] = rtrim(trim($path, '>'), '/');
+                $pathString = rtrim(trim($path, '>'), '/');
+                $result[] = $pathString;
+
+                $this->categoryCacheList[$categoryId] = $pathString;
             }
         }
 

@@ -4,6 +4,21 @@
 
 /** @var \Unbxd\ProductFeed\Block\Adminhtml\System\Config\Fieldset\Catalog $block */
 ?>
+<div class="unbxd-system-config-information-container module-info">
+    <div class="block header">
+        <h2>
+            <strong><?= /* @escapeNotVerified */ __('Product Feed v. %1', $block->getModuleVersion()) ?></strong>&nbsp;
+            <span><?= /* @escapeNotVerified */ __('by') ?></span>
+        </h2>
+        <a class="logo" href="<?= /* @escapeNotVerified */ $block->getUnbxdReferenceUrl()?>" target="_blank">
+            <img src="<?php echo $block->getLogoSrc() ?>" alt="<?= /* @escapeNotVerified */ __('Unbxd') ?>" />
+        </a>
+    </div>
+    <div class="block content">
+        <p><?= /* @escapeNotVerified */ __('Have a question? Please refer to the <a href="%1">documentation</a>.',
+                $block->getUnbxdReferenceUrl('feed_doc')) ?></p>
+    </div>
+</div>
 <div class="unbxd-system-config-information-container catalog">
     <div class="block notification">
         <?php
@@ -32,7 +47,7 @@
                     "easing":"easeOutCubic"
                 },
                 "openedState":"active",
-                "active":true
+                "active":false
                 }}' >
             <p class="title" data-role="title"><?= /* @escapeNotVerified */ __('Last synchronization information:') ?></p>
             <div data-role="content">
@@ -85,7 +100,7 @@
                 "easing":"easeOutCubic"
             },
             "openedState":"active",
-            "active":true
+            "active":false
             }}'>
         <p class="title" data-role="title"><?= /* @escapeNotVerified */ __('Manual product catalog synchronization:') ?></p>
         <div data-role="content">

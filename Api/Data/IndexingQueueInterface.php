@@ -33,6 +33,7 @@ interface IndexingQueueInterface
     const STATUS                    = 'status';
     const ADDITIONAL_INFORMATION    = 'additional_information';
     const SYSTEM_INFORMATION        = 'system_information';
+    const NUMBER_OF_ATTEMPTS        = 'number_of_attempts';
     /**#@-*/
 
     /**
@@ -125,6 +126,13 @@ interface IndexingQueueInterface
      * @return string|null
      */
     public function getSystemInformation();
+
+    /**
+     * Get the number of attempts
+     *
+     * @return int
+     */
+    public function getNumberOfAttempts();
 
     /**
      * Set ID
@@ -229,4 +237,12 @@ interface IndexingQueueInterface
      * @return IndexingQueueInterface
      */
     public function setSystemInformation($systemInformation);
+
+    /**
+     * Set the number of attempts
+     *
+     * @param $value
+     * @return int
+     */
+    public function setNumberOfAttempts($value);
 }

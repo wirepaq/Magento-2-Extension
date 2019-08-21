@@ -30,11 +30,11 @@ use Magento\Framework\Indexer\Table\StrategyInterface;
 class Category extends Indexer
 {
     /**
-     * Local cache for category names
+     * Local cache for category data
      *
      * @var array
      */
-    private $categoryNameCache = [];
+    private $categoryDataCache = [];
 
     /**
      * @var null|CategoryAttributeInterface
@@ -44,7 +44,12 @@ class Category extends Indexer
     /**
      * @var null|CategoryAttributeInterface
      */
-    private $useNameInSearchAttribute = null;
+    private $categoryUrlKeyAttribute = null;
+
+    /**
+     * @var null|CategoryAttributeInterface
+     */
+    private $categoryUrlPathAttribute = null;
 
     /**
      * @var \Magento\Eav\Model\Config
@@ -93,21 +98,29 @@ class Category extends Indexer
      */
     public function loadCategoryData($storeId, $productIds)
     {
-        $categoryData = $this->getProductCategories($productIds, $storeId);
+        $select = $this->getCategoryProductSelect($productIds, $storeId);
+        $categoryData = $this->getConnection()->fetchAll($select);
 
         $categoryIds = [];
         foreach ($categoryData as $categoryDataRow) {
-            $categoryIds[] = $categoryDataRow['category_id'];
+            $categoryId = isset($categoryDataRow['category_id']) ? (int) $categoryDataRow['category_id'] : '';
+            if ($categoryId) {
+                $categoryIds[] = $categoryId;
+            }
         }
 
-//        $storeCategoryName = $this->loadCategoryNames(array_unique($categoryIds), $storeId);
-        $storeCategoryName = [];
-        if (!empty($storeCategoryName)) {
-            foreach ($categoryData as &$categoryDataRow) {
-                $categoryDataRow['name'] = '';
-                if (isset($storeCategoryName[(int) $categoryDataRow['category_id']])) {
-                    $categoryDataRow['name'] = $storeCategoryName[(int) $categoryDataRow['category_id']];
+        $storeCategoryData = $this->buildCategoryData(array_unique($categoryIds), $storeId);
+
+        foreach ($categoryData as &$categoryDataRow) {
+            if (isset($storeCategoryData[$categoryDataRow['category_id']])) {
+                $key = (int) $categoryDataRow['category_id'];
+                if (empty($storeCategoryData[$key])) {
+                    continue;
                 }
+
+                $categoryDataRow['name'] = $storeCategoryData[$key]['name'];
+                $categoryDataRow['url_key'] = $storeCategoryData[$key]['url_key'];
+                $categoryDataRow['url_path'] = $storeCategoryData[$key]['url_path'];
             }
         }
 
@@ -121,24 +134,54 @@ class Category extends Indexer
      * @param integer $storeId
      * @return \Zend_Db_Select
      */
-    protected function getCategoryProductBaseSelect($productIds, $storeId)
+    protected function getCategoryProductSelect($productIds, $storeId)
     {
         $select = $this->getConnection()->select()
             ->from(['cpi' => $this->getTable($this->getCatalogCategoryProductIndexTable($storeId))])
             ->where('cpi.store_id = ?', $storeId)
-            ->where('cpi.product_id IN(?)', $productIds);
+            ->where('cpi.product_id IN(?)', $productIds)
+            ->reset(\Magento\Framework\DB\Select::COLUMNS)
+            ->columns(['category_id', 'product_id', 'is_parent']);
 
         return $select;
     }
 
     /**
-     * @TODO - temporary solution, refactor in future
+     * Retrieve attribute id by entity type code and attribute code
+     *
+     * @param string $entityType
+     * @param string $code
+     * @return int
+     * @deprecated since 1.0.20
+     */
+    public function getAttributeId($entityType, $code)
+    {
+        $connection = $this->getConnection();
+        $bind = [':entity_type_code' => $entityType, ':attribute_code' => $code];
+        $select = $connection->select()->from(
+            ['a' => $this->getTable('eav_attribute')],
+            ['a.attribute_id']
+        )->join(
+            ['t' => $this->getTable('eav_entity_type')],
+            'a.entity_type_id = t.entity_type_id',
+            []
+        )->where(
+            't.entity_type_code = :entity_type_code'
+        )->where(
+            'a.attribute_code = :attribute_code'
+        );
+
+        return $connection->fetchOne($select, $bind);
+    }
+
+    /**
      * Prepare category indexed data.
      *
      * @param $productIds
      * @param $storeId
      * @return array
      * @throws \Exception
+     * @deprecated since 1.0.20
      */
     protected function getProductCategories($productIds, $storeId)
     {
@@ -270,30 +313,13 @@ class Category extends Indexer
     }
 
     /**
-     * Retrieve attribute id by entity type code and attribute code
+     * Access to EAV configuration.
      *
-     * @param string $entityType
-     * @param string $code
-     * @return int
+     * @return \Magento\Eav\Model\Config
      */
-    public function getAttributeId($entityType, $code)
+    protected function getEavConfig()
     {
-        $connection = $this->getConnection();
-        $bind = [':entity_type_code' => $entityType, ':attribute_code' => $code];
-        $select = $connection->select()->from(
-            ['a' => $this->getTable('eav_attribute')],
-            ['a.attribute_id']
-        )->join(
-            ['t' => $this->getTable('eav_entity_type')],
-            'a.entity_type_id = t.entity_type_id',
-            []
-        )->where(
-            't.entity_type_code = :entity_type_code'
-        )->where(
-            'a.attribute_code = :attribute_code'
-        );
-
-        return $connection->fetchOne($select, $bind);
+        return $this->eavConfig;
     }
 
     /**
@@ -312,27 +338,33 @@ class Category extends Indexer
     }
 
     /**
-     * Returns category "use name in product search" attribute
+     * Returns category url key attribute
      *
      * @return CategoryAttributeInterface|\Magento\Eav\Model\Entity\Attribute\AbstractAttribute|null
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function getUseNameInSearchAttribute()
+    protected function getCategoryUrlKeyAttribute()
     {
-        $this->useNameInSearchAttribute = $this->eavConfig
-            ->getAttribute(\Magento\Catalog\Model\Category::ENTITY, 'use_name_in_product_search');
+        $this->categoryUrlKeyAttribute = $this->eavConfig->getAttribute(
+            \Magento\Catalog\Model\Category::ENTITY, 'url_key'
+        );
 
-        return $this->useNameInSearchAttribute;
+        return $this->categoryUrlKeyAttribute;
     }
 
     /**
-     * Access to EAV configuration.
+     * Returns category url path attribute
      *
-     * @return \Magento\Eav\Model\Config
+     * @return CategoryAttributeInterface|\Magento\Eav\Model\Entity\Attribute\AbstractAttribute|null
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function getEavConfig()
+    protected function getCategoryUrlPathAttribute()
     {
-        return $this->eavConfig;
+        $this->categoryUrlPathAttribute = $this->eavConfig->getAttribute(
+            \Magento\Catalog\Model\Category::ENTITY, 'url_path'
+        );
+
+        return $this->categoryUrlPathAttribute;
     }
 
     /**
@@ -360,42 +392,41 @@ class Category extends Indexer
     }
 
     /**
-     * Add some categories name into the cache of names of categories.
+     * Add some categories data into the cache of categories.
      *
      * @param $categoryIds
      * @param $storeId
      * @return array|mixed
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    private function loadCategoryNames($categoryIds, $storeId)
+    private function buildCategoryData($categoryIds, $storeId)
     {
         $loadCategoryIds = $categoryIds;
 
-        if (isset($this->categoryNameCache[$storeId])) {
-            $loadCategoryIds = array_diff($categoryIds, array_keys($this->categoryNameCache[$storeId]));
+        if (isset($this->categoryDataCache[$storeId])) {
+            $loadCategoryIds = array_diff($categoryIds, array_keys($this->categoryDataCache[$storeId]));
         }
 
         $loadCategoryIds = array_map('intval', $loadCategoryIds);
-        $useNameAttribute = $this->getUseNameInSearchAttribute();
-
-        if (!empty($loadCategoryIds) && $useNameAttribute && $useNameAttribute->getId()) {
-            $select = $this->prepareCategoryNameSelect($loadCategoryIds, $storeId);
+        if (!empty($loadCategoryIds)) {
+            $select = $this->prepareCategoryDataSelect($loadCategoryIds, $storeId);
             $entityIdField = $this->getEntityMetaData(CategoryInterface::class)->getIdentifierField();
 
             foreach ($this->getConnection()->fetchAll($select) as $row) {
-                $categoryId = (int) $row[$entityIdField];
-                $this->categoryNameCache[$storeId][$categoryId] = '';
-                if ((bool) $row['use_name']) {
-                    $this->categoryNameCache[$storeId][$categoryId] = $row['name'];
+                $categoryId = isset($row[$entityIdField]) ? (int) $row[$entityIdField] : false;
+                if (!$categoryId) {
+                    continue;
                 }
+
+                $this->categoryDataCache[$storeId][$categoryId] = $row;
             }
         }
 
-        return isset($this->categoryNameCache[$storeId]) ? $this->categoryNameCache[$storeId] : [];
+        return isset($this->categoryDataCache[$storeId]) ? $this->categoryDataCache[$storeId] : [];
     }
 
     /**
-     * Prepare SQL query to retrieve category names
+     * Prepare SQL query to retrieve category data
      *
      * @param $loadCategoryIds
      * @param $storeId
@@ -403,64 +434,52 @@ class Category extends Indexer
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    private function prepareCategoryNameSelect($loadCategoryIds, $storeId)
+    private function prepareCategoryDataSelect($loadCategoryIds, $storeId)
     {
         $rootCategoryId = (int) $this->storeManager->getStore($storeId)->getRootCategoryId();
-        $this->categoryNameCache[$storeId][$rootCategoryId] = '';
+        $this->categoryDataCache[$storeId][$rootCategoryId] = '';
 
-        $nameAttr = $this->getCategoryNameAttribute();
-        $useNameAttr = $this->getUseNameInSearchAttribute();
         $entityIdField = $this->getEntityMetaData(CategoryInterface::class)->getIdentifierField();
         $linkField = $this->getEntityMetaData(CategoryInterface::class)->getLinkField();
+        $nameAttr = $this->getCategoryNameAttribute();
+        $urlKeyAttr = $this->getCategoryUrlKeyAttribute();
+        $urlPathAttr = $this->getCategoryUrlPathAttribute();
+
         $select = $this->connection->select();
 
-        $conditions = [
-            "cat.{$linkField} = default_value.{$linkField}",
-            "default_value.store_id=0",
-            "default_value.attribute_id = " . (int) $nameAttr->getAttributeId(),
+        $conditionsName = [
+            "cat.{$linkField} = name.{$linkField}",
+            "name.attribute_id = " . (int) $nameAttr->getAttributeId()
         ];
+        $joinConditionsName = new \Zend_Db_Expr(implode(" AND ", $conditionsName));
 
-        $joinCondition = new \Zend_Db_Expr(implode(" AND ", $conditions));
-        $select->from(['cat' => $this->getEntityMetaData(CategoryInterface::class)->getEntityTable()], [$entityIdField])
-            ->joinLeft(['default_value' => $nameAttr->getBackendTable()], $joinCondition, [])
+        $conditionsUrlKey = [
+            "cat.{$linkField} = url_key.{$linkField}",
+            "url_key.attribute_id = " . (int) $urlKeyAttr->getAttributeId()
+        ];
+        $joinConditionsUrlKey = new \Zend_Db_Expr(implode(" AND ", $conditionsUrlKey));
+
+        $conditionsUrlPath = [
+            "cat.{$linkField} = url_path.{$linkField}",
+            "url_path.attribute_id = " . (int) $urlPathAttr->getAttributeId()
+        ];
+        $joinConditionsUrlPath = new \Zend_Db_Expr(implode(" AND ", $conditionsUrlPath));
+
+        $select->distinct(
+            true
+        )->from(
+            ['cat' => $this->getEntityMetaData(CategoryInterface::class)->getEntityTable()],
+            [
+                $entityIdField,
+                'name.value AS name',
+                'url_key.value AS url_key',
+                'url_path.value AS url_path'
+            ]
+        )->joinLeft(['name' => $nameAttr->getBackendTable()], $joinConditionsName, [])
+            ->joinLeft(['url_key' => $urlKeyAttr->getBackendTable()], $joinConditionsUrlKey, [])
+            ->joinLeft(['url_path' => $urlPathAttr->getBackendTable()], $joinConditionsUrlPath, [])
             ->where("cat.$entityIdField != ?", $rootCategoryId)
             ->where("cat.$entityIdField IN (?)", $loadCategoryIds);
-
-        // Join to check for use_name_in_product_search.
-        $joinUseNameCond = sprintf(
-            "default_value.$linkField = use_name_default_value.$linkField" .
-            " AND use_name_default_value.attribute_id = %d AND use_name_default_value.store_id = %d",
-            (int) $useNameAttr->getAttributeId(),
-            0
-        );
-        $select->joinLeft(['use_name_default_value' => $useNameAttr->getBackendTable()], $joinUseNameCond, []);
-
-        if ($this->storeManager->isSingleStoreMode()) {
-            $select->columns(['name' => 'default_value.value']);
-            $select->columns(['use_name' => 'COALESCE(use_name_default_value.value,1)']);
-
-            return $select;
-        }
-
-        // multi store additional join to get scoped name value.
-        $joinStoreNameCond = sprintf(
-            "cat.$linkField = store_value.$linkField" .
-            " AND store_value.attribute_id = %d AND store_value.store_id = %d",
-            (int) $nameAttr->getAttributeId(),
-            (int) $storeId
-        );
-        $select->joinLeft(['store_value' => $nameAttr->getBackendTable()], $joinStoreNameCond, [])
-            ->columns(['name' => 'COALESCE(store_value.value,default_value.value, "")']);
-
-        // multi store additional join to get scoped "use_name_in_product_search" value.
-        $joinUseNameStoreCond = sprintf(
-            "cat.$linkField = use_name_store_value.$linkField" .
-            " AND use_name_store_value.attribute_id = %d AND use_name_store_value.store_id = %d",
-            (int) $useNameAttr->getAttributeId(),
-            (int) $storeId
-        );
-        $select->joinLeft(['use_name_store_value' => $useNameAttr->getBackendTable()], $joinUseNameStoreCond, [])
-            ->columns(['use_name' => 'COALESCE(use_name_store_value.value,use_name_default_value.value,1)']);
 
         return $select;
     }

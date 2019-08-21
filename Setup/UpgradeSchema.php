@@ -15,6 +15,7 @@ use Magento\Framework\Setup\UpgradeSchemaInterface;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
 use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\DB\Ddl\Table;
 
 /**
  * Class UpgradeSchema
@@ -39,79 +40,79 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 $installer->getTable('unbxd_productfeed_indexing_queue')
             )->addColumn(
                 'queue_id',
-                \Magento\Framework\DB\Ddl\Table::TYPE_SMALLINT,
+                Table::TYPE_SMALLINT,
                 null,
                 ['identity' => true, 'primary' => true, 'nullable' => false, 'unsigned' => true],
                 'Queue Id'
             )->addColumn(
                 'store_id',
-                \Magento\Framework\DB\Ddl\Table::TYPE_SMALLINT,
+                Table::TYPE_SMALLINT,
                 null,
                 ['unsigned' => true],
                 'Store Id'
             )->addColumn(
                 'created_at',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TIMESTAMP,
+                Table::TYPE_TIMESTAMP,
                 null,
-                ['nullable' => false, 'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT],
+                ['nullable' => false, 'default' => Table::TIMESTAMP_INIT],
                 'Creation Time'
             )->addColumn(
                 'started_at',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TIMESTAMP,
+                Table::TYPE_TIMESTAMP,
                 null,
                 ['nullable' => false, 'default' => '0000-00-00 00:00:00'],
                 'Started Time'
             )->addColumn(
                 'finished_at',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TIMESTAMP,
+                Table::TYPE_TIMESTAMP,
                 null,
                 ['nullable' => false, 'default' => '0000-00-00 00:00:00'],
                 'Finished Time'
             )->addColumn(
                 'is_active',
-                \Magento\Framework\DB\Ddl\Table::TYPE_SMALLINT,
+                Table::TYPE_SMALLINT,
                 null,
                 ['nullable' => false, 'default' => '0'],
                 'Is Active'
             )->addColumn(
                 'execution_time',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 ['nullable' => false],
                 'Execution Time'
             )->addColumn(
                 'affected_entities',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'Affected Entities'
             )->addColumn(
                 'number_of_entities',
-                \Magento\Framework\DB\Ddl\Table::TYPE_INTEGER,
+                Table::TYPE_INTEGER,
                 null,
                 ['default' => '0'],
                 'Number Of Entities'
             )->addColumn(
                 'action_type',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 32,
                 [],
                 'Action Type'
             )->addColumn(
                 'status',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 32,
                 [],
                 'Status'
             )->addColumn(
                 'additional_information',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'Additional Information'
             )->addColumn(
                 'system_information',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'System Information'
@@ -134,79 +135,79 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 $installer->getTable('unbxd_productfeed_feed_view')
             )->addColumn(
                 'feed_id',
-                \Magento\Framework\DB\Ddl\Table::TYPE_INTEGER,
+                Table::TYPE_INTEGER,
                 null,
                 ['identity' => true, 'nullable' => false, 'primary' => true, 'unsigned' => true],
                 'Feed Id'
             )->addColumn(
                 'store_id',
-                \Magento\Framework\DB\Ddl\Table::TYPE_SMALLINT,
+                Table::TYPE_SMALLINT,
                 null,
                 ['unsigned' => true],
                 'Store Id'
             )->addColumn(
                 'created_at',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TIMESTAMP,
+                Table::TYPE_TIMESTAMP,
                 null,
-                ['nullable' => false, 'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT],
+                ['nullable' => false, 'default' => Table::TIMESTAMP_INIT],
                 'Creation Time'
             )->addColumn(
                 'finished_at',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TIMESTAMP,
+                Table::TYPE_TIMESTAMP,
                 null,
                 ['nullable' => false, 'default' => '0000-00-00 00:00:00'],
                 'Finished Time'
             )->addColumn(
                 'is_active',
-                \Magento\Framework\DB\Ddl\Table::TYPE_SMALLINT,
+                Table::TYPE_SMALLINT,
                 null,
                 ['nullable' => false, 'default' => '0'],
                 'Is Active'
             )->addColumn(
                 'execution_time',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 ['nullable' => false],
                 'Execution Time'
             )->addColumn(
                 'affected_entities',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'Affected Entities'
             )->addColumn(
                 'number_of_entities',
-                \Magento\Framework\DB\Ddl\Table::TYPE_INTEGER,
+                Table::TYPE_INTEGER,
                 null,
                 ['default' => '0'],
                 'Number Of Entities'
             )->addColumn(
                 'operation_types',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 ['unsigned' => true],
                 'Operation Types'
             )->addColumn(
                 'status',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 32,
                 [],
                 'Status'
             )->addColumn(
                 'additional_information',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'Additional Information'
             )->addColumn(
                 'system_information',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'System Information'
             )->addColumn(
                 'upload_id',
-                \Magento\Framework\DB\Ddl\Table::TYPE_TEXT,
+                Table::TYPE_TEXT,
                 null,
                 [],
                 'Upload ID'
@@ -221,6 +222,41 @@ class UpgradeSchema implements UpgradeSchemaInterface
             );
 
             $installer->getConnection()->createTable($table);
+        }
+
+        if (version_compare($context->getVersion(), '1.0.20', '<')) {
+            $columnName = 'number_of_attempts';
+            $indexingQueueTable = $installer->getTable('unbxd_productfeed_indexing_queue');
+            if (
+                $installer->tableExists($indexingQueueTable)
+                && !$installer->getConnection()->tableColumnExists($indexingQueueTable, $columnName)
+            ) {
+                $installer->getConnection()->addColumn(
+                    $indexingQueueTable,
+                    $columnName,
+                    [
+                        'type' => Table::TYPE_SMALLINT,
+                        'default' => 0,
+                        'comment' => 'The Number Of Attempts'
+                    ]
+                );
+            }
+
+            $feedViewTable = $installer->getTable('unbxd_productfeed_feed_view');
+            if (
+                $installer->tableExists($feedViewTable)
+                && !$installer->getConnection()->tableColumnExists($feedViewTable, $columnName)
+            ) {
+                $installer->getConnection()->addColumn(
+                    $indexingQueueTable,
+                    $columnName,
+                    [
+                        'type' => Table::TYPE_SMALLINT,
+                        'default' => 0,
+                        'comment' => 'The Number Of Attempts'
+                    ]
+                );
+            }
         }
 
         $installer->endSetup();

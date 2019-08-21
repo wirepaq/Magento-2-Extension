@@ -27,7 +27,7 @@
                 <frontend_model>Unbxd\ProductFeed\Block\Adminhtml\System\Config\Fieldset\Setup</frontend_model>
             </group>
             <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>General Settings</label>
+                <label>Authorization Settings</label>
                 <fieldset_css>unbxd-fieldset</fieldset_css>
                 <field id="site_key" translate="label comment" type="obscure" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Site Key</label>
@@ -71,6 +71,11 @@
                     <comment><![CDATA[Exclude products from synchronization in specific state:
                     out of stock, disabled, not visible individually, with no image, etc.<br/>
                     Don't choose any one if you want all products to be synchronized.]]></comment>
+                </field>
+                <field id="max_number_of_attempts" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Max Number Of Synchronization Attempts</label>
+                    <validate>validate-number validate-number-range number-range-1-5</validate>
+                    <comment><![CDATA[The maximum number of synchronization attempts, when operation(s) are in 'ERROR' state.<br/>Available value in range from 1 to 5.]]></comment>
                 </field>
             </group>
             <group id="indexing" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

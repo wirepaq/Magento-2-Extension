@@ -15,6 +15,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
 use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Ui\Component\Listing\Columns\Column;
+use Unbxd\ProductFeed\Model\IndexingQueue;
 
 /**
  * Class FeedViewActions
@@ -27,6 +28,7 @@ class IndexingQueueActions extends Column
     const URL_PATH_HOLD = 'unbxd_productfeed/indexing_queue/hold';
     const URL_PATH_UNHOLD = 'unbxd_productfeed/indexing_queue/unhold';
     const URL_PATH_DELETE = 'unbxd_productfeed/indexing_queue/delete';
+    const URL_PATH_REPEAT = 'unbxd_productfeed/indexing_queue/repeat';
 
     /**
      * @var \Magento\Framework\UrlInterface
@@ -51,6 +53,11 @@ class IndexingQueueActions extends Column
     /**
      * @var string
      */
+    private $repeatUrl;
+
+    /**
+     * @var string
+     */
     private $deleteUrl;
 
     /**
@@ -63,6 +70,7 @@ class IndexingQueueActions extends Column
      * @param string $viewUrl
      * @param string $holdUrl
      * @param string $unHoldUrl
+     * @param string $repeatUrl
      * @param string $deleteUrl
      */
     public function __construct(
@@ -74,12 +82,14 @@ class IndexingQueueActions extends Column
         $viewUrl = self::URL_PATH_VIEW,
         $holdUrl = self::URL_PATH_HOLD,
         $unHoldUrl = self::URL_PATH_UNHOLD,
+        $repeatUrl = self::URL_PATH_REPEAT,
         $deleteUrl = self::URL_PATH_DELETE
     ) {
         $this->urlBuilder = $urlBuilder;
         $this->viewUrl = $viewUrl;
         $this->holdUrl = $holdUrl;
         $this->unHoldUrl = $unHoldUrl;
+        $this->repeatUrl = $repeatUrl;
         $this->deleteUrl = $deleteUrl;
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
@@ -96,34 +106,56 @@ class IndexingQueueActions extends Column
             foreach ($dataSource['data']['items'] as &$item) {
                 $name = $this->getData('name');
                 if (isset($item['queue_id'])) {
+                    $status = strtolower(strip_tags($item['status']));
                     $item[$name]['view'] = [
                         'href' => $this->urlBuilder->getUrl($this->viewUrl, ['id' => $item['queue_id']]),
                         'label' => __('View Details')
                     ];
-                    $item[$name]['hold'] = [
-                        'href' => $this->urlBuilder->getUrl($this->holdUrl, ['id' => $item['queue_id']]),
-                        'label' => __('Hold'),
-                        'confirm' => [
-                            'title' => __('Hold #%1', $item['queue_id']),
-                            'message' => __('Are you sure you want to put on hold record #%1?', $item['queue_id'])
-                        ]
-                    ];
-                    $item[$name]['unhold'] = [
-                        'href' => $this->urlBuilder->getUrl($this->unHoldUrl, ['id' => $item['queue_id']]),
-                        'label' => __('Unhold'),
-                        'confirm' => [
-                            'title' => __('Unhold #%1', $item['queue_id']),
-                            'message' => __('Are you sure you want to unhold record #%1?', $item['queue_id'])
-                        ]
-                    ];
-                    $item[$name]['delete'] = [
-                        'href' => $this->urlBuilder->getUrl($this->deleteUrl, ['id' => $item['queue_id']]),
-                        'label' => __('Delete'),
-                        'confirm' => [
-                            'title' => __('Delete #%1', $item['queue_id']),
-                            'message' => __('Are you sure you want to delete record #%1?', $item['queue_id'])
-                        ]
-                    ];
+                    if ($status == strtolower(IndexingQueue::STATUS_PENDING_LABEL)) {
+                        $item[$name]['hold'] = [
+                            'href' => $this->urlBuilder->getUrl($this->holdUrl, ['id' => $item['queue_id']]),
+                            'label' => __('Hold'),
+                            'confirm' => [
+                                'title' => __('Hold #%1', $item['queue_id']),
+                                'message' => __('Are you sure you want to put on hold record #%1?', $item['queue_id'])
+                            ]
+                        ];
+                    }
+                    if ($status == strtolower(IndexingQueue::STATUS_HOLD_LABEL)) {
+                        $item[$name]['unhold'] = [
+                            'href' => $this->urlBuilder->getUrl($this->unHoldUrl, ['id' => $item['queue_id']]),
+                            'label' => __('Unhold'),
+                            'confirm' => [
+                                'title' => __('Unhold #%1', $item['queue_id']),
+                                'message' => __('Are you sure you want to unhold record #%1?', $item['queue_id'])
+                            ]
+                        ];
+                    }
+                    if ($status == strtolower(IndexingQueue::STATUS_ERROR_LABEL)) {
+                        $item[$name]['repeat'] = [
+                            'href' => $this->urlBuilder->getUrl($this->repeatUrl, ['id' => $item['queue_id']]),
+                            'label' => __('Repeat'),
+                            'confirm' => [
+                                'title' => __('Repeat #%1', $item['queue_id']),
+                                'message' => __(
+                                    sprintf(
+                                        'Are you sure you want to repeat operation #%s?<br/> This operation will be switched to \'Pending\' status.',
+                                        $item['queue_id']
+                                    )
+                                )
+                            ]
+                        ];
+                    }
+                    if ($status != strtolower(IndexingQueue::STATUS_RUNNING_LABEL)) {
+                        $item[$name]['delete'] = [
+                            'href' => $this->urlBuilder->getUrl($this->deleteUrl, ['id' => $item['queue_id']]),
+                            'label' => __('Delete'),
+                            'confirm' => [
+                                'title' => __('Delete #%1', $item['queue_id']),
+                                'message' => __('Are you sure you want to delete record #%1?', $item['queue_id'])
+                            ]
+                        ];
+                    }
                 }
             }
         }

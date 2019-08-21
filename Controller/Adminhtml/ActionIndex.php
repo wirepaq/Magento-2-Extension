@@ -20,6 +20,7 @@ use Unbxd\ProductFeed\Helper\Data as HelperData;
 use Unbxd\ProductFeed\Helper\ProductHelper;
 use Unbxd\ProductFeed\Model\IndexingQueue;
 use Unbxd\ProductFeed\Model\IndexingQueueFactory;
+use Unbxd\ProductFeed\Model\IndexingQueue\Handler as QueueHandler;
 use Unbxd\ProductFeed\Api\IndexingQueueRepositoryInterface;
 use Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\CollectionFactory as IndexingQueueCollectionFactory;
 use Unbxd\ProductFeed\Model\FeedView;
@@ -42,6 +43,11 @@ abstract class ActionIndex extends Action
      * @var MassActionFilter
      */
     protected $massActionFilter;
+
+    /**
+     * @var QueueHandler
+     */
+    protected $queueHandler;
 
     /**
      * @var IndexingQueue
@@ -113,6 +119,7 @@ abstract class ActionIndex extends Action
      * @param Action\Context $context
      * @param PageFactory $resultPageFactory
      * @param MassActionFilter $massActionFilter
+     * @param QueueHandler $queueHandler
      * @param IndexingQueueFactory $indexingQueueFactory
      * @param IndexingQueueRepositoryInterface $indexingQueueRepository
      * @param IndexingQueueCollectionFactory $indexingQueueCollectionFactory
@@ -129,6 +136,7 @@ abstract class ActionIndex extends Action
         Action\Context $context,
         PageFactory $resultPageFactory,
         MassActionFilter $massActionFilter,
+        QueueHandler $queueHandler,
         IndexingQueueFactory $indexingQueueFactory,
         IndexingQueueRepositoryInterface $indexingQueueRepository,
         IndexingQueueCollectionFactory $indexingQueueCollectionFactory,
@@ -144,6 +152,7 @@ abstract class ActionIndex extends Action
         parent::__construct($context);
         $this->resultPageFactory = $resultPageFactory;
         $this->massActionFilter = $massActionFilter;
+        $this->queueHandler = $queueHandler;
         $this->indexingQueueFactory = $indexingQueueFactory
             ?: \Magento\Framework\App\ObjectManager::getInstance()->get(IndexingQueueFactory::class);
         $this->indexingQueueRepository = $indexingQueueRepository

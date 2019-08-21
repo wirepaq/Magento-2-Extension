@@ -191,7 +191,8 @@ class Handler extends \Magento\Framework\DataObject
             ->setExecutionTime(0)
             ->setAffectedEntities($affectedEntities)
             ->setNumberOfEntities($qty)
-            ->setOperationTypes($operationTypes);
+            ->setOperationTypes($operationTypes)
+            ->setNumberOfAttempts((int) $model->getNumberOfAttempts() + 1);
 
         if (!empty($arguments)) {
             foreach ($arguments as $key => $value) {

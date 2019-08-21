@@ -54,6 +54,7 @@ class Data extends AbstractHelper
      */
     const XML_PATH_CATALOG_AVAILABLE_PRODUCT_TYPES = 'unbxd_catalog/general/available_product_types';
     const XML_PATH_CATALOG_EXCLUDE_PRODUCTS_FILTER_ATTRIBUTES = 'unbxd_catalog/general/filter_attributes';
+    const XML_PATH_CATALOG_MAX_NUMBER_OF_ATTEMPTS = 'unbxd_catalog/general/max_number_of_attempts';
     const XML_PATH_CATALOG_INDEXING_QUEUE_ENABLED = 'unbxd_catalog/indexing/enabled_queue';
     const XML_PATH_CATALOG_CRON_ENABLED = 'unbxd_catalog/cron/enabled';
     const XML_PATH_CATALOG_CRON_TYPE = 'unbxd_catalog/cron/cron_type';
@@ -371,6 +372,19 @@ class Data extends AbstractHelper
         }
 
         return $attributes;
+    }
+
+    /**
+     * @param null $store
+     * @return int
+     */
+    public function getMaxNumberOfAttempts($store = null)
+    {
+        return (int) $this->scopeConfig->getValue(
+            self::XML_PATH_CATALOG_MAX_NUMBER_OF_ATTEMPTS,
+            ScopeInterface::SCOPE_STORE,
+            $store
+        );
     }
 
     /**

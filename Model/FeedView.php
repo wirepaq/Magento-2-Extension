@@ -24,12 +24,21 @@ use Unbxd\ProductFeed\Model\ResourceModel\FeedView as FeedViewResourceModel;
 class FeedView extends AbstractModel implements FeedViewInterface
 {
     /**#@+
-     * Feed view statuses
+     * Feed view status codes
      */
     const STATUS_RUNNING = 1;
     const STATUS_COMPLETE = 2;
     const STATUS_ERROR = 3;
     const STATUS_INDEXING = 4;
+    /**#@-*/
+
+    /**#@+
+     * Feed view status labels
+     */
+    const STATUS_RUNNING_LABEL = 'Running';
+    const STATUS_COMPLETE_LABEL = 'Complete';
+    const STATUS_ERROR_LABEL = 'Error';
+    const STATUS_INDEXING_LABEL = 'Indexing';
     /**#@-*/
 
     /**#@+
@@ -54,10 +63,10 @@ class FeedView extends AbstractModel implements FeedViewInterface
     public function getAvailableStatuses()
     {
         return [
-            self::STATUS_RUNNING => __('Running'),
-            self::STATUS_COMPLETE => __('Complete'),
-            self::STATUS_ERROR => __('Error'),
-            self::STATUS_INDEXING => __('Indexing')
+            self::STATUS_RUNNING => __(self::STATUS_RUNNING_LABEL),
+            self::STATUS_COMPLETE => __(self::STATUS_COMPLETE_LABEL),
+            self::STATUS_ERROR => __(self::STATUS_ERROR_LABEL),
+            self::STATUS_INDEXING => __(self::STATUS_INDEXING_LABEL)
         ];
     }
 
@@ -189,6 +198,16 @@ class FeedView extends AbstractModel implements FeedViewInterface
     public function getUploadId()
     {
         return $this->getData(self::UPLOAD_ID);
+    }
+
+    /**
+     * Retrieve the number of attempts
+     *
+     * @return int
+     */
+    public function getNumberOfAttempts()
+    {
+        return $this->getData(self::NUMBER_OF_ATTEMPTS);
     }
 
     /**
@@ -332,5 +351,16 @@ class FeedView extends AbstractModel implements FeedViewInterface
     public function setUploadId($uploadId)
     {
         return $this->setData(self::UPLOAD_ID, $uploadId);
+    }
+
+    /**
+     * Set the number of attempts
+     *
+     * @param $value
+     * @return int|FeedView
+     */
+    public function setNumberOfAttempts($value)
+    {
+        return $this->setData(self::NUMBER_OF_ATTEMPTS, $value);
     }
 }

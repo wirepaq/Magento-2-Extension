@@ -34,7 +34,8 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      */
     protected static $unbxdReferenceUrls = [
         'base' => 'https://unbxd.com',
-        'feed_doc' => 'https://unbxd.com/documentation/site-search/v2-search-product-feed/'
+        'feed_doc' => 'https://unbxd.com/documentation/site-search/v2-search-product-feed/',
+        'intro' => 'http://unbxd.com/documentation/site-search/v2-search-how-it-works/'
     ];
 
     /**
