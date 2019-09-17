@@ -248,7 +248,7 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 && !$installer->getConnection()->tableColumnExists($feedViewTable, $columnName)
             ) {
                 $installer->getConnection()->addColumn(
-                    $indexingQueueTable,
+                    $feedViewTable,
                     $columnName,
                     [
                         'type' => Table::TYPE_SMALLINT,
@@ -257,6 +257,52 @@ class UpgradeSchema implements UpgradeSchemaInterface
                     ]
                 );
             }
+        }
+
+        // create attribute parameter to include/exclude from product feed
+        $catalogEavAttributeTable = $installer->getTable('catalog_eav_attribute');
+        if (
+            $installer->tableExists($catalogEavAttributeTable)
+            && !$installer->getConnection()->tableColumnExists(
+                $catalogEavAttributeTable, 'include_in_unbxd_product_feed'
+            )
+        ) {
+            $installer->getConnection()
+                ->addColumn(
+                    $catalogEavAttributeTable,
+                    'include_in_unbxd_product_feed',
+                    [
+                        'type' => Table::TYPE_SMALLINT,
+                        'nullable' => false,
+                        'unsigned' => true,
+                        'length' => 1,
+                        'default' => 1,
+                        'comment' => 'Include In Unbxd Product Feed'
+                    ]
+                );
+        }
+
+        // create attribute parameter to include/exclude from product feed
+        $catalogEavAttributeTable = $installer->getTable('catalog_eav_attribute');
+        if (
+            $installer->tableExists($catalogEavAttributeTable)
+            && !$installer->getConnection()->tableColumnExists(
+                $catalogEavAttributeTable, 'include_in_unbxd_product_feed'
+            )
+        ) {
+            $installer->getConnection()
+                ->addColumn(
+                    $catalogEavAttributeTable,
+                    'include_in_unbxd_product_feed',
+                    [
+                        'type' => Table::TYPE_SMALLINT,
+                        'nullable' => false,
+                        'unsigned' => true,
+                        'length' => 1,
+                        'default' => 1,
+                        'comment' => 'Include In Unbxd Product Feed'
+                    ]
+                );
         }
 
         $installer->endSetup();

@@ -16,14 +16,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Magento\Framework\App\State as AppState;
 use Unbxd\ProductFeed\Helper\Feed as FeedHelper;
 use Unbxd\ProductFeed\Helper\ProductHelper;
-use Unbxd\ProductFeed\Model\CronManager;
-use Unbxd\ProductFeed\Model\CacheManager;
 use Unbxd\ProductFeed\Model\Indexer\Product\Full\Action\Full as ReindexAction;
-use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
-use Unbxd\ProductFeed\Model\Feed\Api\ConnectorFactory;
-use Unbxd\ProductFeed\Model\Feed\Api\Connector as ApiConnector;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
+use Unbxd\ProductFeed\Model\CronManager;
+use Unbxd\ProductFeed\Model\CronManagerFactory;
+use Unbxd\ProductFeed\Model\CacheManager;
+use Unbxd\ProductFeed\Model\CacheManagerFactory;
+use Unbxd\ProductFeed\Model\Feed\Manager as FeedManager;
+use Unbxd\ProductFeed\Model\Feed\ManagerFactory as FeedManagerFactory;
+use Unbxd\ProductFeed\Model\Feed\Api\ConnectorFactory;
+use Unbxd\ProductFeed\Model\Feed\Api\Connector as ApiConnector;
 
 /**
  * Class AbstractCommand
@@ -52,29 +55,50 @@ abstract class AbstractCommand extends Command
     protected $productHelper;
 
     /**
-     * @var CronManager
-     */
-    protected $cronManager;
-
-    /**
-     * @var CacheManager
-     */
-    private $cacheManager;
-
-    /**
      * @var ReindexAction
      */
     protected $reindexAction;
 
     /**
-     * @var FeedManager
-     */
-    protected $feedManager;
-
-    /**
      * @var StoreManagerInterface
      */
     protected $storeManager;
+
+    /**
+     * @var CacheManagerFactory
+     */
+    protected $cacheManagerFactory;
+
+    /**
+     * Local cache for cache manager
+     *
+     * @var null|CacheManager
+     */
+    private $cacheManager = null;
+
+    /**
+     * @var CronManagerFactory
+     */
+    protected $cronManagerFactory;
+
+    /**
+     * Local cache for cron manager
+     *
+     * @var null|CronManager
+     */
+    private $cronManager = null;
+
+    /**
+     * @var FeedManagerFactory
+     */
+    protected $feedManagerFactory;
+
+    /**
+     * Local cache for feed manager
+     *
+     * @var null|FeedManager
+     */
+    protected $feedManager = null;
 
     /**
      * @var ConnectorFactory
@@ -84,7 +108,7 @@ abstract class AbstractCommand extends Command
     /**
      * Local cache for feed API connector manager
      *
-     * @var null
+     * @var null|ApiConnector
      */
     private $connectorManager = null;
 
@@ -93,34 +117,34 @@ abstract class AbstractCommand extends Command
      * @param AppState $state
      * @param FeedHelper $feedHelper
      * @param ProductHelper $productHelper
-     * @param CronManager $cronManager
-     * @param CacheManager $cacheManager
      * @param ReindexAction $reindexAction
-     * @param FeedManager $feedManager
      * @param StoreManagerInterface $storeManager
+     * @param CacheManagerFactory $cacheManagerFactory
+     * @param CronManagerFactory $cronManagerFactory
+     * @param FeedManagerFactory $feedManagerFactory
      * @param ConnectorFactory $connectorFactory
      */
     public function __construct(
         AppState $state,
         FeedHelper $feedHelper,
         ProductHelper $productHelper,
-        CronManager $cronManager,
-        CacheManager $cacheManager,
         ReindexAction $reindexAction,
-        FeedManager $feedManager,
         StoreManagerInterface $storeManager,
+        CacheManagerFactory $cacheManagerFactory,
+        CronManagerFactory $cronManagerFactory,
+        FeedManagerFactory $feedManagerFactory,
         ConnectorFactory $connectorFactory
     ) {
-        parent::__construct();
         $this->appState = $state;
         $this->feedHelper = $feedHelper;
         $this->productHelper = $productHelper;
-        $this->cronManager = $cronManager;
-        $this->cacheManager = $cacheManager;
         $this->reindexAction = $reindexAction;
-        $this->feedManager = $feedManager;
         $this->storeManager = $storeManager;
+        $this->cacheManagerFactory = $cacheManagerFactory;
+        $this->cronManagerFactory = $cronManagerFactory;
+        $this->feedManagerFactory = $feedManagerFactory;
         $this->connectorFactory = $connectorFactory;
+        parent::__construct();
     }
 
     /**
@@ -136,13 +160,58 @@ abstract class AbstractCommand extends Command
     abstract protected function postProcessActions($output);
 
     /**
+     * Retrieve cache manager instance. Init if needed
+     *
+     * @return CacheManager|null
+     */
+    public function getCacheManager()
+    {
+        if (null === $this->cacheManager) {
+            /** @var CacheManager */
+            $this->cacheManager = $this->cacheManagerFactory->create();
+        }
+
+        return $this->cacheManager;
+    }
+
+    /**
+     * Retrieve cron manager instance. Init if needed
+     *
+     * @return CronManager|null
+     */
+    public function getCronManager()
+    {
+        if (null === $this->cronManager) {
+            /** @var CronManager */
+            $this->cronManager = $this->cronManagerFactory->create();
+        }
+
+        return $this->cronManager;
+    }
+
+    /**
+     * Retrieve feed manager instance. Init if needed
+     *
+     * @return FeedManager|null
+     */
+    public function getFeedManager()
+    {
+        if (null === $this->feedManager) {
+            /** @var FeedManager */
+            $this->feedManager = $this->feedManagerFactory->create();
+        }
+
+        return $this->feedManager;
+    }
+
+    /**
      * Retrieve connector manager instance. Init if needed
      *
      * @return ApiConnector|null
      */
     public function getConnectorManager()
     {
-        if (null == $this->connectorManager) {
+        if (null === $this->connectorManager) {
             /** @var ApiConnector */
             $this->connectorManager = $this->connectorFactory->create();
         }
@@ -159,9 +228,9 @@ abstract class AbstractCommand extends Command
     protected function flushSystemConfigCache()
     {
         try {
-            $this->cacheManager->flushSystemConfigCache();
+            $this->getCacheManager()->flushSystemConfigCache();
         } catch (\Exception $e) {
-            // catch and log exception
+            return $this;
         }
 
         return $this;
@@ -197,7 +266,7 @@ abstract class AbstractCommand extends Command
      * @return string
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    protected function getStoreNameById($storeId = '')
+    protected function getStoreNameById($storeId = null)
     {
         return $this->storeManager->getStore($storeId)->getName();
     }

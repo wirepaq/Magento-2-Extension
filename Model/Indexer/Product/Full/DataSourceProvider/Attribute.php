@@ -247,11 +247,11 @@ class Attribute extends AbstractAttribute implements DataSourceProviderInterface
      */
     private function addChildSku(&$parentData, $relation)
     {
-        if (isset($parentData['sku']) && !is_array($parentData['sku'])) {
-            $parentData['sku'] = [$parentData['sku']];
+        if (isset($parentData['children_sku']) && !is_array($parentData['children_sku'])) {
+            $parentData['children_sku'] = [$parentData['children_sku']];
         }
 
-        $parentData['sku'][] = $relation['sku'];
-        $parentData['sku'] = array_unique($parentData['sku']);
+        $parentData['children_sku'][] = $relation['sku'];
+        $parentData['children_sku'] = array_unique($parentData['children_sku']);
     }
 }

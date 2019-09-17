@@ -15,6 +15,13 @@
 -->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
+        <referenceContainer name="page.main.actions">
+            <block class="Unbxd\ProductFeed\Block\Adminhtml\AdditionalToolbar" name="additional.toolbar">
+                <arguments>
+                    <argument name="listingView" xsi:type="string">feed_view</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
         <referenceContainer name="content">
             <block class="Unbxd\ProductFeed\Block\Adminhtml\LogViewer\Toolbar\FeedView" name="adminhtml.unbxd.productfeed.feedview.toolbar"/>
             <uiComponent name="unbxd_productfeed_feed_view_grid" />

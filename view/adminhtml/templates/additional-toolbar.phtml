@@ -1,0 +1,27 @@
+<?php
+
+// @codingStandardsIgnoreFile
+
+/** @var \Unbxd\ProductFeed\Block\Adminhtml\AdditionalToolbar $block */
+?>
+<div class="additional-toolbar admin__action-dropdown-wrap">
+    <button class="admin__action-dropdown" title="Menu" data-toggle="dropdown" data-mage-init='{"dropdown":{}}'>
+        <span class="admin__action-dropdown-text"><?= /* @escapeNotVerified */ __('Additional Links') ?></span>
+    </button>
+    <ul class="admin__action-dropdown-menu">
+        <?php foreach ($block->getItems() as $key => $item): ?>
+            <?php $class = array_key_exists('class', $item) ? $item['class'] : ''; ?>
+            <li class="action-dropdown-menu-action <?= /* @escapeNotVerified */ ($key == $block->getCurrentItemKey() ? ' current disabled' : ''); ?>
+                <?= /* @escapeNotVerified */ $class; ?>">
+                <?php if (isset($item['url'])): ?>
+                    <a href="<?= /* @escapeNotVerified */ $item['url']; ?>"
+                       data-ui-id="additional-toolbar-<?= /* @escapeNotVerified */ $key; ?>"
+                       title="<?= /* @escapeNotVerified */ $item['title']; ?>"
+                        <?= /* @escapeNotVerified */ isset($item['target']) ? 'target="' . $item['target'] . '"' : '';?>>
+                        <?= /* @escapeNotVerified */ isset($item['title']) ? $item['title'] : ''; ?>
+                    </a>
+                <?php endif; ?>
+            </li>
+        <?php endforeach;?>
+    </ul>
+</div>

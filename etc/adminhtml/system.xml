@@ -134,9 +134,9 @@
                         <field id="cron_type">template</field>
                     </depends>
                 </field>
-                <field id="cron_is_running" translate="label comment" type="button" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Check If Cron Is Running</label>
-                    <frontend_model>Unbxd\ProductFeed\Block\Adminhtml\System\Config\Field\Buttons\CheckCron</frontend_model>
+                <field id="related_cron_jobs" translate="label comment" type="button" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Check Related Cron Jobs</label>
+                    <frontend_model>Unbxd\ProductFeed\Block\Adminhtml\System\Config\Field\Buttons\RelatedCronJobs</frontend_model>
                     <depends>
                         <field id="enabled">1</field>
                     </depends>

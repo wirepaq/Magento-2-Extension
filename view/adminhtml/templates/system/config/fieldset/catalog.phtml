@@ -15,8 +15,8 @@
         </a>
     </div>
     <div class="block content">
-        <p><?= /* @escapeNotVerified */ __('Have a question? Please refer to the <a href="%1">documentation</a>.',
-                $block->getUnbxdReferenceUrl('feed_doc')) ?></p>
+        <p><?= /* @escapeNotVerified */ __('Have a question? Please refer to the <a href="%1" target="_blank">documentation</a>.',
+            $block->getUnbxdReferenceUrl('feed')) ?></p>
     </div>
 </div>
 <div class="unbxd-system-config-information-container catalog">
@@ -81,10 +81,7 @@
                         <?php if ($uploadedSize = $block->getUploadedSize()): ?>
                             <tr>
                                 <th><?= /* @escapeNotVerified */ __('Total Uploaded Size') ?></th>
-                                <td><?= /* @escapeNotVerified */ __(
-                                        sprintf('%s (children products are not counted)', $uploadedSize)
-                                    ) ?>
-                                </td>
+                                <td><?= /* @escapeNotVerified */ __($uploadedSize) ?></td>
                             </tr>
                         <?php endif; ?>
                     <?php endif; ?>

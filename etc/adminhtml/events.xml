@@ -23,4 +23,11 @@
     <event name="controller_action_predispatch_unbxd_productfeed_feed_view">
         <observer name="unbxd_productfeed_indexing_queue_cron_notice" instance="Unbxd\ProductFeed\Observer\FeedViewListingNotice" />
     </event>
+    <event name="controller_action_predispatch_unbxd_productfeed_cron_index">
+        <observer name="unbxd_productfeed_cron_notice" instance="Unbxd\ProductFeed\Observer\CronTasksListingNotice" />
+    </event>
+    <event name="adminhtml_catalog_product_attribute_edit_frontend_prepare_form">
+        <observer name="unbxd_productfeed_include_attribute"
+            instance="Unbxd\ProductFeed\Observer\Adminhtml\Catalog\Product\Attribute\Edit\PrepareForm\IncludeAttributeInProductFeed" />
+    </event>
 </config>

@@ -187,6 +187,7 @@ class ProductHelper
     {
         $product = null;
         try {
+            /** @var \Magento\Catalog\Api\Data\ProductInterface $product */
             $product = $this->productRepository->getById($id);
         } catch (\Exception $e) {
             // log exception

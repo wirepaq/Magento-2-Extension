@@ -82,7 +82,7 @@ class Manager
     /**
      * @var CacheManager
      */
-    protected $cacheManager;
+    private $cacheManager;
 
     /**
      * @var FeedConfig
@@ -182,6 +182,14 @@ class Manager
      * @var array
      */
     private $childrenSchemaFields = [];
+
+    /**
+     * Local cache for children product data,
+     * in case if child product related to several parent products
+     *
+     * @var array
+     */
+    private $childrenData = [];
 
     /**
      * Local cache for feed file manager
@@ -490,72 +498,12 @@ class Manager
             return $this;
         }
 
-        $websiteIdKey = 'website_id';
-        $entityIdKey = Config::FIELD_KEY_ENTITY_ID;
-        $nameKey = Config::FIELD_KEY_PRODUCT_NAME;
-        $urlKeyKey = Config::FIELD_KEY_PRODUCT_URL_KEY;
-        $imageKey = Config::FIELD_KEY_IMAGE_PATH;
-        $categoryKey = Config::FIELD_KEY_CATEGORY_DATA;
-        $visibilityKey = ProductInterface::VISIBILITY;
-
         $catalog = [];
         foreach ($index as $productId => &$data) {
             // schema fields has key 'fields', do only for products
             if (is_int($productId)) {
-                // prepare store field
-                $defaultStoreId = $this->getStore()->getId();
-                $storeId = isset($data[Store::STORE_ID]) ? $data[Store::STORE_ID] : $defaultStoreId;
-                $data[Store::STORE_ID] = $storeId;
-                // prepare website field
-                $websiteId = isset($data[$websiteIdKey])
-                    ? $data[$websiteIdKey]
-                    : $this->getWebsite($defaultStoreId)->getId();
-                $data[$websiteIdKey] = $websiteId;
-                // prepare title field
-                if (isset($data[$nameKey]) && !empty($data[$nameKey])) {
-                    $value = is_array($data[$nameKey]) ? array_pop($data[$nameKey]) : $data[$nameKey];
-                    $data[Config::SPECIFIC_FIELD_KEY_TITLE] = $value;
-                    unset($data[$nameKey]);
-                }
-                // prepare unique_id field
-                if (isset($data[$entityIdKey]) && !empty($data[$entityIdKey])) {
-                    $data[Config::SPECIFIC_FIELD_KEY_UNIQUE_ID] = $data[$entityIdKey];
-                    unset($data[$entityIdKey]);
-                }
-                // prepare product_url field
-                if (isset($data[$urlKeyKey]) && !empty($data[$urlKeyKey])) {
-                    $value = is_array($data[$urlKeyKey]) ? array_pop($data[$urlKeyKey]) : $data[$urlKeyKey];
-                    $productUrl = $this->buildProductUrl($value, $storeId);
-                    if ($productUrl) {
-                        $data[Config::SPECIFIC_FIELD_KEY_PRODUCT_URL] = $productUrl;
-                        unset($data[$urlKeyKey]);
-                    }
-                }
-                // prepare image_url field
-                if (isset($data[$imageKey]) && !empty($data[$imageKey])) {
-                    $value = is_array($data[$imageKey]) ? array_pop($data[$imageKey]) : $data[$imageKey];
-                    $imageUrl = $this->imageDataHandler->getImageUrl($value);
-                    if ($imageUrl) {
-                        $data[Config::SPECIFIC_FIELD_KEY_IMAGE_URL] = $imageUrl;
-                        unset($data[$imageKey]);
-                    }
-                }
-
-                // prepare category_path_id field
-                if (isset($data[$categoryKey]) && !empty($data[$categoryKey])) {
-                    $categoryData = $this->buildCategoryList($data[$categoryKey]);
-                    if (!empty($categoryData)) {
-                        $data[Config::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID] = $categoryData;
-                        unset($data[$categoryKey]);
-                    }
-                }
-                // prepare visibility field
-                if (isset($data[$visibilityKey]) && !empty($data[$visibilityKey])) {
-                    $value = is_array($data[$visibilityKey])
-                        ? array_pop($data[$visibilityKey])
-                        : $data[$visibilityKey];
-                    $data[$visibilityKey] = $this->getVisibilityTypeLabel($value);
-                }
+                // prepare main feed fields
+                $this->prepareMainFields($data);
 
                 // append child data to parent
                 if (
@@ -574,17 +522,18 @@ class Manager
 
                 // check if product related to parent product (variant product),
                 // if so - do not add child to feed catalog data, just add it like variant product
-                $parentId = array_key_exists('parent_id', $data) ? $data['parent_id'] : null;
-                if ($parentId) {
-                    if (array_key_exists($parentId, $index)) {
-                        continue;
-                    } else {
-                        unset($data['parent_id']);
-                    }
+                if (isset($data[Config::PARENT_ID_KEY])) {
+                    unset($data[Config::PARENT_ID_KEY]);
+                    continue;
                 }
 
                 // change array keys to needed format
                 $this->formatArrayKeysToCamelCase($data);
+
+                // remove helper field
+                if (isset($data[Config::PREPARED_FIELDS_KEY])) {
+                    unset($data[Config::PREPARED_FIELDS_KEY]);
+                }
 
                 // combine data by type of operations
                 $operationKey = array_key_exists('action', $data)
@@ -996,6 +945,8 @@ class Manager
         }
         if ($this->uploadedFeedSize > 0) {
             $this->feedHelper->setUploadedSize($this->uploadedFeedSize);
+        } else {
+            $this->feedHelper->setUploadedSize(FeedConfig::FEED_SIZE_CALCULATION_STATUS);
         }
 
         return $this;
@@ -1133,10 +1084,85 @@ class Manager
     }
 
     /**
+     * Prepare main feed fields to according format
+     *
+     * @param array $data
+     * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function prepareMainFields(array &$data)
+    {
+        $websiteIdKey = 'website_id';
+        $entityIdKey = Config::FIELD_KEY_ENTITY_ID;
+        $nameKey = Config::FIELD_KEY_PRODUCT_NAME;
+        $urlKeyKey = Config::FIELD_KEY_PRODUCT_URL_KEY;
+        $imageKey = Config::FIELD_KEY_IMAGE_PATH;
+        $categoryKey = Config::FIELD_KEY_CATEGORY_DATA;
+        $visibilityKey = ProductInterface::VISIBILITY;
+
+        // prepare store field
+        $defaultStoreId = $this->getStore()->getId();
+        $storeId = isset($data[Store::STORE_ID]) ? $data[Store::STORE_ID] : $defaultStoreId;
+        $data[Store::STORE_ID] = $storeId;
+        // prepare website field
+        $websiteId = isset($data[$websiteIdKey])
+            ? $data[$websiteIdKey]
+            : $this->getWebsite($defaultStoreId)->getId();
+        $data[$websiteIdKey] = $websiteId;
+        // prepare title field
+        if (isset($data[$nameKey]) && !empty($data[$nameKey])) {
+            $value = is_array($data[$nameKey]) ? array_pop($data[$nameKey]) : $data[$nameKey];
+            $data[Config::SPECIFIC_FIELD_KEY_TITLE] = $value;
+            unset($data[$nameKey]);
+        }
+        // prepare unique_id field
+        if (isset($data[$entityIdKey]) && !empty($data[$entityIdKey])) {
+            $data[Config::SPECIFIC_FIELD_KEY_UNIQUE_ID] = $data[$entityIdKey];
+            unset($data[$entityIdKey]);
+        }
+        // prepare product_url field
+        if (isset($data[$urlKeyKey]) && !empty($data[$urlKeyKey])) {
+            $value = is_array($data[$urlKeyKey]) ? array_pop($data[$urlKeyKey]) : $data[$urlKeyKey];
+            $productUrl = $this->buildProductUrl($value, $storeId);
+            if ($productUrl) {
+                $data[Config::SPECIFIC_FIELD_KEY_PRODUCT_URL] = $productUrl;
+                unset($data[$urlKeyKey]);
+            }
+        }
+        // prepare image_url field
+        if (isset($data[$imageKey]) && !empty($data[$imageKey])) {
+            $value = is_array($data[$imageKey]) ? array_pop($data[$imageKey]) : $data[$imageKey];
+            $imageUrl = $this->imageDataHandler->getImageUrl($value);
+            if ($imageUrl) {
+                $data[Config::SPECIFIC_FIELD_KEY_IMAGE_URL] = $imageUrl;
+                unset($data[$imageKey]);
+            }
+        }
+        // prepare category_path_id field
+        if (isset($data[$categoryKey]) && !empty($data[$categoryKey])) {
+            $categoryData = $this->buildCategoryList($data[$categoryKey]);
+            if (!empty($categoryData)) {
+                $data[Config::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID] = $categoryData;
+                unset($data[$categoryKey]);
+            }
+        }
+        // prepare visibility field
+        if (isset($data[$visibilityKey]) && !empty($data[$visibilityKey])) {
+            $value = is_array($data[$visibilityKey])
+                ? array_pop($data[$visibilityKey])
+                : $data[$visibilityKey];
+            $data[$visibilityKey] = $this->getVisibilityTypeLabel($value);
+        }
+
+        return $this;
+    }
+
+    /**\
      * @param array $index
      * @param array $parentData
      * @param array $childIds
      * @return $this
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     private function appendChildDataToParent(array &$index, array &$parentData, array $childIds)
     {
@@ -1144,9 +1170,17 @@ class Manager
             if (!array_key_exists($id, $index)) {
                 continue;
             }
-            $childData = $this->formatChildData($index[$id]);
-            $parentData[Config::CHILD_PRODUCTS_FIELD_KEY][] = $childData;
-            unset($index[$id]);
+
+            if (!isset($index[$id][Config::getPreparedKey()])) {
+                // in case if child child data not prepared yet
+                $this->prepareMainFields($index[$id]);
+                $this->filterFields($index[$id]);
+            }
+
+            $childData = $this->formatChildData($index[$id], $id);
+            if (!empty($childData)) {
+                $parentData[Config::CHILD_PRODUCTS_FIELD_KEY][] = $childData;
+            }
         }
 
         return $this;
@@ -1154,42 +1188,65 @@ class Manager
 
     /**
      * @param array $data
+     * @param $childId
      * @return array
      */
-    private function formatChildData(array $data)
+    private function formatChildData(array $data, $childId)
     {
-        // remove variants, parent_id (helper field) field(s) from child data if any
-        $excludedFields = [Config::CHILD_PRODUCTS_FIELD_KEY, 'parent_id'];
-        foreach ($excludedFields as $field) {
-            if (array_key_exists($field, $data)) {
-                unset($data[$field]);
-            }
-        }
-
-        foreach ($data as $key => $value) {
-            // map child fields to use for add to schema fields
-            if (!in_array($key, $this->childrenSchemaFields)) {
-                $this->childrenSchemaFields[$key] = $key;
-                if ($key == Config::SPECIFIC_FIELD_KEY_UNIQUE_ID) {
-                    $this->childrenSchemaFields[$key] = Config::CHILD_PRODUCT_FIELD_VARIANT_ID;
+        if (!isset($this->childrenData[$childId])) {
+            // remove helper fields from child data if any
+            $excludedFields = [
+                Config::CHILD_PRODUCTS_FIELD_KEY,
+                Config::PARENT_ID_KEY,
+                Config::PREPARED_FIELDS_KEY,
+                Config::getPreparedKey()
+            ];
+            foreach ($excludedFields as $field) {
+                if (array_key_exists($field, $data)) {
+                    unset($data[$field]);
                 }
             }
 
-            $newKey = sprintf(
-                '%s%s',
-                Config::CHILD_PRODUCT_FIELD_PREFIX,
-                ucfirst(SimpleDataObjectConverter::snakeCaseToCamelCase($key))
-            );
-            if ($key == Config::SPECIFIC_FIELD_KEY_UNIQUE_ID) {
-                $newKey = SimpleDataObjectConverter::snakeCaseToCamelCase(Config::CHILD_PRODUCT_FIELD_VARIANT_ID);
+            $variantIdKey = SimpleDataObjectConverter::snakeCaseToCamelCase(Config::CHILD_PRODUCT_FIELD_VARIANT_ID);
+            foreach ($data as $key => $value) {
+                // map child fields to use for add to schema fields
+                if (!in_array($key, $this->childrenSchemaFields)) {
+                    $this->childrenSchemaFields[$key] = $key;
+                    if ($key == Config::SPECIFIC_FIELD_KEY_UNIQUE_ID) {
+                        $this->childrenSchemaFields[$key] = Config::CHILD_PRODUCT_FIELD_VARIANT_ID;
+                    }
+                }
+                $newKey = sprintf(
+                    '%s%s',
+                    Config::CHILD_PRODUCT_FIELD_PREFIX,
+                    ucfirst(SimpleDataObjectConverter::snakeCaseToCamelCase($key))
+                );
+
+                if (
+                in_array($key, [
+                        Config::SPECIFIC_FIELD_KEY_UNIQUE_ID,
+                        SimpleDataObjectConverter::snakeCaseToCamelCase(Config::SPECIFIC_FIELD_KEY_UNIQUE_ID)
+                    ]
+                )
+                ) {
+                    $newKey = $variantIdKey;
+                }
+
+                $data[$newKey] = $value;
+                if ($newKey != $key) {
+                    unset($data[$key]);
+                }
             }
-            $data[$newKey] = $value;
-            if ($newKey != $key) {
-                unset($data[$key]);
+
+            if (!isset($data[$variantIdKey])) {
+                // omit children product if variant id is not specified
+                return [];
             }
+
+            $this->childrenData[$childId] = $data;
         }
 
-        return $data;
+        return $this->childrenData[$childId];
     }
 
     /**
@@ -1297,6 +1354,11 @@ class Manager
 
         // convert option values and labels only in labels
         $this->prepareOptionValues($data);
+
+        // mark to prevent not prepared data
+        if (!isset($data[Config::getPreparedKey()])) {
+            $data[Config::getPreparedKey()] = true;
+        }
 
         return $this;
     }
@@ -1528,6 +1590,7 @@ class Manager
         $this->productUrlSuffix = [];
         $this->visibility = [];
         $this->childrenSchemaFields = [];
+        $this->childrenData = [];
         $this->type = null;
         $this->isFeedLock = false;
         $this->lockedTime = null;

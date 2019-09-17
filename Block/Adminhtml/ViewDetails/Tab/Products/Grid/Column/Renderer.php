@@ -89,7 +89,6 @@ abstract class Renderer extends AbstractRenderer
      * @param AreaList $areaList
      * @param AppEmulation $appEmulation
      * @param ProductRepositoryInterface $productRepository
-     * @param UrlInterface $urlBuilder
      * @param \Magento\Catalog\Helper\Image $imageHelper
      * @param \Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable $catalogProductTypeConfigurable
      * @param StoreManagerInterface $storeManager
@@ -104,7 +103,6 @@ abstract class Renderer extends AbstractRenderer
         AreaList $areaList,
         AppEmulation $appEmulation,
         ProductRepositoryInterface $productRepository,
-        UrlInterface $urlBuilder,
         \Magento\Catalog\Helper\Image $imageHelper,
         \Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable $catalogProductTypeConfigurable,
         StoreManagerInterface $storeManager,
@@ -118,7 +116,7 @@ abstract class Renderer extends AbstractRenderer
         $this->areaList = $areaList;
         $this->appEmulation = $appEmulation;
         $this->productRepository = $productRepository;
-        $this->urlBuilder = $urlBuilder;
+        $this->urlBuilder = $context->getUrlBuilder();
         $this->imageHelper = $imageHelper;
         $this->catalogProductTypeConfigurable = $catalogProductTypeConfigurable;
         $this->storeManager = $storeManager;

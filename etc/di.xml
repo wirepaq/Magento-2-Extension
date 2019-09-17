@@ -23,7 +23,6 @@
     <virtualType name="Unbxd\ProductFeed\Model\Api\SearchCriteria\IndexingQueueCollectionProcessor" type="Magento\Framework\Api\SearchCriteria\CollectionProcessor">
         <arguments>
             <argument name="processors" xsi:type="array">
-                <item name="filters" xsi:type="object">Magento\Cms\Model\Api\SearchCriteria\CollectionProcessor\BlockFilterProcessor</item>
                 <item name="sorting" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\SortingProcessor</item>
                 <item name="pagination" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\PaginationProcessor</item>
             </argument>
@@ -37,7 +36,6 @@
     <virtualType name="Unbxd\ProductFeed\Model\Api\SearchCriteria\FeedViewCollectionProcessor" type="Magento\Framework\Api\SearchCriteria\CollectionProcessor">
         <arguments>
             <argument name="processors" xsi:type="array">
-                <item name="filters" xsi:type="object">Magento\Cms\Model\Api\SearchCriteria\CollectionProcessor\BlockFilterProcessor</item>
                 <item name="sorting" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\SortingProcessor</item>
                 <item name="pagination" xsi:type="object">Magento\Framework\Api\SearchCriteria\CollectionProcessor\PaginationProcessor</item>
             </argument>
@@ -68,6 +66,7 @@
             <argument name="collections" xsi:type="array">
                 <item name="unbxd_productfeed_feed_view_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\FeedView\Grid\Collection</item>
                 <item name="unbxd_productfeed_indexing_queue_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue\Grid\Collection</item>
+                <item name="unbxd_productfeed_cron_grid_data_source" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\Cron\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -85,6 +84,14 @@
             <argument name="eventPrefix" xsi:type="string">unbxd_productfeed_indexing_queue_grid_collection</argument>
             <argument name="eventObject" xsi:type="string">indexing_queue_grid_collection</argument>
             <argument name="resourceModel" xsi:type="string">Unbxd\ProductFeed\Model\ResourceModel\IndexingQueue</argument>
+        </arguments>
+    </type>
+    <type name="Unbxd\ProductFeed\Model\ResourceModel\Cron\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">cron_schedule</argument>
+            <argument name="eventPrefix" xsi:type="string">unbxd_productfeed_cron_grid_collection</argument>
+            <argument name="eventObject" xsi:type="string">cron_grid_collection</argument>
+            <argument name="resourceModel" xsi:type="string">Magento\Cron\Model\ResourceModel\Schedule</argument>
         </arguments>
     </type>
     <type name="Magento\Framework\EntityManager\MetadataPool">
@@ -186,16 +193,6 @@
     </type>
     <!-- END: plugins -->
 
-    <!-- START: custom xml config reader -->
-    <type name="Unbxd\ProductFeed\Model\IndexingQueue\Config\Reader">
-        <arguments>
-            <argument name="fileName" xsi:type="string">indexing_queue_config.xml</argument>
-            <argument name="converter" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Config\Converter</argument>
-            <argument name="schemaLocator" xsi:type="object">Unbxd\ProductFeed\Model\IndexingQueue\Config\SchemaLocator</argument>
-        </arguments>
-    </type>
-    <!-- END: custom xml config reader -->
-
     <!-- START: feed related -->
     <type name="Unbxd\ProductFeed\Model\Feed\FileManager">
         <arguments>
@@ -229,4 +226,10 @@
         </arguments>
     </type>
     <!-- END: config cache declared -->
+
+    <!-- START: fixed issue with id field name in cron collection -->
+    <type name="Magento\Cron\Model\ResourceModel\Schedule\Collection">
+        <plugin name="unbxd_productfeed_cron_resource_collection" type="Unbxd\ProductFeed\Plugin\Cron\Model\ResourceModel\Schedule\Collection" />
+    </type>
+    <!-- END: fixed issue with id field name in cron collection -->
 </config>

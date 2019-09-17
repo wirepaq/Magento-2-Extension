@@ -41,23 +41,20 @@ class Common extends Template
     /**
      * Common constructor.
      * @param Template\Context $context
-     * @param FormKey $formKey
      * @param HelperData $helperData
      * @param array $data
      * @param Serializer|null $serializer
      */
     public function __construct(
         Template\Context $context,
-        FormKey $formKey,
         HelperData $helperData,
         array $data = [],
         Serializer $serializer = null
     ) {
         parent::__construct($context, $data);
-        $this->formKey = $formKey;
+        $this->formKey = $context->getFormKey();
         $this->helperData = $helperData;
-        $this->serializer = $serializer ?: ObjectManager::getInstance()
-            ->get(Serializer::class);
+        $this->serializer = $serializer ?: ObjectManager::getInstance()->get(Serializer::class);
     }
 
     /**
@@ -142,7 +139,8 @@ class Common extends Template
      */
     private function getCronJobsActionUrl()
     {
-        return $this->getActionUrl('unbxd_productfeed/cron/check');
+        return $this->getActionUrl('mui/index/render/namespace/unbxd_productfeed_cron_grid');
+//        return $this->getActionUrl('unbxd_productfeed/cron/modal');
     }
 
     /**

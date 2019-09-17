@@ -129,7 +129,7 @@ class Full extends Indexer
      * @return mixed
      * @throws \Exception
      */
-    public function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = false, $limit = 10000)
+    public function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = true, $limit = 10000)
     {
         $select = $this->getConnection()->select()
             ->from(['e' => $this->getEntityTable()]);
@@ -262,7 +262,6 @@ class Full extends Indexer
     {
         $relatedTable = $this->getTable('catalog_product_entity_int');
 
-        $bind = [];
         $bind = ['status' => 'status'];
         $statusAttributeIdSelect = $this->getConnection()->select()
             ->from(['attribute' => $this->getTable('eav_attribute')], ['attribute_id'])
@@ -271,10 +270,13 @@ class Full extends Indexer
 
         $statusAttributeId = $this->getConnection()->fetchOne($statusAttributeIdSelect, $bind);
 
-        $storeId = 0; // for all stores?
-        $conditions = ['status.entity_id = e.entity_id'];
-        $conditions[] = $this->getConnection()->quoteInto('status.store_id = ?', $storeId);
-        $conditions[] = $this->getConnection()->quoteInto('status.value = ?', $filterValue);
+        $entityColumn = 'entity_id';
+        if ($this->getConnection()->tableColumnExists($relatedTable, 'row_id')) {
+            $entityColumn = 'row_id';
+        }
+
+        $conditions = ["status.{$entityColumn} = e.entity_id"];
+        $conditions[] = $this->getConnection()->quoteInto('status.value != ?', $filterValue);
 
         $statusJoinCond = join(' AND ', $conditions);
         $select->useStraightJoin(true)
@@ -352,10 +354,12 @@ class Full extends Indexer
         try {
             // try to retrieve table name for the current store Id from the TableMaintainer.
             // class TableMaintainer encapsulate logic of work with tables per store in related indexer
-            $tableMaintainer = $this->objectManager->get(
-                \Magento\Catalog\Model\Indexer\Category\Product\TableMaintainer::class
-            );
-            $indexTable = $tableMaintainer->getMainTable($storeId);
+            if (class_exists(\Magento\Catalog\Model\Indexer\Category\Product\TableMaintainer::class)) {
+                $tableMaintainer = $this->objectManager->get(
+                    \Magento\Catalog\Model\Indexer\Category\Product\TableMaintainer::class
+                );
+                $indexTable = $tableMaintainer->getMainTable($storeId);
+            }
         } catch (\Exception $exception) {
             // occurs in magento version where TableMaintainer is not implemented. Will default to legacy table.
         }

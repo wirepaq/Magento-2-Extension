@@ -32,11 +32,12 @@ class Config
     const FEED_MESSAGE_BY_RESPONSE_TYPE_RUNNING =
         'Product feed is currently synchronizing with the Unbxd service.';
     const FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING =
-        'Product feed has been successfully uploaded. Processing by Unbxd service.';
+        'Product feed has been successfully uploaded.<br/> Processing by Unbxd service.';
     const FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE =
         'Product feed has been successfully processed by Unbxd service.';
     const FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR =
-        'Synchronization failed for store(s) with ID(s): %s. See feed view logs for additional information';
+        'Synchronization failed for store(s) with ID(s): %s.<br/> See feed view logs for additional information';
+    const FEED_MESSAGE_UPLOAD_SIZE = 'Total Uploaded Feed Size - %s';
 
     /**
      * Feed types:
@@ -72,7 +73,7 @@ class Config
     /**
      * Index fields related to child products (variants)
      */
-    const CHILD_PRODUCT_SKUS_FIELD_KEY = 'sku';
+    const CHILD_PRODUCT_SKUS_FIELD_KEY = 'children_sku';
     const CHILD_PRODUCT_IDS_FIELD_KEY = 'children_ids';
     const CHILD_PRODUCT_ATTRIBUTES_FIELD_KEY = 'children_attributes';
     const CHILD_PRODUCT_CONFIGURABLE_ATTRIBUTES_FIELD_KEY = 'configurable_attributes';
@@ -113,6 +114,16 @@ class Config
     const CHILD_PRODUCT_FIELD_VARIANT_ID = 'variant_id';
 
     /**
+     * Parent ID key to detect whether or not child product related to any parent product(s)
+     */
+    const PARENT_ID_KEY = 'parent_id';
+
+    /**
+     * Helper key to detect whether or not current item fields are prepared
+     */
+    const PREPARED_FIELDS_KEY = 'prepared';
+
+    /**
      * Default batch size for prepare feed data
      */
     const DEFAULT_BATCH_SIZE_PREPARE_FEED_DATA = 1000;
@@ -135,7 +146,12 @@ class Config
     /**
      * Flag to detect if need to send additional API call to retrieve uploaded feed size
      */
-    const RETRIEVE_SIZE_FOR_UPLOADED_FEED = true;
+    const RETRIEVE_SIZE_FOR_UPLOADED_FEED = false;
+
+    /**
+     * Processing status for upload feed size
+     */
+    const FEED_SIZE_CALCULATION_STATUS = 'Calculation';
 
     /**
      * Feed operation types (e.g. add new product, update product data, delete product)
@@ -238,5 +254,15 @@ class Config
             'thumbnail',
             'thumbnail_label'
         ];
+    }
+
+    /**
+     * Helper full key to detect whether or not current item fields are prepared
+     *
+     * @return string
+     */
+    public static function getPreparedKey()
+    {
+        return sprintf('_%s_', self::PREPARED_FIELDS_KEY);
     }
 }

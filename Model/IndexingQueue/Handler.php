@@ -199,7 +199,8 @@ class Handler extends \Magento\Framework\DataObject
 
         $additionalInformation = $this->getAdditionalInformationCallback();
         if (!empty($additionalInformation)) {
-            $additionalInformation = implode("\n", $additionalInformation);
+            // retrieve only last record from array, in the case of mass action on the product
+            $additionalInformation = array_pop($additionalInformation);
             $model->setAdditionalInformation($additionalInformation);
             $this->logger->info($additionalInformation);
         }

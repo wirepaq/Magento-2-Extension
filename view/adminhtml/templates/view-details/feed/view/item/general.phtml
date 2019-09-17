@@ -50,7 +50,11 @@
         </tr>
         <tr>
             <th><?php /* @escapeNotVerified */ echo __('Number Of Synchronization Attempts'); ?></th>
-            <td style="max-height: 300px"><?php /* @escapeNotVerified */ echo $model->getNumberOfAttempts(); ?></td>
+            <td><?php /* @escapeNotVerified */ echo $model->getNumberOfAttempts(); ?></td>
+        </tr>
+        <tr>
+            <th><?php /* @escapeNotVerified */ echo __('Upload ID'); ?></th>
+            <td><?php /* @escapeNotVerified */ echo $model->getUploadId(); ?></td>
         </tr>
         </tbody>
     </table>

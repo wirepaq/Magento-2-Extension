@@ -19,6 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Unbxd\ProductFeed\Model\CronManager;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Magento\Store\Model\Store;
+use Magento\Framework\Exception\LocalizedException;
 
 /**
  * Class Incremental
@@ -50,6 +51,24 @@ class Incremental extends AbstractCommand
                 'Use the specific Store View',
                 Store::DEFAULT_STORE_ID
             );
+
+        parent::configure();
+    }
+
+    /**
+     * Try to set area code in case if it was not set before
+     *
+     * @return $this
+     */
+    private function initAreaCode()
+    {
+        try {
+            $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        } catch (LocalizedException $e) {
+            // area code already set
+        }
+
+        return $this;
     }
 
     /**
@@ -60,7 +79,7 @@ class Incremental extends AbstractCommand
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        $this->initAreaCode();
 
         // check authorization credentials
         if (!$this->feedHelper->isAuthorizationCredentialsSetup()) {
@@ -69,7 +88,7 @@ class Incremental extends AbstractCommand
         }
 
         // check if related cron process doesn't occur to this process to prevent duplicate execution
-        $jobs = $this->cronManager->getRunningSchedules(CronManager::FEED_JOB_CODE_UPLOAD);
+        $jobs = $this->getCronManager()->getRunningSchedules(CronManager::FEED_JOB_CODE_UPLOAD);
         if ($jobs->getSize()) {
             $message = 'At the moment, the cron job is already executing this process. '. "\n" . 'To prevent duplicate process, which will increase the load on the server, please try it later.';
             $output->writeln("<error>{$message}</error>");
@@ -112,9 +131,14 @@ class Incremental extends AbstractCommand
                     break;
                 }
 
+                if (empty($index)) {
+                    $output->writeln("<error>Index data is empty. Possible reason: product(s) with status 'Disabled' were performed.</error>");
+                    return false;
+                }
+
                 try {
                     $output->writeln("<info>Execute feed...</info>");
-                    $this->feedManager->execute($index, FeedConfig::FEED_TYPE_INCREMENTAL);
+                    $this->getFeedManager()->execute($index, FeedConfig::FEED_TYPE_INCREMENTAL);
                 } catch (\Exception $e) {
                     $output->writeln("<error>Feed execution error: {$e->getMessage()}</error>");
                     $errors[$storeId] = $e->getMessage();
@@ -143,7 +167,7 @@ class Incremental extends AbstractCommand
      */
     private function buildResponse($output, $stores, $errors)
     {
-        $errorMessage = FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR;
+        $errorMessage = strip_tags(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR);
         if (!empty($errors)) {
             $affectedIds = implode(',', array_keys($errors));
             $errorMessages = implode(',', array_values($errors));
@@ -152,7 +176,7 @@ class Incremental extends AbstractCommand
         } else if ($this->feedHelper->isLastSynchronizationSuccess()) {
             $output->writeln("<info>" . FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE . "</info>");
         } else if ($this->feedHelper->isLastSynchronizationProcessing()) {
-            $output->writeln("<info>" . FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING . "</info>");
+            $output->writeln("<info>" . strip_tags(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING) . "</info>");
         } else {
             $affectedIds = implode(',', array_values($stores));
             $errorMessage = sprintf($errorMessage, $affectedIds);

@@ -19,4 +19,11 @@
             <argument name="frontendUrlBuilder" xsi:type="object">Magento\Framework\Url</argument>
         </arguments>
     </type>
+    <type name="Magento\Framework\Notification\MessageList">
+        <arguments>
+            <argument name="messages" xsi:type="array">
+                <item name="unbxdProductFeedModuleAvailabilityMessages" xsi:type="string">Unbxd\ProductFeed\Model\Admin\ModuleAvailabilityMessages</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

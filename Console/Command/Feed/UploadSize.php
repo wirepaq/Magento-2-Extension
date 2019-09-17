@@ -19,6 +19,7 @@ use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Unbxd\ProductFeed\Model\Feed\Api\Connector as ApiConnector;
 use Unbxd\ProductFeed\Model\Feed\Api\Response as FeedResponse;
 use Magento\Store\Model\Store;
+use Magento\Framework\Exception\LocalizedException;
 
 /**
  * Class UploadSize
@@ -40,6 +41,24 @@ class UploadSize extends AbstractCommand
                 'Use the specific Store View',
                 Store::DEFAULT_STORE_ID
             );
+
+        parent::configure();
+    }
+
+    /**
+     * Try to set area code in case if it was not set before
+     *
+     * @return $this
+     */
+    private function initAreaCode()
+    {
+        try {
+            $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        } catch (LocalizedException $e) {
+            // area code already set
+        }
+
+        return $this;
     }
 
     /**
@@ -50,7 +69,7 @@ class UploadSize extends AbstractCommand
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        $this->initAreaCode();
 
         // check authorization credentials
         if (!$this->feedHelper->isAuthorizationCredentialsSetup()) {

@@ -53,5 +53,13 @@
              parent="Unbxd_ProductFeed::productfeed"
              action="unbxd_productfeed/feed/view"
              resource="Unbxd_ProductFeed::productfeed_feed_view"/>
+        <add id="Unbxd_ProductFeed::cron"
+             title="Related Cron Jobs"
+             module="Unbxd_ProductFeed"
+             sortOrder="100"
+             dependsOnModule="Unbxd_ProductFeed"
+             parent="Unbxd_ProductFeed::productfeed"
+             action="unbxd_productfeed/cron/view"
+             resource="Unbxd_ProductFeed::cron"/>
     </menu>
 </config>

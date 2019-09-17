@@ -134,7 +134,7 @@ class FileManager
      */
     public function getSourcePath()
     {
-        return $this->dir->getAbsolutePath($this->subDir);
+        return $this->dir->getRelativePath($this->subDir);
     }
 
     /**

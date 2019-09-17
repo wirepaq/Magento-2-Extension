@@ -33,9 +33,9 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      * @var array
      */
     protected static $unbxdReferenceUrls = [
-        'base' => 'https://unbxd.com',
-        'feed_doc' => 'https://unbxd.com/documentation/site-search/v2-search-product-feed/',
-        'intro' => 'http://unbxd.com/documentation/site-search/v2-search-how-it-works/'
+        'base' => '//unbxd.com',
+        'intro' => '//unbxd.com/documentation/site-search/v2-search-how-it-works/',
+        'feed' => '//unbxd.com/documentation/site-search/v2-search-product-feed/'
     ];
 
     /**
@@ -77,33 +77,29 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      * AbstractFieldset constructor.
      * @param Context $context
      * @param ProductMetadataInterface $productMetadata
-     * @param \Magento\Framework\View\Asset\Repository $assetRepo
      * @param \Magento\Config\Model\Config\Structure $configStructure
      * @param ModuleHelper $moduleHelper
      * @param FeedHelper $feedHelper
      * @param FeedView $feedView
-     * @param TimezoneInterface $dateTime
      * @param array $data
      */
     public function __construct(
         Context $context,
         ProductMetadataInterface $productMetadata,
-        \Magento\Framework\View\Asset\Repository $assetRepo,
         \Magento\Config\Model\Config\Structure $configStructure,
         ModuleHelper $moduleHelper,
         FeedHelper $feedHelper,
         FeedView $feedView,
-        TimezoneInterface $dateTime,
         array $data = []
     ) {
         parent::__construct($context, $data);
         $this->productMetadata = $productMetadata;
-        $this->assetRepo = $assetRepo;
+        $this->assetRepo = $context->getAssetRepository();
         $this->configStructure = $configStructure;
         $this->moduleHelper = $moduleHelper;
         $this->feedHelper = $feedHelper;
         $this->feedView = $feedView;
-        $this->dateTime = $dateTime;
+        $this->dateTime = $context->getLocaleDate();
     }
 
     /**
@@ -300,7 +296,9 @@ abstract class AbstractFieldset extends Template implements RendererInterface
      */
     public static function getUnbxdReferenceUrl($type = null)
     {
-        return isset(self::$unbxdReferenceUrls[$type]) ? self::$unbxdReferenceUrls['base'] : '';
+        return isset(self::$unbxdReferenceUrls[$type])
+            ? self::$unbxdReferenceUrls[$type]
+            : self::$unbxdReferenceUrls['base'];
     }
 
     /**

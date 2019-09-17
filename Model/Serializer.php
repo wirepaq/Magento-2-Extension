@@ -61,32 +61,50 @@ class Serializer
      * Serialize data into string
      *
      * @param $data
-     * @return bool|string
+     * @return false|string
      */
     public function serialize($data)
     {
         if ($this->serializer === null) {
-            return serialize($data);
+            $result = json_encode($data);
+            if (false === $result) {
+                throw new \InvalidArgumentException(
+                    'Unable to serialize value. Error: ' . json_last_error_msg()
+                );
+            }
+
+            return $result;
         }
 
-        return $this->serializer->serialize($data);
+        try {
+            return $this->serializer->serialize($data);
+        } catch (\InvalidArgumentException $e) {
+            return serialize($data);
+        }
     }
 
     /**
      * Unserialize the given string
      *
      * @param $data
-     * @return array|bool|float|int|mixed|string|null
+     * @return mixed
      */
     public function unserialize($data)
     {
         if ($this->serializer === null) {
-            return $this->unserialize->unserialize($data);
+            $result = json_decode($data, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \InvalidArgumentException(
+                    'Unable to unserialize value. Error: ' . json_last_error_msg()
+                );
+            }
+
+            return $result;
         }
 
         try {
             return $this->serializer->unserialize($data);
-        } catch (\InvalidArgumentException $exception) {
+        } catch (\InvalidArgumentException $e) {
             return unserialize($data);
         }
     }

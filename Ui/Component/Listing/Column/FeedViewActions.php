@@ -111,7 +111,7 @@ class FeedViewActions extends Column
                             'href' => $this->urlBuilder->getUrl($this->deleteUrl, ['id' => $item['feed_id']]),
                             'label' => __('Delete'),
                             'confirm' => [
-                                'title' => __('Delete %1', $item['feed_id']),
+                                'title' => __('Delete #%1', $item['feed_id']),
                                 'message' => __('Are you sure you want to delete a record #%1?', $item['feed_id'])
                             ]
                         ];

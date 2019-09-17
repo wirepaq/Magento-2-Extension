@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Controller\Adminhtml\Indexing;
 
 use Unbxd\ProductFeed\Controller\Adminhtml\ViewIndex;
 use Magento\Framework\Controller\ResultFactory;
+use Unbxd\ProductFeed\Block\Adminhtml\AdditionalToolbar;
 
 /**
  * Class Queue
@@ -33,6 +34,13 @@ class Queue extends ViewIndex
         $resultPage->addBreadcrumb(__('Indexing Queue'), __('Indexing Queue'));
         $resultPage->addBreadcrumb(__('View'), __('View'));
         $resultPage->getConfig()->getTitle()->prepend(__('Unbxd | Indexing Queue View'));
+
+        // set init parameters for additional toolbar
+        $resultPage->getLayout()->getBlock('additional.toolbar')->setListingView(
+            AdditionalToolbar::ITEM_INDEXING_QUEUE
+        )->setCurrentItemKey(
+            AdditionalToolbar::ITEM_SETUP
+        );
 
         return $resultPage;
     }

@@ -1,8 +1,13 @@
 # Unbxd Product Feed Module For Magento 2
 
+[![Latest Stable Version](https://poser.pugx.org/unbxd/magento2-product-feed/v/stable)](https://packagist.org/packages/unbxd/magento2-product-feed)
+[![Total Downloads](https://poser.pugx.org/unbxd/magento2-product-feed/downloads)](https://packagist.org/packages/unbxd/magento2-product-feed)
+[![License](https://poser.pugx.org/unbxd/magento2-product-feed/license)](https://packagist.org/packages/unbxd/magento2-product-feed)
+[![composer.lock](https://poser.pugx.org/unbxd/magento2-product-feed/composerlock)](https://packagist.org/packages/unbxd/magento2-product-feed)
+
 This module provide possibility for synchronization product catalog with Unbxd service.
 
-Support Magento 2.2.\* || 2.3.\*
+Support Magento 2.1.\* || 2.2.\* || 2.3.\*
 
 # Installation Guide
 
@@ -18,7 +23,7 @@ php bin/magento cache:flush
 
 ### Manual installation
 
-1. Download this module [Link](https://github.com/unbxd/Magento-2-Extension/archive/1.0.19.zip)
+1. Download this module [Link](https://github.com/unbxd/Magento-2-Extension/archive/1.0.26.zip)
 3. Unzip module in the folder:
 
     app\code\Unbxd\ProductFeed  

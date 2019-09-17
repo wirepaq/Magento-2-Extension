@@ -60,27 +60,32 @@ class CategoryProducts
     }
 
     /**
-     * @param CategoryResourceModel $stockItemModel
+     * @param CategoryResourceModel $categoryResource
      * @param \Closure $proceed
      * @param AbstractModel $category
      * @return mixed
      */
     public function aroundSave(
-        CategoryResourceModel $stockItemModel,
+        CategoryResourceModel $categoryResource,
         \Closure $proceed,
         AbstractModel $category
     ) {
-        $stockItemModel->addCommitCallback(function () use ($category) {
+        $categoryResource->addCommitCallback(function () use ($proceed, $category) {
             if (!$this->indexer->isScheduled()) {
                 /** @var \Magento\Catalog\Model\Category $category */
-                $productIds = array_unique($category->getAffectedProductIds());
+                $productIds = $category->getAffectedProductIds();
+                if (empty($productIds)) {
+                    return $proceed($category);
+                }
+
+                $productIds = array_unique($productIds);
                 $validProductIds = [];
                 foreach ($productIds as $id) {
                     /** @var \Magento\Catalog\Model\Product $product */
                     $product = $this->productHelper->getProduct($id);
                     if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
                         $validProductIds[] = $id;
-                        Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                        Handler::$additionalInformation[$id] = __('Product with ID %1 was updated', $id);
                     }
                 }
                 if (!empty($validProductIds)) {
@@ -94,26 +99,32 @@ class CategoryProducts
     }
 
     /**
-     * @param CategoryResourceModel $stockItemModel
+     * @param CategoryResourceModel $categoryResource
      * @param \Closure $proceed
      * @param AbstractModel $category
      * @return mixed
      */
     public function aroundDelete(
-        CategoryResourceModel $stockItemModel,
+        CategoryResourceModel $categoryResource,
         \Closure $proceed,
         AbstractModel $category
     ) {
-        $stockItemModel->addCommitCallback(function () use ($category) {
+        $categoryResource->addCommitCallback(function () use ($proceed, $category) {
             if (!$this->indexer->isScheduled()) {
                 /** @var \Magento\Catalog\Model\Category $category */
-                $productIds = array_unique($category->getAffectedProductIds());
+                $productIds = $category->getAffectedProductIds();
+                if (empty($productIds)) {
+                    return $proceed($category);
+                }
+
+                /** @var \Magento\Catalog\Model\Category $category */
+                $productIds = array_unique($productIds);
                 $validProductIds = [];
                 foreach ($productIds as $id) {
                     /** @var \Magento\Catalog\Model\Product $product */
                     $product = $this->productHelper->getProduct($id);
                     if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
-                        Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                        Handler::$additionalInformation[$id] = __('Product with ID %1 was updated', $id);
                         $validProductIds[] = $id;
                     }
                 }

@@ -17,6 +17,9 @@ use Magento\Framework\App\Cache\StateInterface;
 use Unbxd\ProductFeed\Model\Serializer;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Cache\FrontendInterface as FrontendInterface;
+use Magento\Framework\App\ProductMetadata;
+use Magento\Framework\App\Config\ReinitableConfigInterface;
+use Magento\Framework\App\Cache\Type\Config;
 
 /**
  * Class CacheManager
@@ -60,23 +63,38 @@ class CacheManager
     private $localCache = [];
 
     /**
+     * @var ProductMetadata
+     */
+    private $productMetadata;
+
+    /**
+     * @var ReinitableConfigInterface
+     */
+    private $reinitableConfig;
+
+    /**
      * CacheManager constructor.
      * @param CacheInterface $cache
      * @param TypeListInterface $cacheTypeList
      * @param StateInterface $cacheState
      * @param \Unbxd\ProductFeed\Model\Serializer $serializer
+     * @param ProductMetadata $productMetadata
+     * @param ReinitableConfigInterface $reinitableConfig
      */
     public function __construct(
         CacheInterface $cache,
         TypeListInterface $cacheTypeList,
         StateInterface $cacheState,
-        Serializer $serializer
+        Serializer $serializer,
+        ProductMetadata $productMetadata,
+        ReinitableConfigInterface $reinitableConfig
     ) {
         $this->cache = $cache;
         $this->cacheTypeList = $cacheTypeList;
         $this->cacheState = $cacheState;
-        $this->serializer = $serializer ?: ObjectManager::getInstance()
-            ->get(Serializer::class);
+        $this->serializer = $serializer ?: ObjectManager::getInstance()->get(Serializer::class);
+        $this->productMetadata = $productMetadata;
+        $this->reinitableConfig = $reinitableConfig;
     }
 
     /**
@@ -179,8 +197,15 @@ class CacheManager
      */
     public function flushSystemConfigCache()
     {
-        if ($this->configCache != null) {
-            $this->configCache->getBackend()->clean();
+        if (strpos($this->productMetadata->getVersion(), '2.2') !== false) {
+            // in versions ~2.2 detect frontend issues after clear config cache
+            // @TODO - implement
+        } else {
+            try {
+                $this->reinitableConfig->reinit();
+            } catch (\Exception $e) {
+                $this->cacheTypeList->invalidate(Config::TYPE_IDENTIFIER);
+            }
         }
     }
 }

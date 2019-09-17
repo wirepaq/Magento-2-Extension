@@ -83,7 +83,7 @@ class Full
      * @return mixed
      * @throws \Exception
      */
-    private function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = false, $limit = null)
+    private function getProducts($storeId, $productIds = [], $fromId = 0, $useFilters = true, $limit = null)
     {
         return $this->resourceModel->getProducts($storeId, $productIds, $fromId, $useFilters, $limit);
     }
@@ -115,7 +115,7 @@ class Full
                 // check if product related to parent product, if so - mark it (use for filtering index data in feed process)
                 $parentId = $this->resourceModel->getRelatedParentProduct($productId);
                 if ($parentId && ($parentId != $productId)) {
-                    $productData['parent_id'] = (int) $parentId;
+                    $productData[FeedConfig::PARENT_ID_KEY] = (int) $parentId;
                 };
                 $productData['has_options'] = (bool) $productData['has_options'];
                 $productData['required_options'] = (bool) $productData['required_options'];

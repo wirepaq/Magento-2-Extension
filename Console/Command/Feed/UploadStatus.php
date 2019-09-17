@@ -20,6 +20,7 @@ use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
 use Unbxd\ProductFeed\Model\Feed\Config as FeedConfig;
 use Unbxd\ProductFeed\Model\Feed\Api\Connector as ApiConnector;
 use Unbxd\ProductFeed\Model\Feed\Api\Response as FeedResponse;
+use Magento\Framework\Exception\LocalizedException;
 
 /**
  * Class UploadStatus
@@ -66,6 +67,24 @@ class UploadStatus extends AbstractCommand
                 InputArgument::OPTIONAL,
                 'Feed Upload ID'
             );
+
+        parent::configure();
+    }
+
+    /**
+     * Try to set area code in case if it was not set before
+     *
+     * @return $this
+     */
+    private function initAreaCode()
+    {
+        try {
+            $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        } catch (LocalizedException $e) {
+            // area code already set
+        }
+
+        return $this;
     }
 
     /**
@@ -76,7 +95,7 @@ class UploadStatus extends AbstractCommand
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->appState->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        $this->initAreaCode();
 
         if (!$this->feedHelper->isAuthorizationCredentialsSetup()) {
             $output->writeln("<error>Please check authorization credentials to perform this operation.</error>");
@@ -131,6 +150,11 @@ class UploadStatus extends AbstractCommand
                     ? $responseBodyData[FeedResponse::RESPONSE_FIELD_STATUS]
                     : null;
 
+                if (!$status) {
+                    $output->writeln("<error>Please make sure your request is correct. Possible reason: the last type of synchronization does not match the current request type.</error>");
+                    return $this;
+                }
+
                 $message = '';
                 if ($status == FeedResponse::RESPONSE_FIELD_STATUS_VALUE_INDEXING) {
                     $message = FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_INDEXING;
@@ -141,6 +165,7 @@ class UploadStatus extends AbstractCommand
                     $message = sprintf(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_ERROR, $affectedStoreId);
                 }
 
+                $message = strip_tags($message);
                 try {
                     $rows = [];
                     $rows[] = [$uploadId, $status, $message];

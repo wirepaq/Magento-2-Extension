@@ -17,6 +17,7 @@ use Magento\Framework\Controller\ResultFactory;
 /**
  * Class Check
  * @package Unbxd\ProductFeed\Controller\Adminhtml\Cron
+ * @deprecated
  */
 class Check extends ActionIndex
 {

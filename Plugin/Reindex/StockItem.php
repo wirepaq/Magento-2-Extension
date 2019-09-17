@@ -76,7 +76,7 @@ class StockItem
                 && $this->productHelper->isProductTypeSupported($stockItem->getProduct()->getTypeId())
             ) {
                 $id = $stockItem->getProductId();
-                Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                Handler::$additionalInformation[$id] = __('Product with ID %1 was updated', $id);
                 // if indexer is 'Update on save' mode we need to rebuild related index data
                 $this->indexer->reindexRow($id);
             }
@@ -102,7 +102,7 @@ class StockItem
                 && $this->productHelper->isProductTypeSupported($stockItem->getProduct()->getTypeId())
             ) {
                 $id = $stockItem->getProductId();
-                Handler::$additionalInformation[$id] = __('Product with ID %1 was deleted.', $id);
+                Handler::$additionalInformation[$id] = __('Product with ID %1 was deleted', $id);
                 // if indexer is 'Update on save' mode we need to rebuild related index data
                 $this->indexer->reindexRow($stockItem->getProductId());
             }

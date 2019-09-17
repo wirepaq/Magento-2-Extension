@@ -14,8 +14,6 @@ namespace Unbxd\ProductFeed\Model;
 use Magento\Store\Model\Store;
 use Unbxd\ProductFeed\Api\Data\IndexingQueueInterface;
 use Unbxd\ProductFeed\Api\Data\FeedViewInterface;
-use Magento\Framework\Crontab\CrontabManagerInterface;
-use Magento\Framework\Crontab\TasksProviderInterface;
 use Magento\Cron\Model\ConfigInterface;
 use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory;
 use Magento\Cron\Model\Schedule;
@@ -30,6 +28,7 @@ use Unbxd\ProductFeed\Model\FeedView;
 use Unbxd\ProductFeed\Model\FeedView\Handler as FeedViewHandler;
 use Unbxd\ProductFeed\Model\ResourceModel\FeedView\CollectionFactory as FeedViewCollectionFactory;
 use Unbxd\ProductFeed\Model\CacheManager;
+use Unbxd\ProductFeed\Model\CacheManagerFactory;
 use Unbxd\ProductFeed\Model\Feed\Api\Connector as ApiConnector;
 use Unbxd\ProductFeed\Model\Feed\Api\ConnectorFactory;
 use Unbxd\ProductFeed\Model\Feed\Api\Response as FeedResponse;
@@ -55,16 +54,6 @@ class CronManager
     const DEFAULT_COLLECTION_SIZE = 20;
 
     const DEFAULT_JOBS_LIMIT_PER_RUN = 5;
-
-    /**
-     * @var CrontabManagerInterface
-     */
-    private $crontabManager;
-
-    /**
-     * @var TasksProviderInterface
-     */
-    private $tasksProvider;
 
     /**
      * @var ConfigInterface
@@ -112,9 +101,14 @@ class CronManager
     private $feedViewCollectionFactory;
 
     /**
-     * @var CacheManager
+     * @var CacheManagerFactory
      */
-    private $cacheManager;
+    private $cacheManagerFactory;
+
+    /**
+     * @var null|CacheManager
+     */
+    private $cacheManager = null;
 
     /**
      * @var ConnectorFactory
@@ -174,8 +168,6 @@ class CronManager
 
     /**
      * CronManager constructor.
-     * @param CrontabManagerInterface $crontabManager
-     * @param TasksProviderInterface $tasksProvider
      * @param ConfigInterface $config
      * @param CollectionFactory $cronFactory
      * @param ScheduleFactory $scheduleFactory
@@ -185,7 +177,7 @@ class CronManager
      * @param QueueHandler $queueHandler
      * @param FeedViewHandler $feedViewHandler
      * @param FeedViewCollectionFactory $feedViewCollectionFactory
-     * @param \Unbxd\ProductFeed\Model\CacheManager $cacheManager
+     * @param \Unbxd\ProductFeed\Model\CacheManagerFactory $cacheManagerFactory
      * @param ConnectorFactory $connectorFactory
      * @param LoggerInterface $logger
      * @param FeedHelper $feedHelper
@@ -194,8 +186,6 @@ class CronManager
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        CrontabManagerInterface $crontabManager,
-        TasksProviderInterface $tasksProvider,
         ConfigInterface $config,
         CollectionFactory $cronFactory,
         ScheduleFactory $scheduleFactory,
@@ -205,7 +195,7 @@ class CronManager
         QueueHandler $queueHandler,
         FeedViewHandler $feedViewHandler,
         FeedViewCollectionFactory $feedViewCollectionFactory,
-        CacheManager $cacheManager,
+        CacheManagerFactory $cacheManagerFactory,
         ConnectorFactory $connectorFactory,
         LoggerInterface $logger,
         FeedHelper $feedHelper,
@@ -213,8 +203,6 @@ class CronManager
         DBHelper $resourceHelper,
         StoreManagerInterface $storeManager
     ) {
-        $this->crontabManager = $crontabManager;
-        $this->tasksProvider = $tasksProvider;
         $this->config = $config;
         $this->cronFactory = $cronFactory;
         $this->scheduleFactory = $scheduleFactory;
@@ -223,7 +211,7 @@ class CronManager
         $this->indexingQueueCollectionFactory = $indexingQueueCollectionFactory;
         $this->queueHandler = $queueHandler;
         $this->feedViewHandler = $feedViewHandler;
-        $this->cacheManager = $cacheManager;
+        $this->cacheManagementFactory = $cacheManagerFactory;
         $this->feedViewCollectionFactory = $feedViewCollectionFactory;
         $this->connectorFactory = $connectorFactory;
         $this->logger = $logger->create(OptionsListConstants::LOGGER_TYPE_INDEXING);
@@ -237,9 +225,9 @@ class CronManager
      * @param \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection
      * @param $timeOffset
      * @param string $size
-     * @return $this
+     * @return \Magento\Cron\Model\ResourceModel\Schedule\Collection
      */
-    private function filterCollectionByTimeOffset(
+    public function filterCollectionByTimeOffset(
         \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection,
         $timeOffset,
         $size = ''
@@ -253,15 +241,15 @@ class CronManager
             ['from' => $from, 'to' => $to]
         )->setOrder('schedule_id')->setPageSize($size ?: self::DEFAULT_COLLECTION_SIZE);
 
-        return $this;
+        return $collection;
     }
 
     /**
      * @param \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection
      * @param $jobCode
-     * @return $this
+     * @return \Magento\Cron\Model\ResourceModel\Schedule\Collection
      */
-    private function filterCollectionByJobCode(
+    public function filterCollectionByJobCode(
         \Magento\Cron\Model\ResourceModel\Schedule\Collection $collection,
         $jobCode
     ) {
@@ -274,7 +262,7 @@ class CronManager
             ['like' => $jobCodeLike]
         );
 
-        return $this;
+        return $collection;
     }
 
     /**
@@ -360,15 +348,15 @@ class CronManager
             return false;
         }
 
-        // check if cron is configured
-        if (!$this->helperData->isCronConfigured()) {
-            $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
-            return false;
-        }
-
         // check authorization keys
         if (!$this->helperData->isAuthorizationCredentialsSetup()) {
             $this->logger->error('Please check authorization credentials to perform this operation.');
+            return false;
+        }
+
+        // check if cron is configured
+        if (!$this->helperData->isCronConfigured()) {
+            $this->logger->error('Cron is not configured. Please configure related cron job to perform this operation.');
             return false;
         }
 
@@ -447,13 +435,25 @@ class CronManager
                 );
             }
 
+            $additionalInformation = $job->getAdditionalInformation();
+            $successMessage = 'The related data has been rebuilt successfully';
+            if ($additionalInformation) {
+                $additionalInformation = sprintf(
+                    '%s.<br/>%s',
+                    $additionalInformation,
+                    $successMessage
+                    );
+            } else {
+                $additionalInformation = $successMessage;
+            }
+
             $updateData = [
                 IndexingQueueInterface::STATUS => $isReindexSuccess
                     ? IndexingQueue::STATUS_COMPLETE
                     : IndexingQueue::STATUS_ERROR,
                 IndexingQueueInterface::FINISHED_AT => date('Y-m-d H:i:s'),
                 IndexingQueueInterface::EXECUTION_TIME => $this->logger->getTime(),
-                IndexingQueueInterface::ADDITIONAL_INFORMATION => '',
+                IndexingQueueInterface::ADDITIONAL_INFORMATION => __($additionalInformation),
                 IndexingQueueInterface::NUMBER_OF_ATTEMPTS => (int) $job->getNumberOfAttempts() + 1
             ];
             if ($error) {
@@ -505,6 +505,7 @@ class CronManager
             return;
         }
 
+        $feedSize = 0;
         $isCacheAffected = false;
         foreach ($jobs as $job) {
             /** @var \Unbxd\ProductFeed\Model\FeedView $job */
@@ -519,7 +520,7 @@ class CronManager
                 ? FeedConfig::FEED_TYPE_FULL_UPLOADED_STATUS
                 : FeedConfig::FEED_TYPE_INCREMENTAL_UPLOADED_STATUS;
 
-            /** @var \Unbxd\ProductFeed\Model\Feed\Api\Connector $connectorManager */
+            /** @var ApiConnector $connectorManager */
             $connectorManager = $this->getConnectorManager();
             try {
                 $connectorManager->resetHeaders()
@@ -551,9 +552,21 @@ class CronManager
                         } else if ($response->getIsSuccess()) {
                             $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] =
                                 __(FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE);
+
+                            // additional API call to retrieve upload feed size if available
+                            $feedSize = $this->retrieveUploadFeedSize($connectorManager, $response);
+                            if ($feedSize > 0) {
+                                $message = sprintf(FeedConfig::FEED_MESSAGE_UPLOAD_SIZE, $feedSize);
+                                $message = sprintf(
+                                    '%s<br/>%s',
+                                    FeedConfig::FEED_MESSAGE_BY_RESPONSE_TYPE_COMPLETE,
+                                    $message
+                                );
+                                $updateData[FeedViewInterface::ADDITIONAL_INFORMATION] = __($message);
+                            }
                         }
 
-                        $this->updateFeedInformation($jobId, $jobType, $updateData, $status);
+                        $this->updateFeedInformation($jobId, $jobType, $updateData, $status, $feedSize);
                         $isCacheAffected = true;
                     }
                 }
@@ -570,18 +583,42 @@ class CronManager
     }
 
     /**
+     * Retrieve upload feed size after the related data was indexed by Unbxd service
+     *
+     * @param ApiConnector $connectorManager
+     * @param FeedResponse $response
+     * @return int
+     */
+    private function retrieveUploadFeedSize(ApiConnector $connectorManager, FeedResponse $response)
+    {
+        try {
+            $connectorManager->resetHeaders()
+                ->resetParams()
+                ->execute(FeedConfig::FEED_TYPE_UPLOADED_SIZE, \Zend_Http_Client::GET);
+        } catch (\Exception $e) {
+            return 0;
+        }
+
+        return (int) $response->getUploadedSize();
+    }
+
+    /**
      * Update related feed view information and feed configuration data based on API response
      *
      * @param $jobId
      * @param $jobType
      * @param $updateData
      * @param $status
+     * @param int $feedSize
      * @return $this
      */
-    private function updateFeedInformation($jobId, $jobType, $updateData, $status)
+    private function updateFeedInformation($jobId, $jobType, $updateData, $status, $feedSize)
     {
         $this->feedViewHandler->update($jobId, $updateData);
         $this->feedHelper->setLastSynchronizationStatus($status);
+        if ($feedSize > 0) {
+            $this->feedHelper->setUploadedSize($feedSize);
+        }
 
         $isSuccess = (bool) ($status == FeedView::STATUS_COMPLETE);
         if ($jobType == FeedConfig::FEED_TYPE_FULL) {
@@ -693,7 +730,7 @@ class CronManager
                 );
                 $this->feedViewHandler->update($jobId,
                     [
-                        FeedViewInterface::ADDITIONAL_INFORMATION => _($additionalMessage)
+                        FeedViewInterface::ADDITIONAL_INFORMATION => __($additionalMessage)
                     ]
                 );
             } else {
@@ -753,12 +790,27 @@ class CronManager
     private function flushSystemConfigCache()
     {
         try {
-            $this->cacheManager->flushSystemConfigCache();
+            $this->getCacheManager()->flushSystemConfigCache();
         } catch (\Exception $e) {
             $this->logger->error($e->getMessage());
         }
 
         return $this;
+    }
+
+    /**
+     * Retrieve cache manager instance. Init if needed
+     *
+     * @return CacheManager|null
+     */
+    public function getCacheManager()
+    {
+        if (null === $this->cacheManager) {
+            /** @var CacheManager */
+            $this->cacheManager = $this->cacheManagerFactory->create();
+        }
+
+        return $this->cacheManager;
     }
 
     /**

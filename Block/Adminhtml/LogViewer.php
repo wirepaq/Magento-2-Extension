@@ -54,24 +54,21 @@ class LogViewer extends Template
      * LogViewer constructor.
      * @param Template\Context $context
      * @param LoggerInterface $logger
-     * @param FormKey $formKey
      * @param array $data
      * @param Serializer|null $serializer
      */
     public function __construct(
         Template\Context $context,
         LoggerInterface $logger,
-        FormKey $formKey,
         array $data = [],
         Serializer $serializer = null
     ) {
         parent::__construct($context, $data);
-        $this->formKey = $formKey;
+        $this->formKey = $context->getFormKey();
         $this->jsLayout = isset($data['jsLayout']) && is_array($data['jsLayout']) ? $data['jsLayout'] : [];
         $this->type = isset($data['type']) ? $data['type'] : 'default';
         $this->logger = $logger->create($this->type);
-        $this->serializer = $serializer ?: ObjectManager::getInstance()
-            ->get(Serializer::class);
+        $this->serializer = $serializer ?: ObjectManager::getInstance()->get(Serializer::class);
     }
 
     /**

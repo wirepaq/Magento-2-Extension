@@ -17,12 +17,15 @@ use Unbxd\ProductFeed\Model\ResourceModel\FeedView as ResourceFeedView;
 use Unbxd\ProductFeed\Model\FeedViewFactory;
 use Unbxd\ProductFeed\Model\ResourceModel\FeedView\CollectionFactory as FeedViewCollectionFactory;
 use Magento\Framework\Api\DataObjectHelper;
+use Magento\Framework\Api\SortOrder;
+use Magento\Framework\Api\SearchCriteriaInterface;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Exception\CouldNotDeleteException;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Reflection\DataObjectProcessor;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\ObjectManager;
 
 /**
  * Class FeedViewRepository
@@ -85,7 +88,6 @@ class FeedViewRepository implements FeedViewRepositoryInterface
      * @param DataObjectHelper $dataObjectHelper
      * @param DataObjectProcessor $dataObjectProcessor
      * @param StoreManagerInterface $storeManager
-     * @param CollectionProcessorInterface|null $collectionProcessor
      */
     public function __construct(
         ResourceFeedView $resource,
@@ -95,8 +97,7 @@ class FeedViewRepository implements FeedViewRepositoryInterface
         Data\FeedViewSearchResultsInterfaceFactory $searchResultsFactory,
         DataObjectHelper $dataObjectHelper,
         DataObjectProcessor $dataObjectProcessor,
-        StoreManagerInterface $storeManager,
-        CollectionProcessorInterface $collectionProcessor = null
+        StoreManagerInterface $storeManager
     ) {
         $this->resource = $resource;
         $this->feedViewFactory = $feedViewFactory;
@@ -106,7 +107,9 @@ class FeedViewRepository implements FeedViewRepositoryInterface
         $this->dataFeedViewFactory = $dataFeedViewFactory;
         $this->dataObjectProcessor = $dataObjectProcessor;
         $this->storeManager = $storeManager;
-        $this->collectionProcessor = $collectionProcessor ?: $this->getCollectionProcessor();
+        if (interface_exists(CollectionProcessorInterface::class)) {
+            $this->collectionProcessor = $this->getCollectionProcessor();
+        }
     }
 
     /**
@@ -150,21 +153,93 @@ class FeedViewRepository implements FeedViewRepositoryInterface
     /**
      * Load feed view collection by given search criteria
      *
-     * @param \Magento\Framework\Api\SearchCriteriaInterface $criteria
+     * @param SearchCriteriaInterface $criteria
      * @return Data\FeedViewSearchResultsInterface
      */
-    public function getList(\Magento\Framework\Api\SearchCriteriaInterface $criteria)
+    public function getList(SearchCriteriaInterface $criteria)
     {
         /** @var \Unbxd\ProductFeed\Model\ResourceModel\FeedView\Collection $collection */
         $collection = $this->feedViewCollectionFactory->create();
 
-        $this->collectionProcessor->process($criteria, $collection);
+        if ($this->collectionProcessor) {
+            $searchResults = $this->processCollectionByCollectionProcessor($collection, $criteria);
+        } else {
+            $searchResults = $this->processCollectionByDefault($collection, $criteria);
+        }
 
+        return $searchResults;
+    }
+
+    /**
+     * @param $collection
+     * @param SearchCriteriaInterface $criteria
+     * @return mixed
+     */
+    private function processCollectionByDefault($collection, SearchCriteriaInterface $criteria)
+    {
         /** @var Data\FeedViewSearchResultsInterface $searchResults */
         $searchResults = $this->searchResultsFactory->create();
         $searchResults->setSearchCriteria($criteria);
+
+        foreach ($criteria->getFilterGroups() as $filterGroup) {
+            foreach ($filterGroup->getFilters() as $filter) {
+                if ($filter->getField() === 'store_id') {
+                    $collection->addStoreFilter($filter->getValue(), false);
+                    continue;
+                }
+                $condition = $filter->getConditionType() ?: 'eq';
+                $collection->addFieldToFilter($filter->getField(), [$condition => $filter->getValue()]);
+            }
+        }
+        $searchResults->setTotalCount($collection->getSize());
+        $sortOrders = $criteria->getSortOrders();
+        if ($sortOrders) {
+            /** @var SortOrder $sortOrder */
+            foreach ($sortOrders as $sortOrder) {
+                $collection->addOrder(
+                    $sortOrder->getField(),
+                    ($sortOrder->getDirection() == SortOrder::SORT_ASC) ? 'ASC' : 'DESC'
+                );
+            }
+        }
+        $collection->setCurPage($criteria->getCurrentPage());
+        $collection->setPageSize($criteria->getPageSize());
+        $items = [];
+        /** @var FeedView $feedViewModel */
+        foreach ($collection as $feedViewModel) {
+            /** @var Data\FeedViewInterface $feedViewData */
+            $feedViewData = $this->dataFeedViewFactory->create();
+            $this->dataObjectHelper->populateWithArray(
+                $feedViewData,
+                $feedViewModel->getData(),
+                'Unbxd\ProductFeed\Api\Data\FeedViewInterface'
+            );
+            $items[] = $this->dataObjectProcessor->buildOutputDataArray(
+                $feedViewData,
+                'Unbxd\ProductFeed\Api\Data\FeedViewInterface'
+            );
+        }
+        $searchResults->setItems($items);
+
+        return $searchResults;
+    }
+
+    /**
+     * @param $collection
+     * @param SearchCriteriaInterface $criteria
+     * @return Data\FeedViewSearchResultsInterface
+     */
+    private function processCollectionByCollectionProcessor($collection, SearchCriteriaInterface $criteria)
+    {
+        /** @var Data\FeedViewSearchResultsInterface $searchResults */
+        $searchResults = $this->searchResultsFactory->create();
+
+        $this->collectionProcessor->process($criteria, $collection);
+
+        $searchResults->setSearchCriteria($criteria);
         $searchResults->setItems($collection->getItems());
         $searchResults->setTotalCount($collection->getSize());
+
         return $searchResults;
     }
 
@@ -208,8 +283,8 @@ class FeedViewRepository implements FeedViewRepositoryInterface
     private function getCollectionProcessor()
     {
         if (!$this->collectionProcessor) {
-            $this->collectionProcessor = \Magento\Framework\App\ObjectManager::getInstance()->get(
-                'Unbxd\ProductFeed\Model\Api\SearchCriteria\FeedViewCollectionProcessor'
+            $this->collectionProcessor = ObjectManager::getInstance()->get(
+                \Unbxd\ProductFeed\Model\Api\SearchCriteria\FeedViewCollectionProcessor::class
             );
         }
 

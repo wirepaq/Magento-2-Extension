@@ -78,8 +78,8 @@ class Product
                 /** @var \Magento\Catalog\Model\Product $product */
                 $id = $product->getId();
                 Handler::$additionalInformation[$id] = $product->isObjectNew()
-                    ? __('Product with ID %1 was added.', $id)
-                    : __('Product with ID %1 was updated.', $id);
+                    ? __('Product with ID %1 was added', $id)
+                    : __('Product with ID %1 was updated', $id);
                 // if indexer is 'Update on save' mode we need to rebuild related index data
                 $this->indexer->reindexRow($id);
             }
@@ -107,7 +107,7 @@ class Product
                 /** @var \Magento\Catalog\Model\Product $product */
                 $id = $product->getId();
                 Handler::$additionalInformation[$id] =
-                    __('Product with ID %1 was deleted.', $id);
+                    __('Product with ID %1 was deleted', $id);
                 // if indexer is 'Update on save' mode we need to rebuild related index data
                 $this->indexer->reindexRow($id);
             }

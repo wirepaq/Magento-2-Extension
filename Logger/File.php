@@ -177,15 +177,28 @@ class File extends LoggerAbstract
     public function getFileSize()
     {
         $this->initFile();
-        $fileStat = $this->dir->stat($this->getFileLocation());
-        $size = isset($fileStat['size']) ? round($fileStat['size'] / 1024, 2) : 0; // in KB
+        $filePath = $this->getFileLocation();
+        try {
+            $fileStat = $this->dir->stat($filePath);
+            $size = isset($fileStat['size']) ? round($fileStat['size'] / 1024, 2) : 0; // in KB
+        } catch (\Exception $e) {
+            if (strpos($e->getMessage(), 'Cannot gather stats') !== false) {
+                // detected for magento ~2.1
+                clearstatcache();
+                $fileStat = @stat($filePath);
+                $size = isset($fileStat['size']) ? round($fileStat['size'] / 1024, 2) : 0; // in KB
+            } else {
+                $size = 0;
+            }
+        }
+
         return $size;
     }
 
     /**
      * Flush log file content
      *
-     * @return string
+     * @return void
      * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function flushFileContent()

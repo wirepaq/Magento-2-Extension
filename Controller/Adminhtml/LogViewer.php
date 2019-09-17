@@ -44,7 +44,6 @@ abstract class LogViewer extends Action
      * @param Action\Context $context
      * @param PageFactory $resultPageFactory
      * @param FileFactory $fileFactory
-     * @param LoggerInterface $logger
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(

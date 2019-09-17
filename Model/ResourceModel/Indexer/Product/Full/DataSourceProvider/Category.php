@@ -380,11 +380,13 @@ class Category extends Indexer
         try {
             // retrieve table name for the current store Id from the TableMaintainer.
             // class TableMaintainer encapsulate logic of work with tables per store in related indexer
-            $tableMaintainer = $this->objectManager->get(
-                \Magento\Catalog\Model\Indexer\Category\Product\TableMaintainer::class
-            );
-            $indexTable = $tableMaintainer->getMainTable($storeId);
-        } catch (\Exception $exception) {
+            if (class_exists(\Magento\Catalog\Model\Indexer\Category\Product\TableMaintainer::class)) {
+                $tableMaintainer = $this->objectManager->get(
+                    \Magento\Catalog\Model\Indexer\Category\Product\TableMaintainer::class
+                );
+                $indexTable = $tableMaintainer->getMainTable($storeId);
+            }
+        } catch (\Exception $e) {
             // occurs in Magento version where TableMaintainer is not implemented, will default to legacy table.
         }
 

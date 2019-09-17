@@ -81,7 +81,7 @@ class ProductMassAction
                 /** @var \Magento\Catalog\Model\Product $product */
                 $product = $this->productHelper->getProduct($id);
                 if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
-                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated', $id);
                     $validProductIds[] = $id;
                 }
             }
@@ -117,7 +117,7 @@ class ProductMassAction
                 /** @var \Magento\Catalog\Model\Product $product */
                 $product = $this->productHelper->getProduct($id);
                 if ($product && $this->productHelper->isProductTypeSupported($product->getTypeId())) {
-                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated.', $id);
+                    Handler::$additionalInformation[$id] = __('Product with ID %1 was updated', $id);
                     $validProductIds[] = $id;
                 }
             }

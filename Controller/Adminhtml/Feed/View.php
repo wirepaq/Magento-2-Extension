@@ -13,6 +13,7 @@ namespace Unbxd\ProductFeed\Controller\Adminhtml\Feed;
 
 use Unbxd\ProductFeed\Controller\Adminhtml\ViewIndex;
 use Magento\Framework\Controller\ResultFactory;
+use Unbxd\ProductFeed\Block\Adminhtml\AdditionalToolbar;
 
 /**
  * Class Index
@@ -33,6 +34,13 @@ class View extends ViewIndex
         $resultPage->addBreadcrumb(__('Product Feed'), __('Product Feed'));
         $resultPage->addBreadcrumb(__('Log View'), __('Log View'));
         $resultPage->getConfig()->getTitle()->prepend(__('Unbxd | Feed View'));
+
+        // set init parameters for additional toolbar
+        $resultPage->getLayout()->getBlock('additional.toolbar')->setListingView(
+            AdditionalToolbar::ITEM_FEED_VIEW
+        )->setCurrentItemKey(
+            AdditionalToolbar::ITEM_SETUP
+        );
 
         return $resultPage;
     }

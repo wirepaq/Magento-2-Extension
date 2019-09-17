@@ -213,7 +213,8 @@ abstract class AbstractAttribute
      */
     private function canIndexAttribute(AttributeInterface $attribute)
     {
-        $canIndex = ($attribute->getBackendType() != 'static') && ($attribute->getAttributeCode() !== 'price');
+        $canIndex = ($attribute->getBackendType() != 'static')
+            && ($attribute->getAttributeCode() !== 'price') && (bool) $attribute->getIncludeInUnbxdProductFeed();
         if ($canIndex && $attribute->getBackendModel()) {
             $canIndex = in_array($attribute->getBackendModel(), $this->indexedBackendModels);
         }

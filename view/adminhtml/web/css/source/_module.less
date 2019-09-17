@@ -5,7 +5,7 @@
                 content: '';
                 display: block;
                 position: absolute;
-                background: url(../images/unbxd_logo_badge.png) no-repeat;
+                background: url('../Unbxd_ProductFeed/images/unbxd_logo_badge.png') no-repeat;
                 background-size: contain;
                 width: 19px;
                 height: 19px;
@@ -204,6 +204,16 @@
             }
         }
     }
+
+    .page-wrapper {
+        .admin__data-grid-outer-wrap {
+            min-height: auto;
+
+            div[data-component*='unbxd_productfeed_cron_grid_modal'] {
+                display: none;
+            }
+        }
+    }
 }
 .unbxd-response-modal-container {
     left: auto;
@@ -271,7 +281,6 @@
     }
 }
 
-
 .incremental-synchronization-container {
     left: auto;
     right: 0;
@@ -298,6 +307,40 @@
                 min-height: 150px;
                 padding: 10px;
                 resize: initial;
+            }
+        }
+    }
+}
+
+.additional-toolbar {
+    float: left;
+    margin-top: 7px;
+    z-index: 500;
+
+    .admin__action-dropdown {
+        background-color: #f8f8f8;
+
+        &-text {
+            &:after {
+                background-color: #f8f8f8 !important;
+            }
+        }
+    }
+
+    .admin__action-dropdown-menu {
+        background-color: #f8f8f8;
+
+        & > li {
+            & > a {
+                padding-left: .5em;
+                padding-right: 1.8rem;
+                transition: background-color .1s linear;
+                white-space: nowrap;
+
+                &:hover {
+                    background-color: #e0f6fe;
+                    color: #41362f;
+                }
             }
         }
     }
