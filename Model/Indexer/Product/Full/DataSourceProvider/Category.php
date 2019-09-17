@@ -70,18 +70,10 @@ class Category implements DataSourceProviderInterface
             $productId = (int) $categoryDataRow['product_id'];
             unset($categoryDataRow['product_id']);
 
-            if (!isset($categoryDataRow['name'])) {
-                continue;
-            }
-
             $categoryDataRow = array_merge(
                 $categoryDataRow,
                 [
-                    'category_id' => (int) $categoryDataRow['category_id'],
-                    'is_parent' => (bool) $categoryDataRow['is_parent'],
-                    'name' => (string) $categoryDataRow['name'],
-                    'url_key' => (string) $categoryDataRow['url_key'],
-                    'url_path' => (string) $categoryDataRow['url_path'],
+                    'category_id' => (int) $categoryDataRow['category_id']
                 ]
             );
 

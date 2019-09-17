@@ -22,7 +22,7 @@ use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\Indexer\Table\StrategyInterface;
 
 /**
- * Categories data data source resource model.
+ * Categories data source resource model.
  *
  * Class Category
  * @package Unbxd\ProductFeed\Model\ResourceModel\Indexer\Product\Full\DataSourceProvider
@@ -110,17 +110,17 @@ class Category extends Indexer
         }
 
         $storeCategoryData = $this->buildCategoryData(array_unique($categoryIds), $storeId);
-
-        foreach ($categoryData as &$categoryDataRow) {
+        foreach ($categoryData as $key => &$categoryDataRow) {
             if (isset($storeCategoryData[$categoryDataRow['category_id']])) {
-                $key = (int) $categoryDataRow['category_id'];
-                if (empty($storeCategoryData[$key])) {
+                $id = (int) $categoryDataRow['category_id'];
+                if (empty($storeCategoryData[$id])) {
+                    unset($categoryData[$key]);
                     continue;
                 }
 
-                $categoryDataRow['name'] = $storeCategoryData[$key]['name'];
-                $categoryDataRow['url_key'] = $storeCategoryData[$key]['url_key'];
-                $categoryDataRow['url_path'] = $storeCategoryData[$key]['url_path'];
+                $categoryDataRow['name'] = $storeCategoryData[$id]['name'];
+                $categoryDataRow['url_key'] = $storeCategoryData[$id]['url_key'];
+                $categoryDataRow['url_path'] = $storeCategoryData[$id]['url_path'];
             }
         }
 
@@ -139,177 +139,11 @@ class Category extends Indexer
         $select = $this->getConnection()->select()
             ->from(['cpi' => $this->getTable($this->getCatalogCategoryProductIndexTable($storeId))])
             ->where('cpi.store_id = ?', $storeId)
-            ->where('cpi.product_id IN(?)', $productIds)
+            ->where('cpi.product_id IN (?)', $productIds)
             ->reset(\Magento\Framework\DB\Select::COLUMNS)
             ->columns(['category_id', 'product_id', 'is_parent']);
 
         return $select;
-    }
-
-    /**
-     * Retrieve attribute id by entity type code and attribute code
-     *
-     * @param string $entityType
-     * @param string $code
-     * @return int
-     * @deprecated since 1.0.20
-     */
-    public function getAttributeId($entityType, $code)
-    {
-        $connection = $this->getConnection();
-        $bind = [':entity_type_code' => $entityType, ':attribute_code' => $code];
-        $select = $connection->select()->from(
-            ['a' => $this->getTable('eav_attribute')],
-            ['a.attribute_id']
-        )->join(
-            ['t' => $this->getTable('eav_entity_type')],
-            'a.entity_type_id = t.entity_type_id',
-            []
-        )->where(
-            't.entity_type_code = :entity_type_code'
-        )->where(
-            'a.attribute_code = :attribute_code'
-        );
-
-        return $connection->fetchOne($select, $bind);
-    }
-
-    /**
-     * Prepare category indexed data.
-     *
-     * @param $productIds
-     * @param $storeId
-     * @return array
-     * @throws \Exception
-     * @deprecated since 1.0.20
-     */
-    protected function getProductCategories($productIds, $storeId)
-    {
-        $select = $this->getConnection()->select()
-            ->from(['cpi' => $this->getTable($this->getCatalogCategoryProductIndexTable($storeId))])
-            ->where('cpi.store_id = ?', $storeId)
-            ->where('cpi.product_id IN(?)', $productIds)
-            ->reset(\Magento\Framework\DB\Select::COLUMNS)
-            ->columns(['category_id', 'product_id'], 'cpi');
-
-        $categoryIds = $this->getConnection()->fetchCol($select);
-
-        $select->useStraightJoin(true)
-            ->join([
-                'cce' => $this->getTable('catalog_category_entity')],
-                'cce.entity_id = cpi.category_id',
-                ['path']
-            )->where('cce.level NOT IN (0,1)');
-
-        $relatedData = [];
-        $allIds = [];
-        foreach ($this->getConnection()->fetchAll($select) as $row) {
-            $categoryId = isset($row['category_id']) ? (int) $row['category_id'] : null;
-            $productId = isset($row['product_id']) ? (int) $row['product_id'] : null;
-            $path = isset($row['path']) ? $row['path'] : null;
-            if (!$categoryId || !$productId || !$path) {
-                continue;
-            }
-
-            // remove root categories from path
-            $rootPartPath = sprintf(
-                '%s/%s',
-                \Magento\Catalog\Model\Category::TREE_ROOT_ID,
-                $this->getRootCategoryId($storeId)
-            );
-            $path = str_replace($rootPartPath, '', $path);
-            if ($path) {
-                $ids = explode('/', $path);
-                if (!empty($ids)) {
-                    foreach ($ids as $id) {
-                        if ($id) {
-                            $relatedData[] = [
-                                'category_id' => $id,
-                                'product_id' => $productId,
-                                'related' => in_array($id, $categoryIds)
-                            ];
-
-                            if (!in_array($id, $allIds)) {
-                                array_push($allIds, $id);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // data with related product id
-        $helperData = array_values(array_unique($relatedData, SORT_REGULAR));
-
-        $allIds = array_unique($allIds);
-        sort($allIds);
-
-        $entityType = $this->getEntityMetaData(CategoryInterface::class)->getEavEntityType();
-        $displayModeAttributeId = $this->getAttributeId($entityType,'display_mode');
-        $nameAttributeId = $this->getAttributeId($entityType,'name');
-        $urlKeyAttributeId = $this->getAttributeId($entityType,'url_key');
-        $urlPathAttributeId = $this->getAttributeId($entityType,'url_path');
-
-        $select = $this->getConnection()->select()
-            ->from(['ccev' => $this->getTable('catalog_category_entity_varchar')])
-            ->where('ccev.entity_id IN (?)', $allIds)
-            ->where('ccev.attribute_id <> ?', $displayModeAttributeId)
-            ->reset(\Magento\Framework\DB\Select::COLUMNS)
-            ->columns('attribute_id', 'ccev')
-            ->columns('ccev.entity_id AS category_id', 'ccev')
-            ->columns('value', 'ccev');
-
-        $result = [];
-        foreach ($this->getConnection()->fetchAll($select) as $key => $row) {
-            $attributeId = isset($row['attribute_id']) ? (int) $row['attribute_id'] : null;
-            $categoryId = isset($row['category_id']) ? (int) $row['category_id'] : null;
-            $value = isset($row['value']) ? (string) $row['value'] : null;
-            if (!$attributeId || !$categoryId || !$value) {
-                continue;
-            }
-
-            foreach ($helperData as $data) {
-                if (isset($data['category_id']) && ($data['category_id'] == $categoryId)) {
-                    if ($attributeId == $nameAttributeId) {
-                        $key = 'name';
-                    }
-                    if ($attributeId == $urlKeyAttributeId) {
-                        $key = 'url_key';
-                    }
-                    if ($attributeId == $urlPathAttributeId) {
-                        $key = 'url_path';
-                    }
-                    $result[] = [
-                        'category_id' => $categoryId,
-                        'product_id' => $data['product_id'],
-                        'related' => $data['related'],
-                        $key => $value
-                    ];
-                }
-            }
-        }
-
-        $output = [];
-        foreach ($result as $key => $data) {
-            $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : null;
-            $productId = isset($data['product_id']) ? (int) $data['product_id'] : null;
-
-            $filteredArray = array_filter($result, function($item) use ($categoryId, $productId) {
-                return ($item['category_id'] == $categoryId) && ($item['product_id'] == $productId);
-            });
-
-            $output[$key] = $data;
-            if (!empty($filteredArray)) {
-                foreach ($filteredArray as $item) {
-                    unset($item['category_id']);
-                    unset($item['product_id']);
-                    unset($item['related']);
-                    $output[$key] = array_merge($output[$key], $item);
-                }
-            }
-        }
-
-        return array_unique($output, SORT_REGULAR);
     }
 
     /**
@@ -330,9 +164,11 @@ class Category extends Indexer
      */
     protected function getCategoryNameAttribute()
     {
-        $this->categoryNameAttribute = $this->eavConfig->getAttribute(
-            \Magento\Catalog\Model\Category::ENTITY, 'name'
-        );
+        if (null === $this->categoryNameAttribute) {
+            $this->categoryNameAttribute = $this->eavConfig->getAttribute(
+                \Magento\Catalog\Model\Category::ENTITY, 'name'
+            );
+        }
 
         return $this->categoryNameAttribute;
     }
@@ -345,9 +181,11 @@ class Category extends Indexer
      */
     protected function getCategoryUrlKeyAttribute()
     {
-        $this->categoryUrlKeyAttribute = $this->eavConfig->getAttribute(
-            \Magento\Catalog\Model\Category::ENTITY, 'url_key'
-        );
+        if (null === $this->categoryUrlKeyAttribute) {
+            $this->categoryUrlKeyAttribute = $this->eavConfig->getAttribute(
+                \Magento\Catalog\Model\Category::ENTITY, 'url_key'
+            );
+        }
 
         return $this->categoryUrlKeyAttribute;
     }
@@ -360,9 +198,11 @@ class Category extends Indexer
      */
     protected function getCategoryUrlPathAttribute()
     {
-        $this->categoryUrlPathAttribute = $this->eavConfig->getAttribute(
-            \Magento\Catalog\Model\Category::ENTITY, 'url_path'
-        );
+        if (null === $this->categoryUrlPathAttribute) {
+            $this->categoryUrlPathAttribute = $this->eavConfig->getAttribute(
+                \Magento\Catalog\Model\Category::ENTITY, 'url_path'
+            );
+        }
 
         return $this->categoryUrlPathAttribute;
     }
@@ -451,19 +291,22 @@ class Category extends Indexer
 
         $conditionsName = [
             "cat.{$linkField} = name.{$linkField}",
-            "name.attribute_id = " . (int) $nameAttr->getAttributeId()
+            "name.attribute_id = " . (int) $nameAttr->getAttributeId(),
+            "name.store_id = " . (int) $storeId
         ];
         $joinConditionsName = new \Zend_Db_Expr(implode(" AND ", $conditionsName));
 
         $conditionsUrlKey = [
             "cat.{$linkField} = url_key.{$linkField}",
-            "url_key.attribute_id = " . (int) $urlKeyAttr->getAttributeId()
+            "url_key.attribute_id = " . (int) $urlKeyAttr->getAttributeId(),
+            "url_key.store_id = " . (int) $storeId
         ];
         $joinConditionsUrlKey = new \Zend_Db_Expr(implode(" AND ", $conditionsUrlKey));
 
         $conditionsUrlPath = [
             "cat.{$linkField} = url_path.{$linkField}",
-            "url_path.attribute_id = " . (int) $urlPathAttr->getAttributeId()
+            "url_path.attribute_id = " . (int) $urlPathAttr->getAttributeId(),
+            "url_path.store_id = " . (int) $storeId
         ];
         $joinConditionsUrlPath = new \Zend_Db_Expr(implode(" AND ", $conditionsUrlPath));
 

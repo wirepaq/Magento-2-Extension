@@ -668,6 +668,7 @@ class Manager
         $zip->open($destination, \ZipArchive::CREATE);
         $zip->addFile($source, $filename);
         $zip->close();
+
         return $destination;
     }
 
@@ -1143,8 +1144,8 @@ class Manager
             $categoryData = $this->buildCategoryList($data[$categoryKey]);
             if (!empty($categoryData)) {
                 $data[Config::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID] = $categoryData;
-                unset($data[$categoryKey]);
             }
+            unset($data[$categoryKey]);
         }
         // prepare visibility field
         if (isset($data[$visibilityKey]) && !empty($data[$visibilityKey])) {
@@ -1326,6 +1327,7 @@ class Manager
                     Config::SPECIFIC_FIELD_KEY_CATEGORY_PATH_ID,
                     Config::CHILD_PRODUCTS_FIELD_KEY
                 ];
+
                 // format to string array only with one record, otherwise put it as is
                 $data[$key] = (is_array($value) && (count($value) == 1) && !in_array($key, $excluded))
                     ? implode(',', $value)
@@ -1373,17 +1375,25 @@ class Manager
     private function buildCategoryList($categoryData)
     {
         $result = [];
-        foreach ($categoryData as $key => $data) {
-            $categoryId = isset($data['category_id']) ? (string) $data['category_id'] : null;
+        foreach ($categoryData as $data) {
+            $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : null;
             // try to retrieve category list data from cache
             if (isset($this->categoryCacheList[$categoryId])) {
                 $result[] = $this->categoryCacheList[$categoryId];
                 continue;
             }
 
-            $name = isset($data['name']) ? (string) $data['name'] : null;
-            $urlPath = isset($data['url_path']) ? (string) $data['url_path'] : null;
+            $name = isset($data['name']) ? (string) trim($data['name']) : null;
+            $urlPath = isset($data['url_path'])
+                ? (string) trim($data['url_path'], '/')
+                    : (isset($data['url_key']) ? (string) trim($data['url_key'], '/') : null);
             if (!$name || !$urlPath) {
+                continue;
+            }
+
+            // remove double slashes from path if any
+            $urlPath = preg_replace('#/+#','/', $urlPath);
+            if (!$urlPath) {
                 continue;
             }
 
@@ -1392,12 +1402,17 @@ class Manager
             } else {
                 $pathData = [$urlPath];
             }
+
             if (!empty($pathData)) {
                 $path = '';
                 $urlPart = '';
                 foreach ($pathData as $urlKey) {
                     $key = array_search($urlKey, array_column($categoryData, 'url_key'));
-                    $name = isset($categoryData[$key]['name']) ? trim($categoryData[$key]['name']) : 'Undefined';
+                    $name = ucwords(trim(str_replace('-', ' ', strtolower($urlKey))));
+                    if ($key && isset($categoryData[$key]['name'])) {
+                        $name = trim($categoryData[$key]['name']);
+                    }
+
                     $urlPart .= '/' . $urlKey;
                     $path .= sprintf('%s|%s>', $urlPart, $name);
                 }

@@ -1,4 +1,9 @@
-# Version 1.0.26
+# Version 1.0.27
+## 1.0.27 - Sep 17, 2019
+### Fix Issues
+- Fixed buh with incorrect category data in product feed, when the active child category 
+belongs to an inactive parent category. 
+
 ## 1.0.26 - Sep 17, 2019
 ### New Features
 - Implemented Related Cron Jobs UI grid.
